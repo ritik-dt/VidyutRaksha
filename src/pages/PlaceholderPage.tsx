@@ -1,9 +1,9 @@
 import { useLocation } from 'react-router-dom'
-import { useNavigation } from '@/context/NavigationContext'
-import { useScope } from '@/context/ScopeContext'
-import type { ScreenName } from '@/types'
-import { ROUTE_DEFINITIONS } from '@/routes/routeConfig'
-import { isHierAwareScreen } from '@/utils/hierarchy'
+import { useNavigation } from '@/shared/context/NavigationContext'
+import { useScope } from '@/shared/context/ScopeContext'
+import type { ScreenName } from '@/shared/types'
+import { ROUTE_DEFINITIONS } from '@/app/routes/routeConfig'
+import { isHierAwareScreen } from '@/shared/utils/hierarchy'
 
 interface PlaceholderPageProps {
   screen: ScreenName

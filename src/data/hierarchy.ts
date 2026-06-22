@@ -1,5 +1,5 @@
 // @ts-nocheck — extracted legacy data; typed at consumption boundaries
-import type { HierDataMap } from '@/types/hierarchy'
+import type { HierDataMap } from '@/shared/types/hierarchy'
 
 export const hierData: HierDataMap = {
   uppcl: {

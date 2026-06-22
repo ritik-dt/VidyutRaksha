@@ -17,13 +17,13 @@ import {
   TabsContent,
   TabsList,
   TabsTrigger,
-} from '@/components/ui'
+} from '@/shared/components/ui'
 import {
   ArrowDownIcon,
   ArrowUpIcon,
   InfoIcon,
   SparklesIcon,
-} from '@/components/ui/icons'
+} from '@/shared/components/ui/icons'
 
 export function UiShowcasePage() {
   const [tabValue, setTabValue] = useState('overview')

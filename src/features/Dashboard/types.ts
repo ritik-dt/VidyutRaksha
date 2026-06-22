@@ -1,5 +1,5 @@
-import type { HierChildRef, HierNode } from '@/types'
-import type { ScreenName } from '@/types'
+import type { HierChildRef, HierNode } from '@/shared/types'
+import type { ScreenName } from '@/shared/types'
 
 export interface DiscomRow {
   name: string

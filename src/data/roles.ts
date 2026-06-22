@@ -1,4 +1,4 @@
-import type { Role } from '@/types'
+import type { Role } from '@/shared/types'
 
 export const ROLES: Role[] = [
   {
