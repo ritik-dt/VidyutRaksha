@@ -1,6 +1,6 @@
 import DashboardHeader from '@/features/Dashboard/components/DashboardHeader'
 import DashboardKpis from '@/features/Dashboard/components/DashboardKpis'
-import DashboardAiAnalysis from '@/features/Dashboard/components/DashboardAiAnalysis'
+// import DashboardAiAnalysis from '@/features/Dashboard/components/DashboardAiAnalysis'
 import DashboardDrilldown from '@/features/Dashboard/components/DashboardDrilldown'
 import DashboardTables from '@/features/Dashboard/components/DashboardTables'
 import DashboardCharts from '@/features/Dashboard/components/DashboardCharts'
@@ -18,7 +18,7 @@ export default function DashboardPage() {
     <div className="dashboard-page space-y-0 pb-8">
       <DashboardHeader />
       <DashboardKpis />
-      <DashboardAiAnalysis />
+      {/* <DashboardAiAnalysis /> */}
       <DashboardDrilldown />
       <DashboardTables />
       <DashboardCharts />

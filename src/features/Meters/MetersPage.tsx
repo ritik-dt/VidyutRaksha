@@ -9,6 +9,7 @@ import { SUSP_METERS, getTopTargets } from '@/features/Meters/data/meters'
 import { formatIndian } from '@/shared/utils/formatters'
 import { getPathForScreen } from '@/shared/utils/navigation'
 import { SuspiciousListPanel } from './components/SuspiciousListPanel'
+import { FlaggedConsumersTable } from './components/FlaggedConsumersTable'
 import { DiscomRiskTable } from './components/DiscomRiskTable'
 import { TopTargetCard } from './components/TopTargetCard'
 import { TheftSignaturesChart } from './components/TheftSignaturesChart'
@@ -18,8 +19,8 @@ import type { MeterRiskBand } from '@/features/Meters/data/meters'
 
 export default function MetersPage() {
   const navigate = useNavigate()
-  const { currentNode, hierPath } = useScope()
-  const [listPanel, setListPanel] = useState<{ open: boolean; band?: MeterRiskBand }>({ open: false })
+  const { currentNode, hierPath, drillToChild } = useScope()
+  const [listPanel, setListPanel] = useState<{ open: boolean; band?: MeterRiskBand; childId?: string; childName?: string }>({ open: false })
 
   const level = currentNode ? enrichLevel(currentNode) : null
   const scopeId = hierPath[hierPath.length - 1] ?? 'uppcl'
@@ -43,6 +44,11 @@ export default function MetersPage() {
 
   function openList(band?: MeterRiskBand) {
     setListPanel({ open: true, band })
+  }
+
+  function openListForChild(childId: string) {
+    const child = level?.children?.find((c) => c.id === childId)
+    setListPanel({ open: true, childId, childName: child?.name })
   }
 
   return (
@@ -154,7 +160,8 @@ export default function MetersPage() {
           highCount={highCount}
           mediumCount={mediumCount}
           flaggedCount={flaggedCount}
-          onRowClick={() => openList()}
+          onRowClick={(childId) => drillToChild(childId)}
+          onViewList={(childId) => openListForChild(childId)}
           onViewAll={() => openList()}
         />
       )}
@@ -205,8 +212,13 @@ export default function MetersPage() {
           className="mt-3.5 grid gap-3.5"
           style={{ gridTemplateColumns: '1fr 1.2fr' }}
         >
-          <TheftSignaturesChart scopeName={scopeName} />
-          <DetectionTrendChart scopeName={scopeName} hitRate={hitRate} rising={flaggedCount > 4000} />
+          <TheftSignaturesChart scopeId={scopeId} scopeName={scopeName} />
+          <DetectionTrendChart
+            scopeName={scopeName}
+            flagged={level?.flagged}
+            hitRate={hitRate}
+            rising={flaggedCount > 4000}
+          />
         </div>
       )}
 
@@ -222,26 +234,14 @@ export default function MetersPage() {
         </div>
       )}
 
-      {/* ===== Consumer-level (DTR) — terminal scope shows the meter list inline ===== */}
-      {isConsumerLevel && (
-        <div className="card">
-          <div className="card-title flex items-center justify-between">
-            <span>Flagged consumers under {scopeName}</span>
-          </div>
-          <p className="text-[12px] text-text-dim">
-            {formatIndian(flaggedCount)} flagged consumers at this DTR.{' '}
-            <button type="button" className="font-semibold text-ai-purple underline" onClick={() => openList()}>
-              Open full list →
-            </button>
-          </p>
-        </div>
-      )}
+      {/* ===== Consumer-level (DTR) — terminal scope shows the full inline table ===== */}
+      {isConsumerLevel && <FlaggedConsumersTable scopeName={scopeName} />}
 
       {/* ===== Suspicious list slide-over (works at any scope level) ===== */}
       {listPanel.open && (
         <SuspiciousListPanel
-          scopeId={scopeId}
-          scopeName={scopeName}
+          scopeId={listPanel.childId ?? scopeId}
+          scopeName={listPanel.childName ?? scopeName}
           scopeType={scopeType}
           totalConsumers={level?.meters ?? 1500000}
           totalFlagged={flaggedCount}

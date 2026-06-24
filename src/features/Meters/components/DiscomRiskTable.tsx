@@ -12,6 +12,7 @@ interface DiscomRiskTableProps {
   mediumCount: number
   flaggedCount: number
   onRowClick: (childId: string) => void
+  onViewList: (childId: string) => void
   onViewAll: () => void
 }
 
@@ -28,6 +29,7 @@ export function DiscomRiskTable({
   mediumCount,
   flaggedCount,
   onRowClick,
+  onViewList,
   onViewAll,
 }: DiscomRiskTableProps) {
   const sorted = [...children].sort((a, b) => (b.critical ?? 0) - (a.critical ?? 0))
@@ -98,7 +100,7 @@ export function DiscomRiskTable({
                       style={{ fontSize: '10px', padding: '3px 9px' }}
                       onClick={(e: MouseEvent) => {
                         e.stopPropagation()
-                        child.id && onRowClick(child.id)
+                        child.id && onViewList(child.id)
                       }}
                     >
                       View list ›

@@ -84,7 +84,7 @@ export function Topbar() {
           </svg>
         </button> */}
 
-        <button
+        {/* <button
           type="button"
           id="roleSwitcher"
           ref={roleSwitcherRef}
@@ -121,7 +121,7 @@ export function Topbar() {
           >
             <polyline points="6 9 12 15 18 9" />
           </svg>
-        </button>
+        </button> */}
 
         {/* <button
           type="button"

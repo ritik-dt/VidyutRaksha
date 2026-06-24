@@ -68,7 +68,7 @@ export function AiActionsPanel({ scopeName, criticalCount, highCount, estMonthly
                 message: `Created ${topN} critical cases in ${scopeName}. Routed to nearest inspectors with optimized route.`,
                 duration: 5000,
               })
-              navigate(getPathForScreen('cases'))
+              // navigate(getPathForScreen('cases'))
             }}
           >
             ✦ Create cases now →
@@ -133,7 +133,7 @@ export function AiActionsPanel({ scopeName, criticalCount, highCount, estMonthly
                 message: `${noticeConsumers} Section 135 notices drafted with evidence packs. Routed to SE inbox for review.`,
                 duration: 5000,
               })
-              navigate(getPathForScreen('notices'))
+              // navigate(getPathForScreen('notices'))
             }}
           >
             ✉️ Draft notices →

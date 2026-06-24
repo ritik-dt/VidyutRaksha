@@ -88,7 +88,8 @@ export default function DashboardHeader() {
             type="button"
             onClick={toggleScopePicker}
             title="Change scope"
-            className="btn btn-outline btn-sm border-[rgba(124,58,237,0.3)] text-ai-purple"
+             className="btn btn-outline btn-sm"
+          style={{ fontSize: '10px', padding: '3px 9px', color: 'var(--ai-purple)', borderColor: 'rgba(124,58,237,0.3)' }}
           >
             ↕ Change scope
           </button>

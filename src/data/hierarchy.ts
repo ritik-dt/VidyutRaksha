@@ -1,5 +1,5 @@
 // @ts-nocheck — extracted legacy data; typed at consumption boundaries
-import type { HierDataMap } from '@/shared/types/hierarchy'
+import type { HierDataMap } from "@/shared/types/hierarchy";
 
 export const hierData: HierDataMap = {
   uppcl: {
@@ -1428,17 +1428,17 @@ export const hierData: HierDataMap = {
   });
 })();
 
-export const HIER_ROOT_ID = 'uppcl' as const
+export const HIER_ROOT_ID = "uppcl" as const;
 
 export const HIER_ICONS: Record<string, string> = {
-  State: '🏛️',
-  DISCOM: '⚡',
-  Zone: '🗺️',
-  Circle: '🔵',
-  Division: '📍',
-  'Sub-division': '📋',
-  Feeder: '⚡',
-  DTR: '🔶',
-}
+  State: "🏛️",
+  DISCOM: "⚡",
+  Zone: "🗺️",
+  Circle: "🔵",
+  Division: "📍",
+  "Sub-division": "📋",
+  Feeder: "⚡",
+  DTR: "🔶",
+};
 
-export const DEFAULT_HIER_PATH: string[] = ['uppcl']
+export const DEFAULT_HIER_PATH: string[] = ["uppcl"];

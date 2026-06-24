@@ -1,28 +1,80 @@
-// ─── Theft Signatures (donut chart) ──────────────────────────────────────────
-export const THEFT_SIGNATURE_DATA = [
-  { name: 'Earth Loading',     value: 33, color: '#DC3545' },
-  { name: 'Meter Bypass',      value: 21, color: '#E6921E' },
-  { name: 'CT Manipulation',   value: 18, color: '#7C3AED' },
-  { name: 'Magnetic Tamper',   value: 15, color: '#3B82F6' },
-  { name: 'Tariff Misuse',     value: 8,  color: '#10B981' },
-  { name: 'Direct Hooking',    value: 5,  color: '#1F2937' },
-]
+// ─── Theft Signatures (donut chart) — scope-aware, matches prototype's
+//     deterministic hash-seeded distribution so each scope shows different %s ──
+export interface TheftSignature {
+  name: string
+  value: number
+  color: string
+}
 
-// ─── Detection Trend (12-month line chart) ───────────────────────────────────
-export const DETECTION_TREND_DATA = [
-  { month: 'May',  newFlags: 1800, confirmed: 1950 },
-  { month: 'Jun',  newFlags: 2100, confirmed: 2050 },
-  { month: 'Jul',  newFlags: 2400, confirmed: 2150 },
-  { month: 'Aug',  newFlags: 2600, confirmed: 2200 },
-  { month: 'Sep',  newFlags: 2800, confirmed: 2250 },
-  { month: 'Oct',  newFlags: 3000, confirmed: 2300 },
-  { month: 'Nov',  newFlags: 3100, confirmed: 2350 },
-  { month: 'Dec',  newFlags: 3200, confirmed: 2350 },
-  { month: 'Jan',  newFlags: 3500, confirmed: 2400 },
-  { month: 'Feb',  newFlags: 3800, confirmed: 2450 },
-  { month: 'Mar',  newFlags: 4200, confirmed: 2500 },
-  { month: 'Apr',  newFlags: 4500, confirmed: 2550 },
-]
+const THEFT_SIGNATURE_COLORS: Record<string, string> = {
+  'Earth Loading': '#DC3545',
+  'Meter Bypass': '#E6921E',
+  'CT Manipulation': '#7C3AED',
+  'Magnetic Tamper': '#0EA5E9',
+  'Tariff Misuse': '#28A745',
+  'Direct Hooking': '#D97706',
+}
+
+export function getTheftSignatureData(scopeId: string): TheftSignature[] {
+  let h = 0
+  for (let i = 0; i < scopeId.length; i++) h = (h * 31 + scopeId.charCodeAt(i)) | 0
+  const seed = Math.abs(h)
+
+  const dist = [
+    { name: 'Earth Loading', val: 32 + (seed % 11) },
+    { name: 'Meter Bypass', val: 22 + ((seed >> 3) % 8) },
+    { name: 'CT Manipulation', val: 14 + ((seed >> 5) % 6) },
+    { name: 'Magnetic Tamper', val: 11 + ((seed >> 7) % 5) },
+    { name: 'Tariff Misuse', val: 8 + ((seed >> 9) % 4) },
+    { name: 'Direct Hooking', val: 5 + ((seed >> 11) % 3) },
+  ]
+  const total = dist.reduce((s, d) => s + d.val, 0)
+
+  return dist.map((d) => ({
+    name: d.name,
+    value: Math.round((d.val * 100) / total),
+    color: THEFT_SIGNATURE_COLORS[d.name],
+  }))
+}
+
+const THEFT_SIGNATURE_INSIGHTS: Record<string, (pct: number) => string> = {
+  'Earth Loading': (pct) =>
+    `**Earth Loading** dominates this scope (${pct}% of flags) — points to physical bypass on industrial/commercial connections. Recommend prioritizing CT clamp inspections.`,
+  'Meter Bypass': (pct) =>
+    `**Meter Bypass** is the leading pattern (${pct}%) — direct service-line tampering. Field inspections need lockout protocols and photo evidence.`,
+  'CT Manipulation': (pct) =>
+    `**CT Manipulation** leads at ${pct}% — sophisticated commercial-tier theft. Requires CT-meter ratio verification and seal audits.`,
+  'Magnetic Tamper': (pct) =>
+    `**Magnetic Tampering** dominates (${pct}%) — typical of domestic consumers. Consider replacing affected meter models with magnet-resistant variants.`,
+  'Tariff Misuse': (pct) =>
+    `**Tariff Misuse** tops the chart (${pct}%) — consumers running commercial loads on domestic tariff. Recommend load-pattern + KYC audit.`,
+  'Direct Hooking': (pct) =>
+    `**Direct Hooking** leads (${pct}%) — pre-meter service-line theft. Coordinate with line-patrol team for visual inspection.`,
+}
+
+export function getTheftSignatureInsight(dist: TheftSignature[]): string {
+  const top = dist.slice().sort((a, b) => b.value - a.value)[0]
+  const fn = THEFT_SIGNATURE_INSIGHTS[top.name]
+  return fn ? fn(top.value) : `**${top.name}** is the top signature (${top.value}%).`
+}
+
+// ─── Detection Trend (12-month line chart) — scope-aware, scaled off the
+//     scope's flagged count so smaller scopes show proportionally smaller series ──
+export interface DetectionTrendPoint {
+  month: string
+  newFlags: number
+  confirmed: number
+}
+
+const DETECTION_TREND_MONTHS = ['May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar', 'Apr']
+
+export function getDetectionTrendData(flagged: number | undefined): DetectionTrendPoint[] {
+  const baseFlagged = flagged ? Math.round(flagged / 12) : 3375
+  return DETECTION_TREND_MONTHS.map((month, i) => {
+    const newFlags = Math.round(baseFlagged * (0.85 + 0.04 * i + Math.sin(i * 1.3) * 0.06))
+    return { month, newFlags, confirmed: Math.round(newFlags * 0.575) }
+  })
+}
 
 // ─── Risk Trend (12-month line for meter detail) ─────────────────────────────
 export function getRiskTrendData(meterId: string) {
