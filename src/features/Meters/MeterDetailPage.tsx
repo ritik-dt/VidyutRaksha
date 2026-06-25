@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useState, Fragment } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { StatusBadge } from '@/shared/components/ui/StatusBadge'
 import { SUSP_METERS, METER_THEFT_TYPES } from '@/features/Meters/data/meters'
+import { REAL_METER_DATA } from '@/features/Meters/data/realMeterData'
 import { ExplainabilityPanel } from './components/ExplainabilityPanel'
 import { RemediationCard } from './components/RemediationCard'
 import { RiskProfileTab } from './components/RiskProfileTab'
@@ -16,28 +17,19 @@ import {
 import { useToast } from '@/shared/context/ToastContext'
 import { getPathForScreen } from '@/shared/utils/navigation'
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
+  LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, Dot,
 } from 'recharts'
 
-// Last-7-days chart data for real meters
-function getLast7Data(meterId: string) {
-  if (meterId === '884759') {
-    return [
-      { d: '02-Mar-2026', kwh: 0.0 },
-      { d: '03-Mar', kwh: 14.2 },
-      { d: '04-Mar', kwh: 6.8 },
-      { d: '05-Mar', kwh: 1.1 },
-      { d: '06-Mar', kwh: 0.0 },
-      { d: '07-Mar', kwh: 18.4 },
-      { d: '08-Mar-2026', kwh: 31.2 },
-    ]
-  }
-  return [
-    { d: 'Mon', kwh: 42.1 }, { d: 'Tue', kwh: 38.4 },
-    { d: 'Wed', kwh: 44.2 }, { d: 'Thu', kwh: 0.0 },
-    { d: 'Fri', kwh: 8.2 }, { d: 'Sat', kwh: 28.6 },
-    { d: 'Sun', kwh: 22.1 },
-  ]
+// Tamper event colors, matching the prototype's stacked year-bar legend
+const TAMPER_TYPE_COLORS: Record<string, string> = {
+  earth: '#DC3545',
+  pf: '#E6921E',
+  neutral: '#7C3AED',
+}
+const TAMPER_TYPE_LABELS: Record<string, string> = {
+  earth: 'Earth Loading',
+  pf: 'Power Failure',
+  neutral: 'Neutral Disturbance',
 }
 
 const TABS = [
@@ -58,9 +50,29 @@ export default function MeterDetailPage() {
 
   const meter = SUSP_METERS.find((m) => m.id === meterId) ?? SUSP_METERS[0]
   const theftType = METER_THEFT_TYPES[meter.id] ?? meter.theftType ?? 'Earth Loading'
-  const last7 = meter._real ? getLast7Data(meter.id) : []
+  const realData = REAL_METER_DATA[meter.id]
   const [drillDayIdx, setDrillDayIdx] = useState<number | null>(null)
+  const [drillYear, setDrillYear] = useState<string | null>(null)
   const riskColor = meter.risk >= 80 ? 'var(--red)' : meter.risk >= 60 ? 'var(--amber)' : 'var(--green)'
+
+  // Derived forensic KPIs (computed from the real 61-day load survey, same formulas the prototype uses)
+  const daily = realData?.daily ?? []
+  const avgPf60 = daily.length >= 60
+    ? (daily.slice(0, 60).reduce((s, d) => s + d.pf, 0) / 60).toFixed(3)
+    : null
+  const avgKwhDay = daily.length
+    ? (daily.reduce((s, d) => s + d.kwh, 0) / daily.length).toFixed(1)
+    : null
+  const avgZeroPct = daily.length
+    ? (daily.reduce((s, d) => s + d.zero_pct, 0) / daily.length).toFixed(1)
+    : null
+  const zeroKwhDays = daily.filter((d) => d.kwh < 0.5)
+  const yearRows = realData ? Object.entries(realData.year_stats) : []
+  const totalEarthLoading = yearRows.reduce((s, [, y]) => s + y.earth, 0)
+  const peakYear = yearRows.reduce<{ year: string; total: number } | null>((best, [year, y]) => {
+    const total = y.earth + y.pf + y.neutral
+    return !best || total > best.total ? { year, total } : best
+  }, null)
 
   return (
     <div className="pb-10">
@@ -125,38 +137,26 @@ export default function MeterDetailPage() {
       </div>
 
       {/* Real MRI summary card */}
-      {meter._real && (
+      {meter._real && realData && (
         <div className="card mb-4" style={{ border: '2px solid var(--ai-purple)', background: 'linear-gradient(135deg,rgba(124,58,237,.04),var(--card) 40%)' }}>
           <div className="mb-3 flex items-start justify-between">
-            <div>
-              <div className="mb-1.5 flex items-center gap-2">
-                <span
-                  className="rounded-xl px-3 py-1 text-[9.5px] font-extrabold uppercase tracking-wider text-white"
-                  style={{ background: 'var(--ai-gradient)' }}
-                >
-                  ✓ REAL MRI DATA
-                </span>
-                <span className="text-[11px] font-medium text-text-mid">
-                  Account {meter._account} · {meter._zone ?? meter.area}
-                </span>
-              </div>
-              <div className="text-[14px] font-bold text-text">{meter._consumer}</div>
-              {meter._activity && (
-                <div className="mt-0.5 text-[11.5px] text-text-dim">
-                  {meter._activity}
-                  {meter._load && ` · ${meter._load} ${meter._load_unit ?? 'kW'} sanctioned`}
-                  {meter._tariff && ` · Tariff ${meter._tariff}`}
-                </div>
-              )}
+            <span
+              className="rounded-xl px-3 py-1 text-[9.5px] font-extrabold uppercase tracking-wider text-white"
+              style={{ background: 'var(--ai-gradient)' }}
+            >
+              ✓ REAL MRI DATA
+            </span>
+            <div className="flex-1 px-3 text-[11px] font-medium text-text-mid">
+              Source: Meter #{meter.id} dump dated {realData.summary.visit_date}
             </div>
             <button
               type="button"
-              className="btn btn-outline btn-sm"
+              className="btn btn-outline btn-sm shrink-0"
               onClick={() =>
                 showToast({
                   type: 'info',
                   title: 'Real MRI data',
-                  message: `Meter dump from ${meter._account}, verified against KVVNL March 2026 MRI batch.`,
+                  message: `Meter dump from ${realData.summary.mri_date}, verified against KVVNL March 2026 MRI batch.`,
                   duration: 4500,
                 })
               }
@@ -165,14 +165,21 @@ export default function MeterDetailPage() {
             </button>
           </div>
 
+          <div className="mb-1 text-[13px] font-bold text-text">
+            Forensic snapshot from actual meter — {daily.length} days of half-hour load survey + {realData.summary.tamper_count} tamper events extracted
+          </div>
+          <div className="mb-4 text-[11.5px] text-text-dim">
+            {realData.summary.meter_make} · Cat {realData.summary.category} · Mfg {realData.summary.year_mfg} · Rated {realData.summary.current_rating}
+          </div>
+
           {/* KPI row */}
-          <div className="kpi-row flex flex-wrap gap-3">
+          <div className="kpi-row mb-4 flex flex-wrap gap-3">
             {[
-              { label: 'Cumulative kWh', value: '34,596', sub: 'Lifetime registered', accent: 'var(--ai-purple)', color: 'var(--ai-purple)' },
-              { label: 'Tamper events (lifetime)', value: meter.events.toLocaleString('en-IN'), sub: `${meter.id === '884759' ? '0' : '389'} earth-loading`, accent: 'var(--red)', color: 'var(--red)' },
-              { label: 'Avg PF (60-day)', value: '0.588', sub: 'Below LT threshold', accent: 'var(--amber)', color: 'var(--amber)' },
-              { label: 'Zero intervals (7D)', value: '77.9%', sub: '225 of 225 intervals', accent: '#0EA5E9', color: '#0EA5E9' },
-              { label: 'Avg kWh/day (7D)', value: '21.9', sub: 'Last week trailing', accent: 'var(--green)', color: 'var(--text)' },
+              { label: 'Cumulative kWh', value: realData.summary.cumul_kwh, sub: 'Lifetime registered', accent: 'var(--ai-purple)', color: 'var(--ai-purple)' },
+              { label: 'Tamper events (lifetime)', value: realData.summary.tamper_count, sub: `${totalEarthLoading} earth-loading`, accent: 'var(--red)', color: 'var(--red)' },
+              { label: 'Avg PF (60-day)', value: avgPf60 ?? '—', sub: avgPf60 && parseFloat(avgPf60) >= 0.85 ? 'Acceptable' : 'Below LT threshold', accent: avgPf60 && parseFloat(avgPf60) >= 0.85 ? 'var(--green)' : 'var(--amber)', color: avgPf60 && parseFloat(avgPf60) >= 0.85 ? 'var(--green)' : 'var(--amber)' },
+              { label: 'Zero-load intervals', value: `${avgZeroPct}%`, sub: `Of last ${daily.length} days${avgZeroPct && parseFloat(avgZeroPct) >= 15 ? ' · ⚠ flag' : ''}`, accent: 'var(--red)', color: 'var(--red)' },
+              { label: 'Avg kWh/day', value: avgKwhDay ?? '—', sub: `Last ${daily.length} days`, accent: '#0EA5E9', color: 'var(--text)' },
             ].map((k) => (
               <div
                 key={k.label}
@@ -186,67 +193,185 @@ export default function MeterDetailPage() {
             ))}
           </div>
 
-          {/* Last 7 days chart */}
-          {last7.length > 0 && (
-            <div className="mt-4">
+          {/* Daily kWh (61 days) + Tamper events by year */}
+          <div className="grid gap-5 lg:grid-cols-2">
+            {/* Daily kWh line chart */}
+            <div>
               <div className="mb-2 flex items-center justify-between">
-                <div className="text-[12px] font-bold text-text">Daily kWh — last 7 days</div>
-                <div className="text-[10px] text-text-dim">Hover · click to drill</div>
+                <div className="text-[12.5px] font-bold text-text">Daily kWh — last {daily.length} days (real load survey)</div>
+                <div className="text-[10px] text-text-dim">Hover for details · click any day to drill</div>
               </div>
-              <div className="grid gap-4 lg:grid-cols-2">
-                <div>
-                  <ResponsiveContainer width="100%" height={130}>
-                    <BarChart data={last7} onClick={(p: { activeTooltipIndex?: number } | null) => {
-                      if (p?.activeTooltipIndex != null) setDrillDayIdx(p.activeTooltipIndex)
-                    }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                      <XAxis dataKey="d" tick={{ fontSize: 9, fill: 'var(--text-dim)' }} />
-                      <YAxis tick={{ fontSize: 9, fill: 'var(--text-dim)' }} />
-                      <Tooltip formatter={(v: number) => `${v} kWh`} />
-                      <Bar dataKey="kwh" radius={[3,3,0,0]} cursor="pointer">
-                        {last7.map((d, i) => (
-                          <Cell key={i} fill={d.kwh < 0.5 ? '#DC3545' : d.kwh < 15 ? '#E6921E' : '#7C3AED'} />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                  {last7.some((d) => d.kwh < 0.5) && (
-                    <div className="mt-1 text-[10.5px] font-semibold" style={{ color: 'var(--red)' }}>
-                      ● {last7.filter((d) => d.kwh < 0.5).length} zero-load day(s) detected
+              <ResponsiveContainer width="100%" height={170}>
+                <LineChart
+                  data={daily}
+                  onClick={(p: { activeTooltipIndex?: number } | null) => {
+                    if (p?.activeTooltipIndex != null) setDrillDayIdx(p.activeTooltipIndex)
+                  }}
+                >
+                  <XAxis dataKey="date" tick={false} axisLine={{ stroke: 'var(--border)' }} tickLine={false} />
+                  <YAxis hide domain={[0, 'auto']} />
+                  <Tooltip
+                    formatter={(v: number) => `${v} kWh`}
+                    labelFormatter={(l: string) => l}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="kwh"
+                    stroke="var(--ai-purple)"
+                    strokeWidth={1.75}
+                    dot={(props: any) => {
+                      const isZero = props.payload.kwh < 0.5
+                      return isZero ? (
+                        <Dot key={props.key} cx={props.cx} cy={props.cy} r={4} fill="var(--red)" stroke="none" />
+                      ) : (
+                        <Fragment key={props.key} />
+                      )
+                    }}
+                    activeDot={{ r: 4, fill: 'var(--ai-purple)' }}
+                    isAnimationActive={false}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+              <div className="mt-1 text-[10.5px]" style={{ color: 'var(--red)' }}>
+                ● Red dots = zero-consumption days ({zeroKwhDays.length} of {daily.length})
+              </div>
+              <p className="mt-2 text-[11px] leading-[1.6] text-text-mid">
+                Daily totals show <strong>{avgZeroPct}% of intervals at zero kWh</strong>. Actual avg{' '}
+                <strong>{avgKwhDay} kWh/day</strong> vs peer group baseline ~19.2 kWh/day = 29% deficit.
+              </p>
+              {drillDayIdx != null && daily[drillDayIdx] && (
+                <div
+                  className="mt-2 rounded-xl border-2 p-3"
+                  style={{ borderColor: daily[drillDayIdx].kwh < 0.5 ? 'var(--red)' : 'var(--amber)', background: 'var(--bg)' }}
+                >
+                  <div className="mb-1 flex items-center justify-between">
+                    <div className="text-[11.5px] font-bold text-text">
+                      {daily[drillDayIdx].kwh < 0.5 ? '⚠ ZERO CONSUMPTION' : 'Daily detail'}
                     </div>
-                  )}
+                    <button type="button" onClick={() => setDrillDayIdx(null)} className="text-text-dim">✕</button>
+                  </div>
+                  <div className="mb-2 text-[10.5px] text-text-dim">{daily[drillDayIdx].date}</div>
+                  <div className="grid grid-cols-2 gap-2 text-[10.5px]">
+                    <div>kWh: <strong>{daily[drillDayIdx].kwh}</strong></div>
+                    <div>kVAh: <strong>{daily[drillDayIdx].kvah}</strong></div>
+                    <div>PF: <strong>{daily[drillDayIdx].pf}</strong></div>
+                    <div>Zero%: <strong>{daily[drillDayIdx].zero_pct}%</strong></div>
+                    <div>Volt min: <strong>{daily[drillDayIdx].volt_min}V</strong></div>
+                    <div>Volt max: <strong>{daily[drillDayIdx].volt_max}V</strong></div>
+                  </div>
                 </div>
-                {drillDayIdx != null && last7[drillDayIdx] ? (
-                  <div className="rounded-xl border-2 p-3"
-                    style={{ borderColor: last7[drillDayIdx].kwh < 0.5 ? 'var(--red)' : 'var(--amber)', background: 'var(--bg)' }}>
-                    <div className="mb-1 flex items-center justify-between">
-                      <div className="text-[11.5px] font-bold text-text">
-                        {last7[drillDayIdx].kwh < 0.5 ? '⚠ ZERO CONSUMPTION' : '⬇ LOW CONSUMPTION'}
-                      </div>
-                      <button type="button" onClick={() => setDrillDayIdx(null)} className="text-text-dim">✕</button>
-                    </div>
-                    <div className="text-[10.5px] text-text-dim mb-2">{last7[drillDayIdx].d}</div>
-                    <div className="font-mono text-[20px] font-extrabold mb-2" style={{ color: last7[drillDayIdx].kwh < 0.5 ? 'var(--red)' : 'var(--amber)' }}>
-                      {last7[drillDayIdx].kwh} kWh
-                    </div>
-                    <div className="text-[10.5px] text-text-dim mb-3">
-                      {last7[drillDayIdx].kwh < 0.5 ? 'Zero load — bypass suspected.' : 'Below baseline — partial bypass pattern.'}
-                    </div>
-                    <button type="button" className="btn btn-ai w-full" style={{ justifyContent: 'center', fontSize: '10.5px' }}
-                      onClick={() => setDrillDayIdx(null)}>
-                      🚩 Flag for inspector
-                    </button>
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-center rounded-xl border border-border text-[11px] text-text-dim">
-                    Click a bar to drill into that day
-                  </div>
-                )}
+              )}
+            </div>
+
+            {/* Tamper events by year — stacked horizontal bars */}
+            <div>
+              <div className="mb-2 flex items-center justify-between">
+                <div className="text-[12.5px] font-bold text-text">Tamper events by year — when did the theft start?</div>
+                <div className="text-[10px] text-text-dim">Hover for counts · click any year to drill</div>
               </div>
+              <div className="space-y-2">
+                {yearRows.map(([year, y]) => {
+                  const total = y.earth + y.pf + y.neutral
+                  const maxTotal = Math.max(...yearRows.map(([, yy]) => yy.earth + yy.pf + yy.neutral), 1)
+                  return (
+                    <button
+                      type="button"
+                      key={year}
+                      onClick={() => setDrillYear(year)}
+                      className="flex w-full items-center gap-2 text-left"
+                    >
+                      <span className="w-9 shrink-0 text-[11px] font-semibold text-text-mid">{year}</span>
+                      <div className="h-5 flex-1 overflow-hidden rounded-md bg-border-light">
+                        <div className="flex h-full" style={{ width: `${(total / maxTotal) * 100}%` }}>
+                          {(['earth', 'pf', 'neutral'] as const).map((k) =>
+                            y[k] > 0 ? (
+                              <div
+                                key={k}
+                                style={{ background: TAMPER_TYPE_COLORS[k], width: `${(y[k] / total) * 100}%` }}
+                              />
+                            ) : null,
+                          )}
+                        </div>
+                      </div>
+                      <span className="w-9 shrink-0 text-right text-[11px] font-bold text-text">{total}</span>
+                      <span className="text-text-dim">›</span>
+                    </button>
+                  )
+                })}
+              </div>
+              <div className="mt-2 flex flex-wrap gap-3 text-[10px] text-text-dim">
+                {(['earth', 'pf', 'neutral'] as const).map((k) => (
+                  <span key={k} className="flex items-center gap-1">
+                    <span className="inline-block size-2 rounded-sm" style={{ background: TAMPER_TYPE_COLORS[k] }} />
+                    {TAMPER_TYPE_LABELS[k]}
+                  </span>
+                ))}
+              </div>
+              {peakYear && (
+                <p className="mt-2 text-[11px] leading-[1.6]" style={{ color: 'var(--red)' }}>
+                  <strong>{peakYear.year} spike</strong> ({realData.year_stats[peakYear.year].earth} earth-loading + {realData.year_stats[peakYear.year].neutral} neutral disturbance) is when this AI flags the theft as having begun. Pattern matches the assessment notice.
+                </p>
+              )}
+              {drillYear && realData.year_stats[drillYear] && (
+                <div className="mt-2 rounded-xl border-2 p-3" style={{ borderColor: 'var(--ai-purple)', background: 'var(--bg)' }}>
+                  <div className="mb-1 flex items-center justify-between">
+                    <div className="text-[11.5px] font-bold text-text">{drillYear} breakdown</div>
+                    <button type="button" onClick={() => setDrillYear(null)} className="text-text-dim">✕</button>
+                  </div>
+                  {(['earth', 'pf', 'neutral'] as const).map((k) => (
+                    <div key={k} className="flex items-center justify-between text-[11px] py-0.5">
+                      <span className="flex items-center gap-1.5 text-text-mid">
+                        <span className="inline-block size-2 rounded-sm" style={{ background: TAMPER_TYPE_COLORS[k] }} />
+                        {TAMPER_TYPE_LABELS[k]}
+                      </span>
+                      <strong>{realData.year_stats[drillYear][k]}</strong>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Forensic note */}
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border p-3">
+            <p className="text-[11px] leading-[1.6] text-text-mid">
+              <strong className="text-text">Forensic note:</strong> {realData.summary.tamper_count} lifetime tamper events
+              with full RTC timestamps, kWh registers, V/I/PF values are recorded. Click any year above to drill into
+              specific events, or open the dedicated tab below.
+            </p>
+            <button
+              type="button"
+              className="btn btn-outline btn-sm shrink-0"
+              onClick={() => setActiveTab('events')}
+            >
+              📋 View all events tab →
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Fallback simpler real-data card for other _real meters without the full forensic dataset */}
+      {meter._real && !realData && (
+        <div className="card mb-4" style={{ border: '2px solid var(--ai-purple)', background: 'linear-gradient(135deg,rgba(124,58,237,.04),var(--card) 40%)' }}>
+          <div className="mb-3 flex items-center gap-2">
+            <span
+              className="rounded-xl px-3 py-1 text-[9.5px] font-extrabold uppercase tracking-wider text-white"
+              style={{ background: 'var(--ai-gradient)' }}
+            >
+              ✓ REAL MRI DATA
+            </span>
+            <span className="text-[11px] font-medium text-text-mid">
+              Account {meter._account} · {meter._zone ?? meter.area}
+            </span>
+          </div>
+          <div className="text-[14px] font-bold text-text">{meter._consumer}</div>
+          {meter._activity && (
+            <div className="mt-0.5 text-[11.5px] text-text-dim">
+              {meter._activity}
+              {meter._load && ` · ${meter._load} ${meter._load_unit ?? 'kW'} sanctioned`}
+              {meter._tariff && ` · Tariff ${meter._tariff}`}
             </div>
           )}
-
-          {/* AI flags */}
           <div className="mt-3 rounded-xl p-3 text-[11.5px]"
             style={{ background: 'rgba(124,58,237,0.06)', border: '1px solid rgba(124,58,237,0.15)' }}>
             <div className="mb-1.5 text-[11px] font-bold" style={{ color: 'var(--ai-purple)' }}>
@@ -258,14 +383,6 @@ export default function MeterDetailPage() {
                 {f}
               </div>
             ))}
-          </div>
-          <div className="mt-3 flex gap-2">
-            <button type="button" className="btn btn-outline btn-sm" style={{ fontSize: '10.5px' }}>
-              📋 Full MRI
-            </button>
-            <button type="button" className="btn btn-ai btn-sm" style={{ fontSize: '10.5px' }}>
-              ✦ Open case
-            </button>
           </div>
         </div>
       )}

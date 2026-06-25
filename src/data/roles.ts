@@ -217,4 +217,4 @@ export const ROLES: Role[] = [
   },
 ]
 
-export const DEFAULT_ROLE_ID = 'cmd' satisfies Role['id']
+export const DEFAULT_ROLE_ID = 'chief' satisfies Role['id']

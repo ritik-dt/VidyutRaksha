@@ -41,7 +41,7 @@ export const SUSP_METERS: SuspMeter[] = [
   },
   {
     id: '884759', risk: 90, conf: 80, cat: 'Industrial',
-    area: 'nan / EDC-II Prayagraj', dt: 'DTR-4759', sl: '12.36 KVA',
+    area: 'EDC-II Prayagraj', dt: 'DTR-4759', sl: '12.36 KVA',
     flags: ['77.9% of recent intervals at zero load', '7768 lifetime tamper events recorded', 'Lifetime PF 0.588 below 0.85 threshold'],
     status: 'New', drop: -77, events: 7768,
     aiNote: 'Real MRI data: 7768 lifetime tamper events, 77.9% zero-load intervals in last 7 days, avg 21.9 kWh/day. Rice Mill & Atta Chakki consumer with sanctioned 12.36KVA. AI-flagged for forensic review.',
@@ -50,7 +50,7 @@ export const SUSP_METERS: SuspMeter[] = [
   },
   {
     id: '885030', risk: 90, conf: 80, cat: 'Commercial',
-    area: 'nan / EDC Pratapgarh', dt: 'DTR-5030', sl: '9.0 KW',
+    area: 'EDC Pratapgarh', dt: 'DTR-5030', sl: '9.0 KW',
     flags: ['58.1% of recent intervals at zero load', '1269 lifetime tamper events recorded', 'Lifetime PF 0.601 below 0.85 threshold'],
     status: 'New', drop: -58, events: 1269,
     aiNote: 'Real MRI data: 1269 lifetime tamper events, 58.1% zero-load intervals. Atta Chakki consumer.',
@@ -58,7 +58,7 @@ export const SUSP_METERS: SuspMeter[] = [
   },
   {
     id: '885321', risk: 90, conf: 80, cat: 'Commercial',
-    area: 'nan / EDC-II Prayagraj', dt: 'DTR-5321', sl: '7.46 KW',
+    area: 'EDC-II Prayagraj', dt: 'DTR-5321', sl: '7.46 KW',
     flags: ['88.9% of recent intervals at zero load', '847 lifetime tamper events recorded', 'Lifetime PF 0.636 below 0.85 threshold'],
     status: 'New', drop: -88, events: 847,
     aiNote: 'Real MRI data: 847 lifetime tamper events, 88.9% zero-load intervals.',
@@ -66,7 +66,7 @@ export const SUSP_METERS: SuspMeter[] = [
   },
   {
     id: '886086', risk: 90, conf: 80, cat: 'Commercial',
-    area: 'nan / EDC Varanasi', dt: 'DTR-6086', sl: '13.0 KVA',
+    area: 'EDC Varanasi', dt: 'DTR-6086', sl: '13.0 KVA',
     flags: ['75.8% of recent intervals at zero load', '5482 lifetime tamper events recorded', 'Lifetime PF 0.764 below 0.85 threshold'],
     status: 'New', drop: -75, events: 5482,
     aiNote: 'Real MRI data: 5482 lifetime tamper events. ITI College consumer.',
@@ -74,7 +74,7 @@ export const SUSP_METERS: SuspMeter[] = [
   },
   {
     id: '886806', risk: 90, conf: 80, cat: 'Commercial',
-    area: 'nan / UEDC-II Varanasi', dt: 'DTR-6806', sl: '5.0 KW',
+    area: 'UEDC-II Varanasi', dt: 'DTR-6806', sl: '5.0 KW',
     flags: ['68.2% of recent intervals at zero load', '712 lifetime tamper events recorded', 'Lifetime PF 0.714 below 0.85 threshold'],
     status: 'New', drop: -68, events: 712,
     aiNote: 'Real MRI data: 712 lifetime tamper events. Cotton Work consumer.',
@@ -82,7 +82,7 @@ export const SUSP_METERS: SuspMeter[] = [
   },
   {
     id: '887067', risk: 90, conf: 80, cat: 'Agricultural',
-    area: 'nan / EDC Chandauli', dt: 'DTR-7067', sl: '13.05 KW',
+    area: 'EDC Chandauli', dt: 'DTR-7067', sl: '13.05 KW',
     flags: ['83.7% of recent intervals at zero load', '4085 lifetime tamper events recorded', 'Lifetime PF 0.666 below 0.85 threshold'],
     status: 'New', drop: -83, events: 4085,
     aiNote: 'Real MRI data: 4085 lifetime tamper events. Govt. Tubewell consumer.',
@@ -114,7 +114,7 @@ export const SUSP_METERS: SuspMeter[] = [
   },
   {
     id: '738342', risk: 80, conf: 80, cat: 'Domestic',
-    area: 'nan / UEDC-I Varanasi', dt: 'DTR-8342', sl: '6.0 KW',
+    area: 'UEDC-I Varanasi', dt: 'DTR-8342', sl: '6.0 KW',
     flags: ['100.0% of recent intervals at zero load', '361 lifetime tamper events recorded', 'Lifetime tampers: 361'],
     status: 'New', drop: -100, events: 361,
     aiNote: 'Real MRI data: 361 lifetime tamper events, 100.0% zero-load intervals.',
@@ -122,7 +122,7 @@ export const SUSP_METERS: SuspMeter[] = [
   },
   {
     id: '751780', risk: 80, conf: 80, cat: 'Domestic',
-    area: 'nan / UEDC-II Varanasi', dt: 'DTR-1780', sl: '8.0 KW',
+    area: 'UEDC-II Varanasi', dt: 'DTR-1780', sl: '8.0 KW',
     flags: ['100.0% of recent intervals at zero load', '208 lifetime tamper events recorded'],
     status: 'New', drop: -100, events: 208,
     aiNote: 'Real MRI data: 208 lifetime tamper events.',
@@ -146,7 +146,7 @@ export const SUSP_METERS: SuspMeter[] = [
   },
   {
     id: '897101', risk: 80, conf: 80, cat: 'Commercial',
-    area: 'nan / EDC I Azamgarh', dt: 'DTR-7101', sl: '5.0 KW',
+    area: 'EDC I Azamgarh', dt: 'DTR-7101', sl: '5.0 KW',
     flags: ['73.3% of recent intervals at zero load', '503 lifetime tamper events recorded'],
     status: 'New', drop: -73, events: 503,
     aiNote: 'Real MRI data: 503 lifetime tamper events. Atta Chakki consumer.',

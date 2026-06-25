@@ -26,7 +26,8 @@ export default function MetersPage() {
   const scopeId = hierPath[hierPath.length - 1] ?? 'uppcl'
   const scopeName = level?.name ?? 'UPPCL'
   const scopeType = level?.type ?? 'State'
-  const isConsumerLevel = scopeType === 'DTR'
+  const hasChildren = !!(level?.children && level.children.length > 0)
+  const isConsumerLevel = !!level && (scopeType === 'DTR' || !hasChildren)
   const childLabel = getChildLabel(scopeType)
 
   const flaggedCount = level?.flagged ?? 40500
