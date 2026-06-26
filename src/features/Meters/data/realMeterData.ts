@@ -34,6 +34,10 @@ export interface RealMeterData {
   }
   daily: RealMeterDailyPoint[]
   year_stats: Record<string, RealMeterYearStat>
+  // Last tamper-inspection reading with a real V/I pair on record — seeds the
+  // Meter analysis tab's instantaneous-parameter snapshot so phase magnitudes
+  // match the actual forensic dump instead of the purely-synthetic fallback.
+  last_tamper_vi?: { v: number; i: number }
 }
 
 export const REAL_METER_DATA: Record<string, RealMeterData> = {
@@ -628,6 +632,7 @@ export const REAL_METER_DATA: Record<string, RealMeterData> = {
         "pf": 100,
         "neutral": 0
       }
-    }
+    },
+    "last_tamper_vi": { "v": 220, "i": 8.32 }
   },
 }

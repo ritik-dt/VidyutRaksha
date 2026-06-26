@@ -1,179 +1,361 @@
-import { useState, type ChangeEvent } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Chart, type ChartOptions } from 'chart.js/auto'
 import type { SuspMeter } from '@/features/Meters/data/meters'
+import { REAL_METER_DATA } from '@/features/Meters/data/realMeterData'
+import {
+  buildInstantParams,
+  computeImbalance,
+  phaseIntegrityCheck,
+  phaseIntegrityFromLoadSurvey,
+  phaseSeverity,
+  buildTODProfile,
+  computeRunningTime,
+  categorizeTamperEvents,
+  classifyPhasor,
+  type InstantParams,
+  type PhaseTriplet,
+} from '@/features/Meters/data/meterAnalysisData'
 
 interface MeterAnalysisTabProps {
   meter: SuspMeter
 }
 
-const PHASE_DATA = {
-  R: { voltage: 233.6, current: 23.69, pf: 0.52, vAngle: 2, iAngle: 303 },
-  Y: { voltage: 199.1, current: 13.34, pf: 0.43, vAngle: 111, iAngle: 46 },
-  B: { voltage: 215.5, current: 0.1, pf: 0.55, vAngle: 250, iAngle: 76 },
+const PHASE_COLORS = { R: '#DC3545', Y: '#E6921E', B: '#0EA5E9' } as const
+
+function RealBadge({ isReal }: { isReal: boolean }) {
+  return isReal ? (
+    <span
+      className="ml-1.5 inline-block rounded-md px-1.5 py-px text-[9px] font-extrabold tracking-[.3px]"
+      style={{ background: 'rgba(40,167,69,.12)', color: 'var(--green)', border: '1px solid rgba(40,167,69,.3)' }}
+    >
+      ✓ FROM REAL MRI
+    </span>
+  ) : (
+    <span
+      className="ml-1.5 inline-block rounded-md px-1.5 py-px text-[9px] font-extrabold tracking-[.3px]"
+      style={{ background: 'rgba(124,58,237,.08)', color: 'var(--ai-purple)', border: '1px solid rgba(124,58,237,.25)' }}
+    >
+      DERIVED
+    </span>
+  )
 }
 
-const PHASE_COLORS = { R: '#DC3545', Y: '#E6921E', B: '#0EA5E9' }
+const fmt = (n: number) => n.toLocaleString('en-IN')
 
-interface SliderState { R: number; Y: number; B: number }
+export function MeterAnalysisTab({ meter }: MeterAnalysisTabProps) {
+  const realData = REAL_METER_DATA[meter.id]
 
-export function MeterAnalysisTab({ meter: _meter }: MeterAnalysisTabProps) {
-  const [lags, setLags] = useState<SliderState>({ R: 59, Y: 65, B: 174 })
-
-  const vImbalance = 8.1
-  const iImbalance = 9.2
-  const freq = 49.8
-
-  const hasReversal = (Object.values(lags) as number[]).some((lag) => lag > 90)
-
-  // Simple SVG phasor: draw vectors at given angles
-  const cx = 110, cy = 110, r = 80
-  function polarToXY(angleDeg: number, len: number) {
-    const rad = ((angleDeg - 90) * Math.PI) / 180
-    return { x: cx + len * Math.cos(rad), y: cy + len * Math.sin(rad) }
+  // ── Base instant params (deterministic per meter; live-editable via sliders) ─
+  const baseParams = useMemo(() => buildInstantParams(meter, realData), [meter, realData])
+  const [prevMeterId, setPrevMeterId] = useState(meter.id)
+  const [angle, setAngle] = useState(baseParams.angle)
+  const [pf, setPf] = useState<PhaseTriplet>(baseParams.pf)
+  if (meter.id !== prevMeterId) {
+    setPrevMeterId(meter.id)
+    setAngle(baseParams.angle)
+    setPf(baseParams.pf)
   }
+
+  const p: InstantParams = { ...baseParams, angle, pf }
+
+  const vImb = computeImbalance(p.voltage)
+  const iImb = computeImbalance(p.current)
+  const integrity = phaseIntegrityCheck(p)
+  const cls = classifyPhasor(angle, pf)
+
+  // ── Slider lag values (-180..180), derived live from angle state ───────────
+  const lagOf = (ph: 'R' | 'Y' | 'B') => {
+    const v = angle[('v' + ph) as 'vR' | 'vY' | 'vB']
+    const i = angle[('i' + ph) as 'iR' | 'iY' | 'iB']
+    return ((v - i + 540) % 360) - 180
+  }
+
+  function updateLag(ph: 'R' | 'Y' | 'B', lagStr: string) {
+    const lag = parseFloat(lagStr) || 0
+    const vKey = ('v' + ph) as 'vR' | 'vY' | 'vB'
+    setAngle((prev) => ({ ...prev, [('i' + ph) as 'iR' | 'iY' | 'iB']: (prev[vKey] - lag + 720) % 360 }))
+    const cosLag = Math.cos((lag * Math.PI) / 180)
+    setPf((prev) => ({ ...prev, [ph]: +Math.max(-1, Math.min(1, cosLag)).toFixed(3) }))
+  }
+
+  function resetPhasor() {
+    setAngle(baseParams.angle)
+    setPf(baseParams.pf)
+  }
+
+  // ── Phasor SVG geometry (mirrors prototype's buildPhasorSVG exactly) ───────
+  const cx = 140, cy = 140, vRadius = 100, iRadius = 70
+  const toXY = (angDeg: number, len: number) => {
+    const rad = (angDeg * Math.PI) / 180
+    return { x: cx + len * Math.cos(-rad), y: cy + len * Math.sin(-rad) }
+  }
+  const maxV = Math.max(p.voltage.R, p.voltage.Y, p.voltage.B)
+  const vScale = (v: number) => (v / Math.max(240, maxV)) * vRadius
+  const maxI = Math.max(p.current.R, p.current.Y, p.current.B, 1)
+  const iScale = (i: number) => (i / Math.max(20, maxI)) * iRadius
+
+  const vXY = { R: toXY(angle.vR, vScale(p.voltage.R)), Y: toXY(angle.vY, vScale(p.voltage.Y)), B: toXY(angle.vB, vScale(p.voltage.B)) }
+  const iXY = { R: toXY(angle.iR, iScale(p.current.R)), Y: toXY(angle.iY, iScale(p.current.Y)), B: toXY(angle.iB, iScale(p.current.B)) }
+
+  // ── Other forensic derivations ──────────────────────────────────────────────
+  const ls = useMemo(() => phaseIntegrityFromLoadSurvey(meter, realData), [meter, realData])
+  const tod = useMemo(() => buildTODProfile(meter), [meter])
+  const rt = useMemo(() => computeRunningTime(meter, realData), [meter, realData])
+  const tamperCat = useMemo(() => categorizeTamperEvents(realData), [realData])
+
+  const todTotal = tod.offPeak + tod.normal + tod.peak
+  const offPct = todTotal > 0 ? (tod.offPeak / todTotal) * 100 : 0
+  const normPct = todTotal > 0 ? (tod.normal / todTotal) * 100 : 0
+  const peakPct = todTotal > 0 ? (tod.peak / todTotal) * 100 : 0
+
+  const gaugeColor = rt.pct < 30 ? '#DC3545' : rt.pct < 55 ? '#E6921E' : '#28A745'
+  const gaugeRadius = 64
+  const circ = 2 * Math.PI * gaugeRadius
+  const fillCirc = circ * 0.75
+
+  const lsCritPhases = (['R', 'Y', 'B'] as const).filter((ph) => phaseSeverity(ls, ph) === 'critical')
+  const lsWarnPhases = (['R', 'Y', 'B'] as const).filter((ph) => phaseSeverity(ls, ph) === 'warning')
+  const instCritical = integrity.critical.length
+  let verdict: string
+  let verdictBg: string
+  let verdictColor: string
+  if (lsCritPhases.length > 0 && instCritical === 0) {
+    verdict = `Instance shows clean right now, but load survey reveals ${lsCritPhases.length} phase(s) with critical anomalies (${lsCritPhases.join(', ')}). Pattern indicates the bypass may be active intermittently — operator likely disconnects when meter reads are due. Recommend surprise inspection during peak hours.`
+    verdictBg = 'var(--red-light)'
+    verdictColor = 'var(--red)'
+  } else if (lsCritPhases.length > 0 && instCritical > 0) {
+    verdict = `Bypass is active. Both instance and ${ls.windowDays}-day survey confirm sustained V_AVAIL+I=0 condition on phase(s) ${lsCritPhases.join(', ')}. Strongest possible evidence — Section 135 prosecution-grade.`
+    verdictBg = 'var(--red-light)'
+    verdictColor = 'var(--red)'
+  } else if (lsWarnPhases.length > 0) {
+    verdict = `Load survey shows ${lsWarnPhases.length} phase(s) with elevated anomaly rates (${lsWarnPhases.join(', ')}). Below the critical threshold but worth watching. Re-evaluate on next monthly MRI download.`
+    verdictBg = 'rgba(230,146,30,0.08)'
+    verdictColor = 'var(--amber-dark)'
+  } else {
+    verdict = `Both instance and ${ls.windowDays}-day load survey are clean. No bypass or PT manipulation evidence at either layer.`
+    verdictBg = 'rgba(40,167,69,0.06)'
+    verdictColor = 'var(--green)'
+  }
+
+  // ── Tamper criticality stacked-bar chart (Chart.js, mirrors renderTamperCategoryCard) ─
+  const tamperCanvasRef = useRef<HTMLCanvasElement | null>(null)
+  const tamperChartRef = useRef<Chart | null>(null)
+  const years = useMemo(() => Object.keys(tamperCat.byYear).sort(), [tamperCat])
+  const totals = useMemo(() => {
+    const t = { critical: 0, high: 0, medium: 0 }
+    years.forEach((y) => {
+      t.critical += tamperCat.byYear[y].critical
+      t.high += tamperCat.byYear[y].high
+      t.medium += tamperCat.byYear[y].medium
+    })
+    return t
+  }, [years, tamperCat])
+  const grand = totals.critical + totals.high + totals.medium
+
+  useEffect(() => {
+    if (!tamperCanvasRef.current) return
+    tamperChartRef.current?.destroy()
+    tamperChartRef.current = new Chart(tamperCanvasRef.current, {
+      type: 'bar',
+      data: {
+        labels: years,
+        datasets: [
+          { label: 'Critical', data: years.map((y) => tamperCat.byYear[y].critical), backgroundColor: '#DC3545', borderRadius: 3, barPercentage: 0.6 },
+          { label: 'High', data: years.map((y) => tamperCat.byYear[y].high), backgroundColor: '#E6921E', borderRadius: 3, barPercentage: 0.6 },
+          // Mirrors the prototype's "Medium" series exactly (its var(--amber-dark) CSS
+          // variable isn't resolvable on a canvas fillStyle, so Chart.js renders it black —
+          // matching the reference screenshots pixel-for-pixel).
+          { label: 'Medium', data: years.map((y) => tamperCat.byYear[y].medium), backgroundColor: '#000000', borderRadius: 3, barPercentage: 0.6 },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: true, position: 'bottom', labels: { usePointStyle: true, padding: 10, font: { size: 10, family: 'IBM Plex Sans' } } },
+          tooltip: {
+            backgroundColor: '#fff', titleColor: '#1A1A2E', bodyColor: '#4A5568', borderColor: '#E2E8F0',
+            borderWidth: 1, padding: 8, cornerRadius: 8,
+            titleFont: { size: 11, family: 'IBM Plex Sans' }, bodyFont: { size: 11, family: 'IBM Plex Sans' },
+          },
+        },
+        scales: {
+          x: { stacked: true, grid: { display: false }, ticks: { font: { size: 10, family: 'IBM Plex Sans' }, color: '#8B95A5' } },
+          y: { stacked: true, grid: { color: '#EDF2F7' }, ticks: { font: { size: 10, family: 'IBM Plex Sans' }, color: '#8B95A5' }, beginAtZero: true },
+        },
+      } as ChartOptions,
+    })
+    return () => {
+      tamperChartRef.current?.destroy()
+      tamperChartRef.current = null
+    }
+  }, [years, tamperCat])
+
+  const tamperAiText = useMemo(() => {
+    if (grand === 0) return 'No tamper events on record.'
+    const critPct = Math.round((totals.critical / grand) * 100)
+    const lastYr = years[years.length - 1]
+    const prevYr = years[years.length - 2]
+    const lastTotal = lastYr ? tamperCat.byYear[lastYr].critical + tamperCat.byYear[lastYr].high + tamperCat.byYear[lastYr].medium : 0
+    const prevTotal = prevYr ? tamperCat.byYear[prevYr].critical + tamperCat.byYear[prevYr].high + tamperCat.byYear[prevYr].medium : 0
+    const trend = prevTotal > 0 ? Math.round(((lastTotal - prevTotal) / prevTotal) * 100) : null
+    let trendText = 'Tamper activity stable YoY.'
+    if (trend != null && trend > 30) trendText = `Tamper count rose ${trend}% YoY — escalating pattern.`
+    else if (trend != null && trend < -10) trendText = `Tamper count dropped ${Math.abs(trend)}% YoY — possible deterrent effect from prior inspection.`
+    return { critPct, trendText }
+  }, [grand, totals, years, tamperCat])
 
   return (
     <div>
+      {/* 1. Instantaneous parameter snapshot */}
       <div className="card mb-4">
         <div className="mb-3 flex items-center justify-between">
-          <div>
-            <div className="text-[13px] font-bold text-text">Instantaneous parameter snapshot</div>
-            <div className="mt-0.5 flex items-center gap-2">
-              <span className="rounded-md px-1.5 py-px text-[9px] font-bold text-white"
-                style={{ background: 'var(--amber)' }}>DERIVED</span>
-              <span className="text-[10.5px] text-text-dim">3-phase · captured 2026-06-11</span>
-            </div>
+          <div className="flex items-center">
+            <span className="text-[13px] font-bold text-text">⚡ Instantaneous parameter snapshot</span>
+            <RealBadge isReal={p.isReal} />
           </div>
+          <span className="text-[10.5px] text-text-dim">
+            {p.isThreePhase ? '3-phase' : '1-phase'} · captured {p.timestamp.split('T')[0]}
+          </span>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2">
-          {/* Phasor SVG */}
-          <div>
-            <div className="mb-2 text-[11px] font-semibold text-text-dim uppercase tracking-wider">Phasor diagram</div>
-            <div className="flex items-center gap-4">
-              <svg width="220" height="220" style={{ background: 'var(--bg)', borderRadius: 12, border: '1px solid var(--border)' }}>
-                {/* Grid circles */}
-                {[0.33, 0.67, 1].map((f) => (
-                  <circle key={f} cx={cx} cy={cy} r={r * f} fill="none" stroke="var(--border)" strokeWidth={0.5} />
+        <div className="grid gap-4 lg:grid-cols-[300px_1fr]">
+          {/* Phasor diagram + AI classification + interactive sliders */}
+          <div className="rounded-xl border border-border bg-bg p-3.5">
+            <div className="mb-1.5 text-center text-[10px] font-bold uppercase tracking-wider text-text-dim">Phasor diagram</div>
+            <svg width="100%" viewBox="0 0 280 280" style={{ display: 'block', margin: '0 auto', maxWidth: 260 }}>
+              <defs>
+                {(['DC3545', 'E6921E', '0EA5E9'] as const).map((c) => (
+                  <marker key={c} id={`arrow${c}`} viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+                    <path d="M0,0 L10,5 L0,10 z" fill={`#${c}`} />
+                  </marker>
                 ))}
-                {/* Axis lines */}
-                <line x1={cx - r} y1={cy} x2={cx + r} y2={cy} stroke="var(--border)" strokeWidth={0.5} />
-                <line x1={cx} y1={cy - r} x2={cx} y2={cy + r} stroke="var(--border)" strokeWidth={0.5} />
+              </defs>
+              <circle cx={cx} cy={cy} r={vRadius} fill="none" stroke="rgba(0,0,0,0.06)" strokeWidth={1} />
+              <circle cx={cx} cy={cy} r={iRadius} fill="none" stroke="rgba(0,0,0,0.05)" strokeWidth={1} strokeDasharray="2,3" />
+              <line x1={cx - vRadius - 15} y1={cy} x2={cx + vRadius + 15} y2={cy} stroke="rgba(0,0,0,0.1)" strokeWidth={1} />
+              <line x1={cx} y1={cy - vRadius - 15} x2={cx} y2={cy + vRadius + 15} stroke="rgba(0,0,0,0.1)" strokeWidth={1} />
+              {[0, 120, 240].map((a) => {
+                const e = toXY(a, vRadius + 10)
+                return <line key={a} x1={cx} y1={cy} x2={e.x} y2={e.y} stroke="rgba(0,0,0,0.06)" strokeWidth={1} strokeDasharray="2,4" />
+              })}
+              {(['R', 'Y', 'B'] as const).map((ph) => (
+                <line key={`v-${ph}`} x1={cx} y1={cy} x2={vXY[ph].x} y2={vXY[ph].y} stroke={PHASE_COLORS[ph]} strokeWidth={2.5} markerEnd={`url(#arrow${ph === 'R' ? 'DC3545' : ph === 'Y' ? 'E6921E' : '0EA5E9'})`} />
+              ))}
+              {(['R', 'Y', 'B'] as const).map((ph) => (
+                <line key={`i-${ph}`} x1={cx} y1={cy} x2={iXY[ph].x} y2={iXY[ph].y} stroke={PHASE_COLORS[ph]} strokeWidth={1.6} strokeDasharray="3,3" markerEnd={`url(#arrow${ph === 'R' ? 'DC3545' : ph === 'Y' ? 'E6921E' : '0EA5E9'})`} />
+              ))}
+              <text x={vXY.R.x + 6} y={vXY.R.y - 2} fontSize={10} fontWeight={700} fill={PHASE_COLORS.R}>VR</text>
+              <text x={vXY.Y.x - 12} y={vXY.Y.y - 4} fontSize={10} fontWeight={700} fill={PHASE_COLORS.Y}>VY</text>
+              <text x={vXY.B.x - 6} y={vXY.B.y + 12} fontSize={10} fontWeight={700} fill={PHASE_COLORS.B}>VB</text>
+              <text x={iXY.R.x + 4} y={iXY.R.y + 10} fontSize={9} fontWeight={600} fill={PHASE_COLORS.R} opacity={0.85}>IR</text>
+              <text x={iXY.Y.x - 10} y={iXY.Y.y + 8} fontSize={9} fontWeight={600} fill={PHASE_COLORS.Y} opacity={0.85}>IY</text>
+              <text x={iXY.B.x - 4} y={iXY.B.y - 4} fontSize={9} fontWeight={600} fill={PHASE_COLORS.B} opacity={0.85}>IB</text>
+              <circle cx={cx} cy={cy} r={2.5} fill="#333" />
+            </svg>
+            <div className="flex justify-center gap-2.5 text-[9.5px] text-text-mid">
+              <span>━━ Voltage</span>
+              <span className="text-text-dim">┄┄ Current</span>
+            </div>
 
-                {/* Voltage phasors (solid) */}
-                {(['R', 'Y', 'B'] as const).map((ph) => {
-                  const d = PHASE_DATA[ph]
-                  const vLen = (d.voltage / 240) * r
-                  const end = polarToXY(d.vAngle, vLen)
-                  const c = PHASE_COLORS[ph]
-                  return (
-                    <g key={`v-${ph}`}>
-                      <line x1={cx} y1={cy} x2={end.x} y2={end.y} stroke={c} strokeWidth={2.5} markerEnd={`url(#arrow-${ph})`} />
-                      <defs>
-                        <marker id={`arrow-${ph}`} markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
-                          <path d="M0,0 L0,6 L6,3 z" fill={c} />
-                        </marker>
-                      </defs>
-                      <text x={end.x + 4} y={end.y + 4} fontSize={9} fill={c} fontWeight={700}>{`V${ph}`}</text>
-                    </g>
-                  )
-                })}
-
-                {/* Current phasors (dashed) */}
-                {(['R', 'Y', 'B'] as const).map((ph) => {
-                  const d = PHASE_DATA[ph]
-                  const iLen = (d.current / 30) * r * 0.85
-                  const end = polarToXY(d.iAngle, iLen)
-                  const c = PHASE_COLORS[ph]
-                  return (
-                    <line key={`i-${ph}`} x1={cx} y1={cy} x2={end.x} y2={end.y}
-                      stroke={c} strokeWidth={1.5} strokeDasharray="4 2" opacity={0.7} />
-                  )
-                })}
-
-                {/* Legend */}
-                <g transform="translate(4,196)">
-                  <line x1={0} y1={4} x2={14} y2={4} stroke="var(--text-mid)" strokeWidth={2} />
-                  <text x={18} y={7} fontSize={9} fill="var(--text-dim)">Voltage</text>
-                  <line x1={50} y1={4} x2={64} y2={4} stroke="var(--text-mid)" strokeWidth={1.5} strokeDasharray="3 2" />
-                  <text x={68} y={7} fontSize={9} fill="var(--text-dim)">Current</text>
-                </g>
-              </svg>
-
-              {/* AI Classification */}
-              <div className="flex-1">
-                <div className="rounded-xl p-3 text-[11px]"
-                  style={{ background: 'rgba(220,53,69,0.06)', border: '2px solid rgba(220,53,69,0.25)' }}>
-                  <div className="mb-1 text-[9.5px] font-extrabold uppercase tracking-wider text-red-600">
-                    ✦ AI Classification
-                  </div>
-                  <div className="font-bold text-red-600">
-                    1 phase with |lag| &gt; 90°
-                  </div>
-                  <div className="mt-0.5 font-bold text-red-600">
-                    SINGLE-PHASE REVERSAL · SUSPICIOUS
-                  </div>
-                  <p className="mt-1.5 text-text-mid">
-                    One phase showing reverse current. Could be CT installation error or selective tampering on
-                    highest-load phase. Site verification recommended.
-                  </p>
-                </div>
+            {/* AI Classification — live, reacts to sliders */}
+            <div className="mt-2.5 rounded-lg p-2.5" style={{ background: cls.bg, border: `1px solid ${cls.color}` }}>
+              <div className="mb-0.5 flex items-center justify-between">
+                <span className="text-[10px] font-extrabold tracking-[.4px]" style={{ color: cls.color }}>✦ AI CLASSIFICATION</span>
+                <span className="font-mono text-[9.5px] font-bold" style={{ color: cls.color }}>{cls.sig}</span>
               </div>
+              <div className="mb-0.5 text-[11.5px] font-extrabold" style={{ color: cls.color }}>{cls.cls}</div>
+              <div className="text-[10px] leading-[1.45] text-text-mid">{cls.msg}</div>
+            </div>
+
+            {/* Interactive demo sliders */}
+            <div className="mt-3 border-t border-dashed border-border pt-2.5">
+              <div className="mb-2 flex items-center justify-between">
+                <span className="text-[9.5px] font-bold uppercase tracking-[.4px] text-ai-purple">✦ Interactive demo · rotate current vectors</span>
+                <button type="button" onClick={resetPhasor} className="rounded-md border border-border bg-card px-2 py-0.5 text-[9.5px] text-text-mid hover:border-ai-purple">
+                  ↺ Reset
+                </button>
+              </div>
+              <p className="mb-2 text-[10px] leading-[1.4] text-text-dim">
+                Drag the sliders to simulate CT manipulation. Each lag angle represents the phase shift between
+                voltage and current that an inspector would observe with a tong-tester on-site.
+              </p>
+              {(['R', 'Y', 'B'] as const).map((ph) => {
+                const lag = lagOf(ph)
+                return (
+                  <div key={ph} className="mb-1.5 grid grid-cols-[44px_1fr_38px] items-center gap-2">
+                    <span className="text-[10.5px] font-bold" style={{ color: PHASE_COLORS[ph] }}>
+                      I<sub>{ph}</sub> lag
+                    </span>
+                    <input
+                      type="range"
+                      min={-180}
+                      max={180}
+                      step={1}
+                      value={lag}
+                      onChange={(e) => updateLag(ph, e.target.value)}
+                      className="w-full cursor-pointer"
+                      style={{ accentColor: PHASE_COLORS[ph] }}
+                    />
+                    <span className="text-right font-mono text-[10.5px] font-bold" style={{ color: PHASE_COLORS[ph] }}>
+                      {lag.toFixed(0)}°
+                    </span>
+                  </div>
+                )
+              })}
             </div>
           </div>
 
-          {/* Phase table */}
+          {/* Parameter table */}
           <div>
-            <div className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-text-dim">Phase measurements</div>
-            <div className="table-wrap mb-3">
-              <table>
-                <thead>
-                  <tr className="table-header">
-                    <th>Phase</th><th>Voltage (V)</th><th>Current (A)</th>
-                    <th style={{ color: 'var(--amber)' }}>Power Factor</th>
-                    <th>V Angle</th><th>I Angle</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {(['R', 'Y', 'B'] as const).map((ph) => {
-                    const d = PHASE_DATA[ph]
-                    const pfWarn = d.pf < 0.6
-                    return (
-                      <tr key={ph} className="table-row">
-                        <td>
-                          <span className="font-bold" style={{ color: PHASE_COLORS[ph] }}>{ph}-phase</span>
-                        </td>
-                        <td className="font-mono">{d.voltage}</td>
-                        <td className="font-mono font-bold"
-                          style={{ color: d.current < 1 ? 'var(--red)' : 'var(--text)' }}>
-                          {d.current}
-                        </td>
-                        <td className="font-mono font-bold"
-                          style={{ color: pfWarn ? 'var(--red)' : 'var(--text)' }}>
-                          {d.pf}
-                        </td>
-                        <td className="font-mono">{d.vAngle}°</td>
-                        <td className="font-mono"
-                          style={{ color: d.iAngle > 180 ? 'var(--red)' : 'var(--text)' }}>
-                          {d.iAngle}°
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
+            <table className="w-full text-[11.5px]">
+              <thead>
+                <tr className="border-b-2 border-border">
+                  <th className="px-2 py-1.5 text-left text-[9.5px] font-bold uppercase tracking-[.4px] text-text-dim">Phase</th>
+                  <th className="px-2 py-1.5 text-right text-[9.5px] font-bold uppercase tracking-[.4px] text-text-dim">Voltage (V)</th>
+                  <th className="px-2 py-1.5 text-right text-[9.5px] font-bold uppercase tracking-[.4px] text-text-dim">Current (A)</th>
+                  <th className="px-2 py-1.5 text-right text-[9.5px] font-bold uppercase tracking-[.4px] text-text-dim">Power factor</th>
+                  <th className="px-2 py-1.5 text-right text-[9.5px] font-bold uppercase tracking-[.4px] text-text-dim">V angle</th>
+                  <th className="px-2 py-1.5 text-right text-[9.5px] font-bold uppercase tracking-[.4px] text-text-dim">I angle</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(['R', 'Y', 'B'] as const).map((ph) => {
+                  const v = p.voltage[ph]
+                  const i = p.current[ph]
+                  const pfv = pf[ph]
+                  const vCol = v < 200 ? 'var(--red)' : v > 250 ? 'var(--amber)' : 'var(--text)'
+                  const iCol = i < 0.5 ? 'var(--red)' : 'var(--text)'
+                  const pfCol = pfv < 0.85 ? 'var(--red)' : pfv < 0.92 ? 'var(--amber)' : 'var(--green)'
+                  const vAng = angle[('v' + ph) as 'vR' | 'vY' | 'vB']
+                  const iAng = angle[('i' + ph) as 'iR' | 'iY' | 'iB']
+                  return (
+                    <tr key={ph} className="border-b border-border-light">
+                      <td className="px-2 py-2 font-bold" style={{ color: PHASE_COLORS[ph] }}>
+                        <span className="mr-1.5 inline-block size-2 rounded-full align-middle" style={{ background: PHASE_COLORS[ph] }} />
+                        {ph}-phase
+                      </td>
+                      <td className="px-2 py-2 text-right font-mono font-bold" style={{ color: vCol }}>{v}</td>
+                      <td className="px-2 py-2 text-right font-mono font-bold" style={{ color: iCol }}>{i}</td>
+                      <td className="px-2 py-2 text-right font-mono font-bold" style={{ color: pfCol }}>{pfv}</td>
+                      <td className="px-2 py-2 text-right font-mono text-text-mid">{vAng.toFixed(0)}°</td>
+                      <td className="px-2 py-2 text-right font-mono text-text-mid">{iAng.toFixed(0)}°</td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
 
-            {/* Summary metrics */}
-            <div className="grid grid-cols-3 gap-2">
+            <div className="mt-2.5 grid grid-cols-3 gap-2">
               {[
-                { label: 'V Imbalance', value: `${vImbalance}%`, sub: 'healthy < 2%', color: 'var(--red)' },
-                { label: 'I Imbalance', value: `${iImbalance}%`, sub: 'healthy < 10%', color: 'var(--amber)' },
-                { label: 'Frequency', value: `${freq} Hz`, sub: 'grid: 50 ± 0.5', color: 'var(--green)' },
+                { label: 'V imbalance', value: `${vImb.toFixed(1)}%`, sub: 'healthy < 2%', color: vImb > 5 ? 'var(--red)' : vImb > 2 ? 'var(--amber)' : 'var(--green)' },
+                { label: 'I imbalance', value: `${iImb.toFixed(1)}%`, sub: 'healthy < 10%', color: iImb > 30 ? 'var(--red)' : iImb > 10 ? 'var(--amber)' : 'var(--green)' },
+                { label: 'Frequency', value: `${p.frequency.toFixed(2)} Hz`, sub: 'grid: 50 ± 0.5', color: 'var(--ai-purple)' },
               ].map((m) => (
-                <div key={m.label} className="rounded-xl border border-border bg-bg p-2.5 text-center">
-                  <div className="font-mono text-[14px] font-extrabold" style={{ color: m.color }}>{m.value}</div>
-                  <div className="text-[9.5px] font-semibold text-text">{m.label}</div>
-                  <div className="text-[9px] text-text-dim">{m.sub}</div>
+                <div key={m.label} className="rounded-lg border-l-[3px] bg-bg p-2.5" style={{ borderLeftColor: m.color }}>
+                  <div className="text-[9.5px] font-bold uppercase tracking-[.3px] text-text-dim">{m.label}</div>
+                  <div className="font-mono text-[16px] font-extrabold" style={{ color: m.label === 'Frequency' ? 'var(--text)' : m.color }}>{m.value}</div>
+                  <div className="mt-px text-[9.5px] text-text-dim">{m.sub}</div>
                 </div>
               ))}
             </div>
@@ -181,42 +363,228 @@ export function MeterAnalysisTab({ meter: _meter }: MeterAnalysisTabProps) {
         </div>
       </div>
 
-      {/* Interactive CT lag simulator */}
-      <div className="card">
-        <div className="mb-3">
-          <div className="flex items-center gap-2">
-            <div className="text-[13px] font-bold text-text">✦ Interactive demo — rotate current vectors</div>
-            <button type="button" onClick={() => setLags({ R: 59, Y: 65, B: 174 })}
-              className="rounded-md border border-border bg-bg px-2 py-0.5 text-[10px] text-text-dim hover:border-ai-purple">
-              Reset
-            </button>
-          </div>
-          <p className="mt-1 text-[11px] text-text-dim">
-            Drag the sliders to simulate CT manipulation. Each lag angle represents the phase shift between
-            voltage and current that an inspector would observe with a tong-tester on-site.
-          </p>
-        </div>
-        <div className="space-y-3">
-          {(['R', 'Y', 'B'] as const).map((ph) => (
-            <div key={ph} className="flex items-center gap-3">
-              <span className="w-8 text-[11px] font-bold" style={{ color: PHASE_COLORS[ph] }}>
-                I{ph} lag
-              </span>
-              <input type="range" min={0} max={180} value={lags[ph]}
-                onChange={(e: ChangeEvent<HTMLInputElement>) => setLags((p: SliderState) => ({ ...p, [ph]: parseInt(e.target.value) }))}
-                className="flex-1" style={{ accentColor: PHASE_COLORS[ph] }} />
-              <span className="w-10 text-right font-mono text-[11px] font-bold" style={{ color: PHASE_COLORS[ph] }}>
-                {lags[ph]}°
-              </span>
+      {/* 2. Phase integrity check — bypass & PT manipulation rules */}
+      <div className="card mb-4">
+        <div className="card-title mb-3.5 text-[13px] font-bold">🔍 Phase integrity check · bypass &amp; PT manipulation rules</div>
+        <p className="mb-3.5 text-[11px] leading-[1.5] text-text-mid">
+          Two complementary rules tested at <strong>two layers</strong>: (a) <strong>V available + I zero</strong> = line
+          energized but meter records nothing → bypass. (b) <strong>I flowing + V low</strong> = consumer drawing through
+          manipulated PT or upstream tap. The single-instant snapshot tells you the current state; the load-survey window
+          tells you whether the anomaly is a <strong>persistent pattern</strong>.
+        </p>
+
+        <div className="mb-3 grid gap-3.5 lg:grid-cols-[1fr_1.3fr]">
+          {/* Right now (instantaneous) */}
+          <div className="rounded-xl border border-border-light bg-bg p-3.5">
+            <div className="mb-2.5 flex items-center justify-between">
+              <span className="text-[11.5px] font-bold text-text">⚡ Right now (instantaneous)</span>
+              <span className="text-[9px] font-semibold text-text-dim">single snapshot</span>
             </div>
-          ))}
-        </div>
-        {hasReversal && (
-          <div className="mt-3 rounded-lg p-2.5 text-[11px] font-semibold"
-            style={{ background: 'rgba(220,53,69,0.08)', border: '1px solid rgba(220,53,69,0.3)', color: 'var(--red)' }}>
-            ▲ Reverse current detected on one or more phases — strong CT manipulation signature
+            {integrity.critical.length === 0 && integrity.warnings.length === 0 ? (
+              <div className="rounded-lg p-2.5 text-[11px] font-semibold" style={{ background: 'rgba(40,167,69,0.08)', border: '1px solid rgba(40,167,69,0.25)', color: 'var(--green)' }}>
+                ✓ All three phases pass. V and I readings consistent with a healthy connection at this moment.
+              </div>
+            ) : (
+              <div className="flex flex-col gap-1.5">
+                {integrity.critical.map((c) => (
+                  <div key={c.code + c.phase} className="rounded-lg p-2.5" style={{ background: 'var(--red-light)', border: '1px solid var(--red)' }}>
+                    <div className="mb-0.5 flex items-center gap-1.5 text-[11px] font-bold" style={{ color: 'var(--red)' }}>
+                      ⚠ {c.phase}-phase: V available, I zero
+                      <span className="rounded px-1.5 py-px font-mono text-[8.5px]" style={{ background: 'rgba(220,53,69,0.2)' }}>{c.code}</span>
+                    </div>
+                    <div className="text-[10.5px] leading-[1.45]" style={{ color: 'var(--red)' }}>{c.desc}</div>
+                  </div>
+                ))}
+                {integrity.warnings.map((w) => (
+                  <div key={w.code + w.phase} className="rounded-lg p-2.5" style={{ background: 'rgba(230,146,30,0.1)', border: '1px solid var(--amber)' }}>
+                    <div className="mb-0.5 flex items-center gap-1.5 text-[11px] font-bold" style={{ color: 'var(--amber-dark)' }}>
+                      ⚠ {w.phase}-phase: I available, V low
+                      <span className="rounded px-1.5 py-px font-mono text-[8.5px]" style={{ background: 'rgba(230,146,30,0.2)' }}>{w.code}</span>
+                    </div>
+                    <div className="text-[10.5px] leading-[1.45]" style={{ color: 'var(--amber-dark)' }}>{w.desc}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="mt-2.5 rounded-md p-2 text-[9.5px] leading-[1.5] text-text-dim" style={{ background: 'rgba(0,0,0,0.03)' }}>
+              Thresholds: V_normal = 220–250 V · V_low = &lt; 200 V · I_zero = &lt; 0.5 A
+            </div>
           </div>
-        )}
+
+          {/* Load survey check */}
+          <div
+            className="rounded-xl border p-3.5"
+            style={{ background: 'linear-gradient(135deg,rgba(124,58,237,0.04) 0%,rgba(255,255,255,0) 60%), var(--card)', borderColor: 'rgba(124,58,237,0.18)' }}
+          >
+            <div className="mb-2.5 flex items-center justify-between">
+              <span className="flex items-center text-[11.5px] font-bold text-text">
+                📊 Over {ls.windowDays}-day load survey
+                <RealBadge isReal={ls.isReal} />
+              </span>
+              <span className="text-[9px] font-semibold text-text-dim">{fmt(ls.totalIntervals)} intervals analysed</span>
+            </div>
+            <table className="w-full text-[11px]">
+              <thead>
+                <tr className="border-b-2 border-border">
+                  <th className="px-1.5 py-1.5 text-left text-[9.5px] font-bold uppercase tracking-[.4px] text-text-dim">Phase</th>
+                  <th className="px-1.5 py-1.5 text-right text-[9.5px] font-bold uppercase tracking-[.4px] text-text-dim" title="V available + I = 0">V_AVAIL &amp; I=0</th>
+                  <th className="px-1.5 py-1.5 text-right text-[9.5px] font-bold uppercase tracking-[.4px] text-text-dim" title="I flowing + V low">I_AVAIL &amp; V_LOW</th>
+                  <th className="px-1.5 py-1.5 text-center text-[9.5px] font-bold uppercase tracking-[.4px] text-text-dim">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(['R', 'Y', 'B'] as const).map((ph) => {
+                  const pp = ls.perPhase[ph]
+                  const sev = phaseSeverity(ls, ph)
+                  const vCol = pp.vAvailIZero > 25 ? 'var(--red)' : pp.vAvailIZero > 10 ? 'var(--amber)' : 'var(--text)'
+                  const iCol = pp.iAvailVLow > 15 ? 'var(--red)' : pp.iAvailVLow > 5 ? 'var(--amber)' : 'var(--text)'
+                  const sevColor = sev === 'critical' ? 'var(--red)' : sev === 'warning' ? 'var(--amber)' : 'var(--green)'
+                  const sevBg = sev === 'critical' ? 'var(--red-light)' : sev === 'warning' ? 'rgba(230,146,30,0.08)' : 'rgba(40,167,69,0.06)'
+                  return (
+                    <tr key={ph} className="border-b border-border-light">
+                      <td className="px-1.5 py-2 font-bold" style={{ color: PHASE_COLORS[ph] }}>
+                        <span className="mr-1.5 inline-block size-2 rounded-full align-middle" style={{ background: PHASE_COLORS[ph] }} />
+                        {ph}-phase
+                      </td>
+                      <td className="px-1.5 py-2 text-right font-mono font-bold" style={{ color: vCol }}>{pp.vAvailIZero}%</td>
+                      <td className="px-1.5 py-2 text-right font-mono font-bold" style={{ color: iCol }}>{pp.iAvailVLow}%</td>
+                      <td className="px-1.5 py-2 text-center">
+                        <span className="inline-block rounded-full px-2 py-px text-[9px] font-extrabold tracking-[.3px]" style={{ background: sevBg, color: sevColor, border: `1px solid ${sevColor}` }}>
+                          {sev === 'critical' ? '⚠ CRITICAL' : sev === 'warning' ? 'WARNING' : '✓ OK'}
+                        </span>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+            <div className="mt-2.5 rounded-md p-2 text-[9.5px] leading-[1.5] text-text-dim" style={{ background: 'rgba(0,0,0,0.03)' }}>
+              <strong>Severity bands:</strong> Critical = V_AVAIL&amp;I=0 &gt; 25% or I_AVAIL&amp;V_LOW &gt; 15% · Warning = &gt; 10% / &gt; 5% · OK below.
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-lg p-2.5 text-[11px] leading-[1.5]" style={{ background: verdictBg, color: verdictColor }}>
+          <strong>✦ AI synthesis:</strong> {verdict}
+        </div>
+      </div>
+
+      {/* 3. Running time + 4. TOD profile */}
+      <div className="mb-4 grid gap-3.5 lg:grid-cols-[1fr_1.4fr]">
+        {/* Running time gauge */}
+        <div className="card mb-0">
+          <div className="mb-1 flex items-center justify-between">
+            <span className="flex items-center text-[13px] font-bold text-text">⏱ Running time<RealBadge isReal={rt.isReal} /></span>
+            <span className="text-[10px] text-text-dim">last 30 days</span>
+          </div>
+          <div className="py-3 text-center">
+            <svg width="160" height="140" viewBox="0 0 160 140" className="mx-auto">
+              <circle cx={80} cy={80} r={gaugeRadius} fill="none" stroke="rgba(0,0,0,0.06)" strokeWidth={11} strokeDasharray={`${fillCirc} ${circ}`} transform="rotate(135 80 80)" />
+              <circle cx={80} cy={80} r={gaugeRadius} fill="none" stroke={gaugeColor} strokeWidth={11} strokeLinecap="round" strokeDasharray={`${(rt.pct / 100) * fillCirc} ${circ}`} transform="rotate(135 80 80)" />
+              <text x={80} y={78} textAnchor="middle" fontSize={28} fontWeight={800} fill={gaugeColor} className="font-mono">{rt.pct}%</text>
+              <text x={80} y={96} textAnchor="middle" fontSize={10} fill="#71717A">running time</text>
+            </svg>
+            <div className="flex justify-center gap-3.5 text-[10.5px] text-text-mid">
+              <div><strong className="font-mono text-text">{fmt(rt.activeIntervals)}</strong> active</div>
+              <div className="text-text-dim">/</div>
+              <div><strong className="font-mono text-text">{fmt(rt.totalIntervals)}</strong> intervals</div>
+            </div>
+            <div
+              className="mt-2.5 rounded-lg p-2.5 text-left text-[10.5px] leading-[1.5]"
+              style={{
+                background: rt.pct < 30 ? 'var(--red-light)' : rt.pct < 55 ? 'rgba(230,146,30,0.08)' : 'rgba(40,167,69,0.06)',
+                color: rt.pct < 30 ? 'var(--red)' : rt.pct < 55 ? 'var(--amber-dark)' : 'var(--green)',
+              }}
+            >
+              {rt.pct < 30 ? (
+                <><strong>⚠ Suspiciously low.</strong> Industrial baseline is 70–85%. This consumer's meter recorded current in only {rt.pct}% of intervals — strong bypass signature.</>
+              ) : rt.pct < 55 ? (
+                <><strong>Below baseline.</strong> Healthy {meter.cat || 'industrial'} meters typically run 60–80% of intervals. Investigate.</>
+              ) : (
+                <><strong>✓ Within normal range</strong> for {meter.cat || 'this category'}. No running-time concern.</>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* TOD profile */}
+        <div className="card mb-0">
+          <div className="mb-1.5 flex items-center justify-between">
+            <span className="flex items-center text-[13px] font-bold text-text">🕒 Time-of-Day (TOD) profile<RealBadge isReal={tod.isReal} /></span>
+            <span className="text-[10px] text-text-dim">last billing cycle</span>
+          </div>
+          <div
+            className="flex h-8 overflow-hidden rounded-lg"
+            style={{ background: 'rgba(0,0,0,0.05)', boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.06)' }}
+          >
+            <div className="flex items-center justify-center text-[11px] font-bold text-white" style={{ background: 'linear-gradient(180deg,#0EA5E9,#0284C7)', width: `${offPct}%` }}>
+              {offPct > 8 ? `${offPct.toFixed(0)}%` : ''}
+            </div>
+            <div className="flex items-center justify-center text-[11px] font-bold text-white" style={{ background: 'linear-gradient(180deg,#7C3AED,#5B21B6)', width: `${normPct}%` }}>
+              {normPct > 8 ? `${normPct.toFixed(0)}%` : ''}
+            </div>
+            <div className="flex items-center justify-center text-[11px] font-bold text-white" style={{ background: 'linear-gradient(180deg,#DC3545,#A8222F)', width: `${peakPct}%` }}>
+              {peakPct > 8 ? `${peakPct.toFixed(0)}%` : ''}
+            </div>
+          </div>
+          <div className="mt-2.5 grid grid-cols-3 gap-2">
+            <div className="rounded-lg border-l-[3px] p-2.5" style={{ background: 'rgba(14,165,233,0.06)', borderLeftColor: '#0EA5E9' }}>
+              <div className="text-[9px] font-bold uppercase tracking-[.3px]" style={{ color: '#0284C7' }}>Off-peak</div>
+              <div className="text-[9px] text-text-dim">22:00–06:00 · discount</div>
+              <div className="mt-0.5 font-mono text-[14px] font-extrabold" style={{ color: '#0284C7' }}>{fmt(tod.offPeak)} <span className="text-[9px] font-medium text-text-dim">kWh</span></div>
+            </div>
+            <div className="rounded-lg border-l-[3px] p-2.5" style={{ background: 'rgba(124,58,237,0.06)', borderLeftColor: 'var(--ai-purple)' }}>
+              <div className="text-[9px] font-bold uppercase tracking-[.3px] text-ai-purple">Normal</div>
+              <div className="text-[9px] text-text-dim">06:00–18:00 · standard</div>
+              <div className="mt-0.5 font-mono text-[14px] font-extrabold text-ai-purple">{fmt(tod.normal)} <span className="text-[9px] font-medium text-text-dim">kWh</span></div>
+            </div>
+            <div className="rounded-lg border-l-[3px] p-2.5" style={{ background: 'rgba(220,53,69,0.06)', borderLeftColor: 'var(--red)' }}>
+              <div className="text-[9px] font-bold uppercase tracking-[.3px]" style={{ color: 'var(--red)' }}>Peak</div>
+              <div className="text-[9px] text-text-dim">18:00–22:00 · surcharge</div>
+              <div className="mt-0.5 font-mono text-[14px] font-extrabold" style={{ color: 'var(--red)' }}>{fmt(tod.peak)} <span className="text-[9px] font-medium text-text-dim">kWh</span></div>
+            </div>
+          </div>
+          <div
+            className="mt-2.5 rounded-lg p-2.5 text-[10.5px] leading-[1.5]"
+            style={{
+              background: tod.actualPeakPct < tod.expectedPeakPct - 5 ? 'var(--red-light)' : 'rgba(124,58,237,0.05)',
+              color: tod.actualPeakPct < tod.expectedPeakPct - 5 ? 'var(--red)' : 'var(--text-mid)',
+            }}
+          >
+            <strong>✦ AI:</strong> Peak slab is <strong>{tod.actualPeakPct}%</strong> of total. Expected for {meter.cat || 'this category'}: ~{tod.expectedPeakPct}%.{' '}
+            {tod.actualPeakPct < tod.expectedPeakPct - 5 ? (
+              <><strong style={{ color: 'var(--red)' }}>Significantly below baseline</strong> — possible peak-hour tampering. Bypass may be timed to peak slab when each kWh costs more.</>
+            ) : (
+              'Within expected range.'
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* 5. Tamper event criticality, year-by-year */}
+      <div className="card">
+        <div className="mb-0.5 flex items-center justify-between">
+          <span className="flex items-center text-[13px] font-bold text-text">📊 Tamper event criticality · year-by-year<RealBadge isReal={tamperCat.isReal} /></span>
+          <span className="text-[10px] text-text-dim">stacked by severity</span>
+        </div>
+        <div className="page-sub mb-2.5 -mt-1">
+          <strong style={{ color: 'var(--red)' }}>Critical</strong> = Earth Loading + Magnetic Tamper ·{' '}
+          <strong style={{ color: 'var(--amber)' }}>High</strong> = Neutral Disturbance + Cover Open ·{' '}
+          <strong style={{ color: 'var(--amber-dark)' }}>Medium</strong> = Power Failure + Other
+        </div>
+        <div className="relative h-[220px]">
+          <canvas ref={tamperCanvasRef} />
+        </div>
+        <div className="mt-3 rounded-lg p-2.5 text-[10.5px] leading-[1.5]" style={{ background: 'var(--ai-purple-light)', color: 'var(--ai-purple)' }}>
+          <strong>✦ AI:</strong>{' '}
+          {typeof tamperAiText === 'string' ? (
+            tamperAiText
+          ) : (
+            <>
+              <strong>{tamperAiText.critPct}% of all events</strong> are critical (Earth/Magnetic). {tamperAiText.trendText}
+            </>
+          )}
+        </div>
       </div>
     </div>
   )
