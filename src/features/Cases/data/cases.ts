@@ -1,21 +1,124 @@
-export interface CaseRecord {
-  id: string
-  meter: string
-  consumer: string
-  risk: number
-  area: string
-  status: string
-  assignee: string
-  created: string
-  due: string
-  flags: number
-  _real?: boolean
-  _account?: string
-  _activity?: string
-  _tariff?: string
-  _load?: number
-  _load_unit?: string
-  _zone?: string
+import { hierData } from '@/data/hierarchy'
+import { enrichLevel, getChildLabel, fmtINR } from '@/features/Dashboard/adapter'
+import { formatIndian } from '@/shared/utils/formatters'
+import type {
+  CaseListSortKey,
+  CaseRecord,
+  CasesHierarchyRow,
+  CasesStats,
+  CasesWatchlistItem,
+} from '../types'
+
+export type { CaseListSortKey, CaseRecord, CasesHierarchyRow, CasesStats, CasesWatchlistItem }
+
+const CASE_ANCHOR_DATE = new Date('2026-04-01T00:00:00.000Z')
+
+const INSPECTOR_POOL = [
+  'Rajesh Kumar',
+  'Sunita Verma',
+  'Amit Sharma',
+  'Priya Singh',
+  'Deepak Yadav',
+  'Manish Gupta',
+  'Vikash Patel',
+  'Priya Mishra',
+]
+
+const WATCHLIST_CONSUMERS = [
+  {
+    name: 'M/S RAJESH STEEL INDUSTRIES',
+    activity: 'Steel rolling mill',
+    tariff: 'H21T',
+    loadKW: 280,
+  },
+  {
+    name: 'KAILASH CHANDRA SHARMA',
+    activity: 'Atta Chakki',
+    tariff: '22',
+    loadKW: 32,
+  },
+  {
+    name: 'SHRI BALAJI COLD STORAGE',
+    activity: 'Cold storage',
+    tariff: '47',
+    loadKW: 165,
+  },
+  {
+    name: 'M/S GUPTA TEXTILES',
+    activity: 'Power loom',
+    tariff: '68',
+    loadKW: 48,
+  },
+  {
+    name: 'SUNIL KUMAR YADAV',
+    activity: 'Domestic',
+    tariff: '10',
+    loadKW: 6,
+  },
+  {
+    name: 'AGRA AGROCHEM PVT LTD',
+    activity: 'Chemical plant',
+    tariff: 'H21T',
+    loadKW: 420,
+  },
+  {
+    name: 'HARI OM RICE MILL',
+    activity: 'Rice mill',
+    tariff: '22',
+    loadKW: 95,
+  },
+  {
+    name: 'ROYAL BANQUET HALL',
+    activity: 'Banquet hall',
+    tariff: '47',
+    loadKW: 78,
+  },
+  {
+    name: 'M/S SHARMA AUTO PARTS',
+    activity: 'Manufacturing',
+    tariff: '22',
+    loadKW: 38,
+  },
+  {
+    name: 'GRACE NURSING HOME',
+    activity: 'Private hospital',
+    tariff: '47',
+    loadKW: 52,
+  },
+  {
+    name: 'BANSAL OIL MILLS',
+    activity: 'Oil mill',
+    tariff: '22',
+    loadKW: 110,
+  },
+  {
+    name: 'JAY BHAVANI WAREHOUSE',
+    activity: 'Warehouse',
+    tariff: '47',
+    loadKW: 28,
+  },
+]
+
+function hashSeed(value: string): number {
+  let h = 0
+  for (let i = 0; i < value.length; i += 1) {
+    h = (h * 31 + value.charCodeAt(i)) | 0
+  }
+  return Math.abs(h)
+}
+
+function formatDateForDue(date: Date): string {
+  return date.toLocaleDateString('en-GB', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  })
+}
+
+function buildDueDate(offsetDays: number): string {
+  const date = new Date(CASE_ANCHOR_DATE)
+  date.setDate(date.getDate() + offsetDays)
+  return formatDateForDue(date)
 }
 
 export const CASES_LIST: CaseRecord[] = [
@@ -30,6 +133,7 @@ export const CASES_LIST: CaseRecord[] = [
     created: '01 Mar 2026',
     due: '15 Mar 2026',
     flags: 3,
+    scopeId: 'dtr_vijaya',
     _real: true,
     _account: '1705463',
   },
@@ -44,6 +148,7 @@ export const CASES_LIST: CaseRecord[] = [
     created: '28 Feb 2026',
     due: '14 Mar 2026',
     flags: 3,
+    scopeId: 'dtr_ragh1',
   },
   {
     id: 'C-20260225-008',
@@ -56,6 +161,7 @@ export const CASES_LIST: CaseRecord[] = [
     created: '25 Feb 2026',
     due: '10 Mar 2026',
     flags: 3,
+    scopeId: 'dtr_vijaya',
   },
   {
     id: 'C-20260220-022',
@@ -68,6 +174,7 @@ export const CASES_LIST: CaseRecord[] = [
     created: '20 Feb 2026',
     due: '06 Mar 2026',
     flags: 2,
+    scopeId: 'dtr_rath1',
   },
   {
     id: 'C-20260218-005',
@@ -80,6 +187,7 @@ export const CASES_LIST: CaseRecord[] = [
     created: '18 Feb 2026',
     due: '04 Mar 2026',
     flags: 2,
+    scopeId: 'dtr_rath2',
   },
   {
     id: 'C-20260215-011',
@@ -92,6 +200,7 @@ export const CASES_LIST: CaseRecord[] = [
     created: '15 Feb 2026',
     due: '01 Mar 2026',
     flags: 2,
+    scopeId: 'dtr_ragh1',
   },
   {
     id: 'C-20260301-R415',
@@ -104,11 +213,12 @@ export const CASES_LIST: CaseRecord[] = [
     created: '05 Mar 2026',
     due: '19 Mar 2026',
     flags: 2,
+    scopeId: 'f_bhelupur',
     _real: true,
     _account: '1924538000',
     _activity: 'Factory',
     _tariff: 'H21T',
-    _load: 1000.0,
+    _load: 1000,
     _load_unit: 'KVA',
     _zone: 'Varanasi II',
   },
@@ -123,77 +233,155 @@ export const CASES_LIST: CaseRecord[] = [
     created: '08 Mar 2026',
     due: '22 Mar 2026',
     flags: 2,
+    scopeId: 'pvvnl_agra',
     _real: true,
     _account: '1589101174',
+    _activity: 'Atta Chakki',
+    _tariff: '22',
+    _load: 48,
+    _load_unit: 'KW',
+    _zone: 'Prayagraj II',
   },
   {
-    id: 'C-20260305-019',
-    meter: '1456789',
-    consumer: 'RAMESH PRASAD YADAV',
-    risk: 76,
-    area: 'Rajajipuram / EDD-I',
-    status: 'New',
-    assignee: 'Unassigned',
-    created: '05 Mar 2026',
-    due: '19 Mar 2026',
+    id: 'C-20260303-R945',
+    meter: '302945',
+    consumer: 'M/SRELIANCE JIO INFOCOMM LTD',
+    risk: 89,
+    area: 'EDD-II Ballia / EDC Ballia',
+    status: 'Confirmed Theft',
+    assignee: 'Manish Gupta',
+    created: '11 Mar 2026',
+    due: '25 Mar 2026',
     flags: 2,
+    scopeId: 'dvvnl_prayagraj',
+    _real: true,
+    _account: '4775404000',
+    _activity: 'Tower',
+    _tariff: 'H21T',
+    _load: 105,
+    _load_unit: 'KVA',
+    _zone: 'Azamgarh',
   },
   {
-    id: 'C-20260306-023',
-    meter: '2098765',
-    consumer: 'SHARMA TRADING CO.',
+    id: 'C-20260304-R086',
+    meter: '3917086',
+    consumer: 'AKSHAY KAKKAR S/O RAJEEV KUMAR KAKKAR',
+    risk: 90,
+    area: 'MAYOHALL / EUDC-II Prayagraj',
+    status: 'In Progress',
+    assignee: 'Priya Mishra',
+    created: '14 Mar 2026',
+    due: '28 Mar 2026',
+    flags: 2,
+    scopeId: 'dvvnl_prayagraj',
+    _real: true,
+    _account: '5239803290',
+    _activity: 'Hotel',
+    _tariff: '22',
+    _load: 45,
+    _load_unit: 'KW',
+    _zone: 'Prayagraj I',
+  },
+  {
+    id: 'C-20260305-R758',
+    meter: '3918758',
+    consumer: 'JP MEMORIAL HOSPITAL REKHA NURSING CAMPUS',
     risk: 73,
-    area: 'Mahanagar / EDD-III',
-    status: 'New',
-    assignee: 'Unassigned',
-    created: '06 Mar 2026',
-    due: '20 Mar 2026',
+    area: 'TAGORE TOWN / EUDC-II Prayagraj',
+    status: 'Escalated',
+    assignee: 'Vikash Patel',
+    created: '17 Mar 2026',
+    due: '31 Mar 2026',
     flags: 2,
+    scopeId: 'dvvnl_prayagraj',
+    _real: true,
+    _account: '4165242403',
+    _activity: 'Private Hospital',
+    _tariff: '47',
+    _load: 35,
+    _load_unit: 'KW',
+    _zone: 'Prayagraj I',
   },
   {
-    id: 'C-20260210-017',
-    meter: '1789034',
-    consumer: 'LAKSHMI INDUSTRIES',
-    risk: 68,
-    area: 'Chinhat / EDD-II',
-    status: 'Closed',
-    assignee: 'Amit Sharma',
-    created: '10 Feb 2026',
-    due: '24 Feb 2026',
+    id: 'C-20260306-R160',
+    meter: '905160',
+    consumer: 'NAJEER AHMAD',
+    risk: 85,
+    area: 'EDD Phaphamau / EDC-II Prayagraj',
+    status: 'Confirmed Theft',
+    assignee: 'Priya Mishra',
+    created: '20 Mar 2026',
+    due: '03 Apr 2026',
     flags: 2,
+    scopeId: 'dvvnl_prayagraj',
+    _real: true,
+    _account: '3723500100',
+    _activity: 'POWER LOOM',
+    _tariff: '68',
+    _load: 32,
+    _load_unit: 'KVA',
+    _zone: 'Prayagraj II',
   },
   {
-    id: 'C-20260207-009',
-    meter: '1345678',
-    consumer: 'PUJA DEVI',
-    risk: 64,
-    area: 'Vikas Nagar / EDD-I',
-    status: 'False Positive',
-    assignee: 'Priya Singh',
-    created: '07 Feb 2026',
-    due: '21 Feb 2026',
-    flags: 1,
+    id: 'C-20260307-R093',
+    meter: '1307093',
+    consumer: 'SRI R KHOSELA',
+    risk: 74,
+    area: 'Karela Bagh / EUDC-I Prayagraj',
+    status: 'In Progress',
+    assignee: 'Vikash Patel',
+    created: '23 Mar 2026',
+    due: '06 Apr 2026',
+    flags: 4,
+    scopeId: 'dvvnl_prayagraj',
+    _real: true,
+    _account: '6865595000',
+    _activity: 'Home',
+    _tariff: '10',
+    _load: 6,
+    _load_unit: 'KW',
+    _zone: 'Prayagraj I',
+  },
+  {
+    id: 'C-20260308-R280',
+    meter: '889280',
+    consumer: 'SRI VIVEK KUMAR KESARI',
+    risk: 73,
+    area: 'EUDD-2 CHOKAGHAT / UEDC-I Varanasi',
+    status: 'Assigned',
+    assignee: 'Sunita Verma',
+    created: '26 Mar 2026',
+    due: '09 Apr 2026',
+    flags: 4,
+    scopeId: 'dtr_vijaya',
+    _real: true,
+    _account: '8499638473',
+    _activity: 'Apartment',
+    _tariff: '10',
+    _load: 6,
+    _load_unit: 'KW',
+    _zone: 'Varanasi I',
   },
 ]
 
-export interface CasesStats {
-  total: number
-  pastSla: number
-  open: number
-  inProgress: number
-  escalated: number
-  confirmed: number
-  closed: number
-  avgClose: number
-  recovery: number
-  active: number
-}
+export const INSPECTORS = [...INSPECTOR_POOL]
+
+export const CASE_STATUS_PILLS: Array<{ value: string; label: string }> = [
+  { value: 'all', label: 'All cases' },
+  { value: 'Past SLA', label: 'Past SLA' },
+  { value: 'Assigned', label: 'Open' },
+  { value: 'In Progress', label: 'In Progress' },
+  { value: 'Escalated', label: 'Escalated' },
+  { value: 'Confirmed Theft', label: 'Confirmed' },
+  { value: 'Closed', label: 'Closed' },
+]
 
 export function computeCasesStats(cases: CaseRecord[]): CasesStats {
   const active = cases.filter((c) => !['Closed', 'False Positive'].includes(c.status)).length
+
   return {
     total: cases.length,
-    pastSla: cases.filter((c) => c.status === 'Past SLA').length + 3, // include some past SLA
+    pastSla: cases.filter((c) => c.status === 'Past SLA').length + 3,
     open: cases.filter((c) => c.status === 'Assigned').length,
     inProgress: cases.filter((c) => ['In Progress', 'Escalated'].includes(c.status)).length,
     escalated: cases.filter((c) => c.status === 'Escalated').length,
@@ -205,13 +393,172 @@ export function computeCasesStats(cases: CaseRecord[]): CasesStats {
   }
 }
 
-export const INSPECTORS = [
-  'Rajesh Kumar',
-  'Sunita Verma',
-  'Amit Sharma',
-  'Priya Singh',
-  'Deepak Yadav',
-  'Manish Gupta',
-  'Vikash Patel',
-  'Priya Mishra',
-]
+export function getCasesScopeStats(scopeId: string): CasesStats | null {
+  const level = hierData[scopeId]
+  if (!level) return null
+
+  const enriched = enrichLevel(level)
+  const totalCases = enriched.openCases || 0
+  const seed = hashSeed(scopeId)
+  const open = Math.round(totalCases * (0.28 + (seed % 4) / 100))
+  const inProgress = Math.round(totalCases * (0.24 + ((seed >> 3) % 4) / 100))
+  const escalated = Math.round(totalCases * (0.08 + ((seed >> 5) % 3) / 100))
+  const confirmed = Math.round(totalCases * (0.22 + ((seed >> 7) % 4) / 100))
+  const closed = Math.max(0, totalCases - open - inProgress - escalated - confirmed)
+  const active = open + inProgress + escalated
+  const pastSla = Math.round(active * (0.18 + ((seed >> 9) % 9) / 100))
+  const avgClose = +(2.4 + (enriched.loss || 20) * 0.08 + ((seed >> 11) % 5) / 10).toFixed(1)
+  const recovery = Math.round(confirmed * 600000 * 0.62)
+
+  return {
+    total: totalCases,
+    pastSla,
+    open,
+    inProgress,
+    escalated,
+    confirmed,
+    closed,
+    avgClose,
+    recovery,
+    active,
+  }
+}
+
+export function getCasesHierarchyRows(scopeId: string): CasesHierarchyRow[] {
+  const scope = hierData[scopeId]
+  if (!scope?.children?.length) return []
+
+  return [...scope.children]
+    .map((child) => {
+      const stats = getCasesScopeStats(child.id)
+      if (!stats) {
+        return null
+      }
+
+      return {
+        id: child.id,
+        name: child.name,
+        type: hierData[child.id]?.type ?? 'Child',
+        total: stats.total,
+        pastSla: stats.pastSla,
+        open: stats.open,
+        inProgress: stats.inProgress,
+        confirmed: stats.confirmed,
+        avgClose: stats.avgClose,
+        recovery: stats.recovery,
+        topInspector: INSPECTOR_POOL[hashSeed(child.id) % INSPECTOR_POOL.length],
+      } satisfies CasesHierarchyRow
+    })
+    .filter((row): row is CasesHierarchyRow => Boolean(row))
+    .sort((a, b) => b.pastSla - a.pastSla || b.total - a.total)
+}
+
+export function getCaseListRows(_scopeId: string): CaseRecord[] {
+  return [...CASES_LIST].sort((a, b) => {
+    const seedA = hashSeed(a.id)
+    const seedB = hashSeed(b.id)
+    return seedB - seedA
+  })
+}
+
+export function getCasesWatchlist(scopeId: string, limit = 5): CasesWatchlistItem[] {
+  const stats = getCasesScopeStats(scopeId)
+  if (!stats || stats.pastSla <= 0) return []
+
+  const scope = hierData[scopeId]
+  const areaPool = scope?.children?.length
+    ? scope.children.map((child) => child.name)
+    : [scope?.name ?? 'Unknown area']
+
+  const count = Math.min(limit, stats.pastSla)
+  const entries: CasesWatchlistItem[] = []
+
+  for (let i = 0; i < count; i += 1) {
+    const seed = hashSeed(`${scopeId}:${i}`)
+    const consumer = WATCHLIST_CONSUMERS[seed % WATCHLIST_CONSUMERS.length]
+    const inspector = INSPECTOR_POOL[(seed >> 3) % INSPECTOR_POOL.length]
+    const area = areaPool[(seed >> 5) % areaPool.length]
+    const risk = 70 + (seed % 26)
+    const overdueDays = 2 + ((seed >> 9) % 27)
+    const valueScore = (risk / 50) * (1 + consumer.loadKW / 200)
+    const estValue = Math.round(550000 * valueScore + ((seed >> 11) % 200000))
+    const dayMonth = String(15 + ((seed >> 13) % 14)).padStart(2, '0') + 'Mar'
+    const idSuffix = String((seed >> 17) % 999).padStart(3, '0')
+    const caseId = `C-2026${dayMonth.substring(0, 2)}-${idSuffix}`
+    const meterId = String(1500000 + ((seed >> 19) % 500000))
+    const statusPool: CaseRecord['status'][] = ['Assigned', 'In Progress', 'Escalated']
+    const status = statusPool[(seed >> 21) % statusPool.length]
+
+    entries.push({
+      id: caseId,
+      meter: meterId,
+      consumer: consumer.name,
+      area,
+      assignee: inspector,
+      status,
+      risk,
+      created: buildDueDate(-overdueDays - 12),
+      due: buildDueDate(-overdueDays),
+      flags: 2 + ((seed >> 7) % 3),
+      scopeId,
+      overdueDays,
+      estValue,
+      category: consumer.activity,
+      _activity: consumer.activity,
+      _load: consumer.loadKW,
+      _load_unit: 'KW',
+      _tariff: consumer.tariff,
+      urgency: (overdueDays * estValue) / 100000,
+      _synth: true,
+    } as CasesWatchlistItem)
+  }
+
+  return entries.sort((a, b) => (b.urgency ?? 0) - (a.urgency ?? 0))
+}
+
+export function getCaseStatusLabel(statusFilter: string): string {
+  switch (statusFilter) {
+    case 'Past SLA':
+      return 'Showing Past SLA cases'
+    case 'Assigned':
+      return 'Showing Open (assigned) cases'
+    case 'In Progress':
+      return 'Showing In progress cases'
+    case 'Confirmed Theft':
+      return 'Showing Confirmed cases'
+    case 'Closed':
+      return 'Showing Closed cases'
+    case 'Escalated':
+      return 'Showing Escalated cases'
+    default:
+      return 'All cases at this scope'
+  }
+}
+
+export function getCasesClosureTrend(scopeId: string, avgClose: number): Array<{ month: string; value: number }> {
+  const seed = hashSeed(scopeId)
+  const months = ['May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar', 'Apr']
+  const startVal = avgClose + 1.4
+  const endVal = avgClose
+  return months.map((month, index) => {
+    const t = index / (months.length - 1)
+    const linear = startVal + (endVal - startVal) * t
+    const noise = (((seed >> (index % 12)) % 7) - 3) * 0.08
+    return {
+      month,
+      value: +(linear + noise).toFixed(2),
+    }
+  })
+}
+
+export function getCasesChartData(stats: CasesStats) {
+  return [
+    { label: 'Past SLA', value: stats.pastSla, color: '#FF4757' },
+    { label: 'Open', value: stats.open, color: '#0EA5E9' },
+    { label: 'In progress', value: stats.inProgress, color: '#FFA502' },
+    { label: 'Confirmed', value: stats.confirmed, color: '#28A745' },
+    { label: 'Closed/FP', value: stats.closed, color: '#9CA3AF' },
+  ]
+}
+
+export { getChildLabel, fmtINR, formatIndian }

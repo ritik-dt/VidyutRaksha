@@ -121,6 +121,38 @@ export function getConsumerTimeline() {
   ]
 }
 
+// ─── Similar consumers under same DTR (AI-detected cluster) ─────────────────
+export interface ClusterConsumer {
+  name: string
+  meter: string
+  similarity: number
+  drop: number
+  tamperEvents: number
+  risk: number
+  status: 'New' | 'In Progress'
+}
+
+export interface ClusterData {
+  dtrName: string
+  consumers: ClusterConsumer[]
+}
+
+// Only meter 1849966 has a confirmed coordinated-theft cluster, matching the prototype
+const SIMILAR_CONSUMERS_CLUSTER: Record<string, ClusterData> = {
+  '1849966': {
+    dtrName: 'DTR Vijaya Complex',
+    consumers: [
+      { name: 'BHUWAL JAISWAL', meter: 'SC10178896', similarity: 94, drop: -47, tamperEvents: 12, risk: 78, status: 'In Progress' },
+      { name: 'ANAND PRAKASH AGARWAL', meter: 'AL2861165', similarity: 76, drop: -38, tamperEvents: 5, risk: 65, status: 'New' },
+      { name: 'ISHANT', meter: 'AL2860041', similarity: 72, drop: -41, tamperEvents: 18, risk: 72, status: 'New' },
+    ],
+  },
+}
+
+export function getSimilarConsumersCluster(meterId: string): ClusterData | null {
+  return SIMILAR_CONSUMERS_CLUSTER[meterId] ?? null
+}
+
 // ─── Daily consumption data ───────────────────────────────────────────────────
 export function getDailyConsumptionData() {
   const data = []

@@ -57,14 +57,14 @@ export function ScopeBreadcrumb({ rightActions }: ScopeBreadcrumbProps) {
       })}
 
       <div className="ml-auto flex items-center gap-1.5">
-        <button
+        {/* <button
           type="button"
           onClick={toggleScopePicker}
           className="btn btn-outline btn-sm"
           style={{ fontSize: '10px', padding: '3px 9px', color: 'var(--ai-purple)', borderColor: 'rgba(124,58,237,0.3)' }}
         >
           ↕ Change scope
-        </button>
+        </button> */}
         {rightActions}
       </div>
     </div>
