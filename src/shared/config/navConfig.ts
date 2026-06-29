@@ -38,19 +38,19 @@ export const NAV_SECTIONS: NavSectionConfig[] = [
         badge: '14',
         badgeVariant: 'amber',
       },
-      {
-        screen: 'diagnostics',
-        icon: '🚨',
-        label: 'Tamper & anomaly reports',
-        badge: '8',
-        badgeVariant: 'purple',
-      },
-      {
-        screen: 'alerts',
-        icon: '🔔',
-        label: 'Alerts',
-        badge: '3',
-      },
+      // {
+      //   screen: 'diagnostics',
+      //   icon: '🚨',
+      //   label: 'Tamper & anomaly reports',
+      //   badge: '8',
+      //   badgeVariant: 'purple',
+      // },
+      // {
+      //   screen: 'alerts',
+      //   icon: '🔔',
+      //   label: 'Alerts',
+      //   badge: '3',
+      // },
     ],
   },
   // {

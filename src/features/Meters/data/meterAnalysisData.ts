@@ -306,7 +306,83 @@ export function categorizeTamperEvents(realData?: RealMeterData) {
   return { byYear, isReal: false }
 }
 
-// ─── Live phasor classification (drives the AI Classification box + sliders) ─
+// ─── Raw per-event tamper log (mirrors prototype's `realData.tampers[]`) ─────
+export interface RawTamperEvent {
+  ts: string // "YYYY-MM-DD HH:MM:SS"
+  type: 'Earth Loading' | 'Neutral Disturbance' | 'Power Failure'
+  occ: 'Occurrence' | 'Restoration'
+}
+
+export interface TamperEventsRaw {
+  events: RawTamperEvent[]
+  total: number
+  earthCount: number
+  isReal: boolean
+}
+
+// Deterministic PRNG (mulberry32) seeded per-meter so the generated log is stable across renders
+function mulberry32(seed: number) {
+  let a = seed
+  return () => {
+    a = (a + 0x6d2b79f5) | 0
+    let t = Math.imul(a ^ (a >>> 15), 1 | a)
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+  }
+}
+
+const pad2 = (n: number) => String(n).padStart(2, '0')
+function formatTs(d: Date): string {
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())} ${pad2(d.getHours())}:${pad2(d.getMinutes())}:30`
+}
+
+export function buildTamperEventsRaw(meter: SuspMeter, realData?: RealMeterData): TamperEventsRaw {
+  const cat = categorizeTamperEvents(realData)
+  const years = Object.keys(cat.byYear).sort()
+  if (years.length === 0) return { events: [], total: 0, earthCount: 0, isReal: cat.isReal }
+
+  const rng = mulberry32(seedFor(meter.id || '') || 1)
+  const anchor = realData?.summary?.mri_date ? new Date(realData.summary.mri_date.replace(' ', 'T')) : new Date()
+  const latestYear = years[years.length - 1]
+
+  const events: { d: Date; type: RawTamperEvent['type']; occ: RawTamperEvent['occ'] }[] = []
+
+  years.forEach((yearStr) => {
+    const year = parseInt(yearStr, 10)
+    const counts = cat.byYear[yearStr]
+    const typeCounts: { type: RawTamperEvent['type']; n: number }[] = [
+      { type: 'Earth Loading', n: counts.critical },
+      { type: 'Neutral Disturbance', n: counts.high },
+      { type: 'Power Failure', n: counts.medium },
+    ]
+    const yearStart = new Date(year, 0, 1).getTime()
+    const yearEnd = yearStr === latestYear ? anchor.getTime() : new Date(year, 11, 31, 23, 59, 0).getTime()
+    const span = Math.max(yearEnd - yearStart, 86400000)
+
+    typeCounts.forEach(({ type, n }) => {
+      if (n <= 0) return
+      const pairCount = Math.floor(n / 2)
+      for (let i = 0; i < pairCount; i++) {
+        const frac = (i + 0.5) / pairCount
+        const jitter = (rng() - 0.5) * (span / pairCount) * 0.7
+        const occurredAt = Math.min(yearStart + frac * span + jitter, yearEnd)
+        const restoredAt = Math.min(occurredAt + (5 + rng() * 175) * 60000, yearEnd)
+        events.push({ d: new Date(occurredAt), type, occ: 'Occurrence' })
+        events.push({ d: new Date(restoredAt), type, occ: 'Restoration' })
+      }
+      if (n % 2 === 1) {
+        events.push({ d: new Date(yearStart + rng() * span), type, occ: 'Occurrence' })
+      }
+    })
+  })
+
+  events.sort((a, b) => b.d.getTime() - a.d.getTime())
+  const formatted: RawTamperEvent[] = events.map((e) => ({ ts: formatTs(e.d), type: e.type, occ: e.occ }))
+  const earthCount = formatted.filter((e) => e.type === 'Earth Loading').length
+  return { events: formatted, total: formatted.length, earthCount, isReal: cat.isReal }
+}
+
+
 export interface PhasorClassification {
   cls: string
   color: string

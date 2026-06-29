@@ -1,5 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { Chart, type ChartOptions } from 'chart.js/auto'
+import { useMemo, useState } from 'react'
 import type { SuspMeter } from '@/features/Meters/data/meters'
 import { REAL_METER_DATA } from '@/features/Meters/data/realMeterData'
 import {
@@ -8,37 +7,18 @@ import {
   phaseIntegrityCheck,
   phaseIntegrityFromLoadSurvey,
   phaseSeverity,
-  buildTODProfile,
-  computeRunningTime,
-  categorizeTamperEvents,
   classifyPhasor,
   type InstantParams,
   type PhaseTriplet,
 } from '@/features/Meters/data/meterAnalysisData'
+import { RealBadge, RunningTimeTodCards } from './RunningTimeTodCards'
+import { TamperCriticalityCard } from './TamperCriticalityCard'
 
 interface MeterAnalysisTabProps {
   meter: SuspMeter
 }
 
 const PHASE_COLORS = { R: '#DC3545', Y: '#E6921E', B: '#0EA5E9' } as const
-
-function RealBadge({ isReal }: { isReal: boolean }) {
-  return isReal ? (
-    <span
-      className="ml-1.5 inline-block rounded-md px-1.5 py-px text-[9px] font-extrabold tracking-[.3px]"
-      style={{ background: 'rgba(40,167,69,.12)', color: 'var(--green)', border: '1px solid rgba(40,167,69,.3)' }}
-    >
-      ✓ FROM REAL MRI
-    </span>
-  ) : (
-    <span
-      className="ml-1.5 inline-block rounded-md px-1.5 py-px text-[9px] font-extrabold tracking-[.3px]"
-      style={{ background: 'rgba(124,58,237,.08)', color: 'var(--ai-purple)', border: '1px solid rgba(124,58,237,.25)' }}
-    >
-      DERIVED
-    </span>
-  )
-}
 
 const fmt = (n: number) => n.toLocaleString('en-IN')
 
@@ -99,19 +79,6 @@ export function MeterAnalysisTab({ meter }: MeterAnalysisTabProps) {
 
   // ── Other forensic derivations ──────────────────────────────────────────────
   const ls = useMemo(() => phaseIntegrityFromLoadSurvey(meter, realData), [meter, realData])
-  const tod = useMemo(() => buildTODProfile(meter), [meter])
-  const rt = useMemo(() => computeRunningTime(meter, realData), [meter, realData])
-  const tamperCat = useMemo(() => categorizeTamperEvents(realData), [realData])
-
-  const todTotal = tod.offPeak + tod.normal + tod.peak
-  const offPct = todTotal > 0 ? (tod.offPeak / todTotal) * 100 : 0
-  const normPct = todTotal > 0 ? (tod.normal / todTotal) * 100 : 0
-  const peakPct = todTotal > 0 ? (tod.peak / todTotal) * 100 : 0
-
-  const gaugeColor = rt.pct < 30 ? '#DC3545' : rt.pct < 55 ? '#E6921E' : '#28A745'
-  const gaugeRadius = 64
-  const circ = 2 * Math.PI * gaugeRadius
-  const fillCirc = circ * 0.75
 
   const lsCritPhases = (['R', 'Y', 'B'] as const).filter((ph) => phaseSeverity(ls, ph) === 'critical')
   const lsWarnPhases = (['R', 'Y', 'B'] as const).filter((ph) => phaseSeverity(ls, ph) === 'warning')
@@ -136,74 +103,6 @@ export function MeterAnalysisTab({ meter }: MeterAnalysisTabProps) {
     verdictBg = 'rgba(40,167,69,0.06)'
     verdictColor = 'var(--green)'
   }
-
-  // ── Tamper criticality stacked-bar chart (Chart.js, mirrors renderTamperCategoryCard) ─
-  const tamperCanvasRef = useRef<HTMLCanvasElement | null>(null)
-  const tamperChartRef = useRef<Chart | null>(null)
-  const years = useMemo(() => Object.keys(tamperCat.byYear).sort(), [tamperCat])
-  const totals = useMemo(() => {
-    const t = { critical: 0, high: 0, medium: 0 }
-    years.forEach((y) => {
-      t.critical += tamperCat.byYear[y].critical
-      t.high += tamperCat.byYear[y].high
-      t.medium += tamperCat.byYear[y].medium
-    })
-    return t
-  }, [years, tamperCat])
-  const grand = totals.critical + totals.high + totals.medium
-
-  useEffect(() => {
-    if (!tamperCanvasRef.current) return
-    tamperChartRef.current?.destroy()
-    tamperChartRef.current = new Chart(tamperCanvasRef.current, {
-      type: 'bar',
-      data: {
-        labels: years,
-        datasets: [
-          { label: 'Critical', data: years.map((y) => tamperCat.byYear[y].critical), backgroundColor: '#DC3545', borderRadius: 3, barPercentage: 0.6 },
-          { label: 'High', data: years.map((y) => tamperCat.byYear[y].high), backgroundColor: '#E6921E', borderRadius: 3, barPercentage: 0.6 },
-          // Mirrors the prototype's "Medium" series exactly (its var(--amber-dark) CSS
-          // variable isn't resolvable on a canvas fillStyle, so Chart.js renders it black —
-          // matching the reference screenshots pixel-for-pixel).
-          { label: 'Medium', data: years.map((y) => tamperCat.byYear[y].medium), backgroundColor: '#000000', borderRadius: 3, barPercentage: 0.6 },
-        ],
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { display: true, position: 'bottom', labels: { usePointStyle: true, padding: 10, font: { size: 10, family: 'IBM Plex Sans' } } },
-          tooltip: {
-            backgroundColor: '#fff', titleColor: '#1A1A2E', bodyColor: '#4A5568', borderColor: '#E2E8F0',
-            borderWidth: 1, padding: 8, cornerRadius: 8,
-            titleFont: { size: 11, family: 'IBM Plex Sans' }, bodyFont: { size: 11, family: 'IBM Plex Sans' },
-          },
-        },
-        scales: {
-          x: { stacked: true, grid: { display: false }, ticks: { font: { size: 10, family: 'IBM Plex Sans' }, color: '#8B95A5' } },
-          y: { stacked: true, grid: { color: '#EDF2F7' }, ticks: { font: { size: 10, family: 'IBM Plex Sans' }, color: '#8B95A5' }, beginAtZero: true },
-        },
-      } as ChartOptions,
-    })
-    return () => {
-      tamperChartRef.current?.destroy()
-      tamperChartRef.current = null
-    }
-  }, [years, tamperCat])
-
-  const tamperAiText = useMemo(() => {
-    if (grand === 0) return 'No tamper events on record.'
-    const critPct = Math.round((totals.critical / grand) * 100)
-    const lastYr = years[years.length - 1]
-    const prevYr = years[years.length - 2]
-    const lastTotal = lastYr ? tamperCat.byYear[lastYr].critical + tamperCat.byYear[lastYr].high + tamperCat.byYear[lastYr].medium : 0
-    const prevTotal = prevYr ? tamperCat.byYear[prevYr].critical + tamperCat.byYear[prevYr].high + tamperCat.byYear[prevYr].medium : 0
-    const trend = prevTotal > 0 ? Math.round(((lastTotal - prevTotal) / prevTotal) * 100) : null
-    let trendText = 'Tamper activity stable YoY.'
-    if (trend != null && trend > 30) trendText = `Tamper count rose ${trend}% YoY — escalating pattern.`
-    else if (trend != null && trend < -10) trendText = `Tamper count dropped ${Math.abs(trend)}% YoY — possible deterrent effect from prior inspection.`
-    return { critPct, trendText }
-  }, [grand, totals, years, tamperCat])
 
   return (
     <div>
@@ -470,122 +369,11 @@ export function MeterAnalysisTab({ meter }: MeterAnalysisTabProps) {
       </div>
 
       {/* 3. Running time + 4. TOD profile */}
-      <div className="mb-4 grid gap-3.5 lg:grid-cols-[1fr_1.4fr]">
-        {/* Running time gauge */}
-        <div className="card mb-0">
-          <div className="mb-1 flex items-center justify-between">
-            <span className="flex items-center text-[13px] font-bold text-text">⏱ Running time<RealBadge isReal={rt.isReal} /></span>
-            <span className="text-[10px] text-text-dim">last 30 days</span>
-          </div>
-          <div className="py-3 text-center">
-            <svg width="160" height="140" viewBox="0 0 160 140" className="mx-auto">
-              <circle cx={80} cy={80} r={gaugeRadius} fill="none" stroke="rgba(0,0,0,0.06)" strokeWidth={11} strokeDasharray={`${fillCirc} ${circ}`} transform="rotate(135 80 80)" />
-              <circle cx={80} cy={80} r={gaugeRadius} fill="none" stroke={gaugeColor} strokeWidth={11} strokeLinecap="round" strokeDasharray={`${(rt.pct / 100) * fillCirc} ${circ}`} transform="rotate(135 80 80)" />
-              <text x={80} y={78} textAnchor="middle" fontSize={28} fontWeight={800} fill={gaugeColor} className="font-mono">{rt.pct}%</text>
-              <text x={80} y={96} textAnchor="middle" fontSize={10} fill="#71717A">running time</text>
-            </svg>
-            <div className="flex justify-center gap-3.5 text-[10.5px] text-text-mid">
-              <div><strong className="font-mono text-text">{fmt(rt.activeIntervals)}</strong> active</div>
-              <div className="text-text-dim">/</div>
-              <div><strong className="font-mono text-text">{fmt(rt.totalIntervals)}</strong> intervals</div>
-            </div>
-            <div
-              className="mt-2.5 rounded-lg p-2.5 text-left text-[10.5px] leading-[1.5]"
-              style={{
-                background: rt.pct < 30 ? 'var(--red-light)' : rt.pct < 55 ? 'rgba(230,146,30,0.08)' : 'rgba(40,167,69,0.06)',
-                color: rt.pct < 30 ? 'var(--red)' : rt.pct < 55 ? 'var(--amber-dark)' : 'var(--green)',
-              }}
-            >
-              {rt.pct < 30 ? (
-                <><strong>⚠ Suspiciously low.</strong> Industrial baseline is 70–85%. This consumer's meter recorded current in only {rt.pct}% of intervals — strong bypass signature.</>
-              ) : rt.pct < 55 ? (
-                <><strong>Below baseline.</strong> Healthy {meter.cat || 'industrial'} meters typically run 60–80% of intervals. Investigate.</>
-              ) : (
-                <><strong>✓ Within normal range</strong> for {meter.cat || 'this category'}. No running-time concern.</>
-              )}
-            </div>
-          </div>
-        </div>
+      <RunningTimeTodCards meter={meter} />
 
-        {/* TOD profile */}
-        <div className="card mb-0">
-          <div className="mb-1.5 flex items-center justify-between">
-            <span className="flex items-center text-[13px] font-bold text-text">🕒 Time-of-Day (TOD) profile<RealBadge isReal={tod.isReal} /></span>
-            <span className="text-[10px] text-text-dim">last billing cycle</span>
-          </div>
-          <div
-            className="flex h-8 overflow-hidden rounded-lg"
-            style={{ background: 'rgba(0,0,0,0.05)', boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.06)' }}
-          >
-            <div className="flex items-center justify-center text-[11px] font-bold text-white" style={{ background: 'linear-gradient(180deg,#0EA5E9,#0284C7)', width: `${offPct}%` }}>
-              {offPct > 8 ? `${offPct.toFixed(0)}%` : ''}
-            </div>
-            <div className="flex items-center justify-center text-[11px] font-bold text-white" style={{ background: 'linear-gradient(180deg,#7C3AED,#5B21B6)', width: `${normPct}%` }}>
-              {normPct > 8 ? `${normPct.toFixed(0)}%` : ''}
-            </div>
-            <div className="flex items-center justify-center text-[11px] font-bold text-white" style={{ background: 'linear-gradient(180deg,#DC3545,#A8222F)', width: `${peakPct}%` }}>
-              {peakPct > 8 ? `${peakPct.toFixed(0)}%` : ''}
-            </div>
-          </div>
-          <div className="mt-2.5 grid grid-cols-3 gap-2">
-            <div className="rounded-lg border-l-[3px] p-2.5" style={{ background: 'rgba(14,165,233,0.06)', borderLeftColor: '#0EA5E9' }}>
-              <div className="text-[9px] font-bold uppercase tracking-[.3px]" style={{ color: '#0284C7' }}>Off-peak</div>
-              <div className="text-[9px] text-text-dim">22:00–06:00 · discount</div>
-              <div className="mt-0.5 font-mono text-[14px] font-extrabold" style={{ color: '#0284C7' }}>{fmt(tod.offPeak)} <span className="text-[9px] font-medium text-text-dim">kWh</span></div>
-            </div>
-            <div className="rounded-lg border-l-[3px] p-2.5" style={{ background: 'rgba(124,58,237,0.06)', borderLeftColor: 'var(--ai-purple)' }}>
-              <div className="text-[9px] font-bold uppercase tracking-[.3px] text-ai-purple">Normal</div>
-              <div className="text-[9px] text-text-dim">06:00–18:00 · standard</div>
-              <div className="mt-0.5 font-mono text-[14px] font-extrabold text-ai-purple">{fmt(tod.normal)} <span className="text-[9px] font-medium text-text-dim">kWh</span></div>
-            </div>
-            <div className="rounded-lg border-l-[3px] p-2.5" style={{ background: 'rgba(220,53,69,0.06)', borderLeftColor: 'var(--red)' }}>
-              <div className="text-[9px] font-bold uppercase tracking-[.3px]" style={{ color: 'var(--red)' }}>Peak</div>
-              <div className="text-[9px] text-text-dim">18:00–22:00 · surcharge</div>
-              <div className="mt-0.5 font-mono text-[14px] font-extrabold" style={{ color: 'var(--red)' }}>{fmt(tod.peak)} <span className="text-[9px] font-medium text-text-dim">kWh</span></div>
-            </div>
-          </div>
-          <div
-            className="mt-2.5 rounded-lg p-2.5 text-[10.5px] leading-[1.5]"
-            style={{
-              background: tod.actualPeakPct < tod.expectedPeakPct - 5 ? 'var(--red-light)' : 'rgba(124,58,237,0.05)',
-              color: tod.actualPeakPct < tod.expectedPeakPct - 5 ? 'var(--red)' : 'var(--text-mid)',
-            }}
-          >
-            <strong>✦ AI:</strong> Peak slab is <strong>{tod.actualPeakPct}%</strong> of total. Expected for {meter.cat || 'this category'}: ~{tod.expectedPeakPct}%.{' '}
-            {tod.actualPeakPct < tod.expectedPeakPct - 5 ? (
-              <><strong style={{ color: 'var(--red)' }}>Significantly below baseline</strong> — possible peak-hour tampering. Bypass may be timed to peak slab when each kWh costs more.</>
-            ) : (
-              'Within expected range.'
-            )}
-          </div>
-        </div>
-      </div>
 
       {/* 5. Tamper event criticality, year-by-year */}
-      <div className="card">
-        <div className="mb-0.5 flex items-center justify-between">
-          <span className="flex items-center text-[13px] font-bold text-text">📊 Tamper event criticality · year-by-year<RealBadge isReal={tamperCat.isReal} /></span>
-          <span className="text-[10px] text-text-dim">stacked by severity</span>
-        </div>
-        <div className="page-sub mb-2.5 -mt-1">
-          <strong style={{ color: 'var(--red)' }}>Critical</strong> = Earth Loading + Magnetic Tamper ·{' '}
-          <strong style={{ color: 'var(--amber)' }}>High</strong> = Neutral Disturbance + Cover Open ·{' '}
-          <strong style={{ color: 'var(--amber-dark)' }}>Medium</strong> = Power Failure + Other
-        </div>
-        <div className="relative h-[220px]">
-          <canvas ref={tamperCanvasRef} />
-        </div>
-        <div className="mt-3 rounded-lg p-2.5 text-[10.5px] leading-[1.5]" style={{ background: 'var(--ai-purple-light)', color: 'var(--ai-purple)' }}>
-          <strong>✦ AI:</strong>{' '}
-          {typeof tamperAiText === 'string' ? (
-            tamperAiText
-          ) : (
-            <>
-              <strong>{tamperAiText.critPct}% of all events</strong> are critical (Earth/Magnetic). {tamperAiText.trendText}
-            </>
-          )}
-        </div>
-      </div>
+      <TamperCriticalityCard meter={meter} canvasIdSuffix="analysis" />
     </div>
   )
 }

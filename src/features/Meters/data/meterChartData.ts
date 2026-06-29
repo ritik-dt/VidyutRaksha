@@ -154,82 +154,65 @@ export function getSimilarConsumersCluster(meterId: string): ClusterData | null 
 }
 
 // ─── Daily consumption data ───────────────────────────────────────────────────
-export function getDailyConsumptionData() {
-  const data = []
-  const startVal = 18.5
-  const peerAvg = 19.2
-  for (let i = 0; i < 32; i++) {
-    const label = i < 28 ? `${i + 1} Feb` : `${i - 27} Mar`
-    const decline = Math.max(0, startVal - i * 0.52 + (Math.sin(i) * 0.4))
-    data.push({ day: label, meter: parseFloat(decline.toFixed(1)), peer: parseFloat((peerAvg + Math.sin(i * 0.3) * 0.3).toFixed(1)) })
-  }
-  return data
+export interface DailyConsumptionPoint {
+  day: string
+  meter: number
+  peer: number
+}
+
+// Mirrors the prototype's fixed `dailyProfile` object exactly (labels/kwh/peerAvg)
+export function getDailyConsumptionData(): DailyConsumptionPoint[] {
+  const labels = [
+    '1 Feb', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20', '21', '22', '23', '24', '25', '26', '27', '28', '1 Mar', '2', '3',
+  ]
+  const kwh = [
+    18.2, 17.8, 19.1, 18.5, 17.2, 16.8, 15.4, 14.9, 15.2, 14.1, 13.8, 14.5, 13.2, 12.8, 13.1, 12.4, 11.9, 12.2, 11.5, 10.8, 11.2, 10.5, 9.8, 10.2, 9.5, 8.8, 9.2, 8.5, 7.8, 6.2, 0.2,
+  ]
+  const peerAvg = [
+    19.5, 19.2, 19.8, 19.4, 19.1, 18.8, 19.5, 19.2, 18.9, 19.4, 19.1, 18.7, 19.3, 19.0, 18.8, 19.2, 18.9, 19.1, 18.8, 19.4, 19.0, 18.7, 19.2, 18.9, 19.1, 18.8, 19.3, 19.0, 18.7, 19.1, 18.9,
+  ]
+  return labels.map((day, i) => ({ day, meter: kwh[i], peer: peerAvg[i] }))
 }
 
 // ─── Billing history ──────────────────────────────────────────────────────────
-export function getBillingHistoryData() {
-  return [
-    { month: "Apr'25", kwh: 580, md: 5.8 }, { month: "May'25", kwh: 850, md: 6.2 },
-    { month: "Jun'25", kwh: 944, md: 6.56 }, { month: "Jul'25", kwh: 910, md: 6.4 },
-    { month: "Aug'25", kwh: 780, md: 5.9 }, { month: "Sep'25", kwh: 720, md: 5.6 },
-    { month: "Oct'25", kwh: 620, md: 5.1 }, { month: "Nov'25", kwh: 530, md: 4.5 },
-    { month: "Dec'25", kwh: 490, md: 4.2 }, { month: "Jan'26", kwh: 478, md: 3.8 },
-    { month: "Feb'26", kwh: 434, md: 3.0 },
-  ]
+export interface BillingHistoryPoint {
+  month: string
+  kwh: number
+  md: number
 }
 
-export function getLoadFactorData() {
-  return [
-    { month: "Apr'25", lf: 0.22 }, { month: "May'25", lf: 0.19 }, { month: "Jun'25", lf: 0.20 },
-    { month: "Jul'25", lf: 0.20 }, { month: "Aug'25", lf: 0.18 }, { month: "Sep'25", lf: 0.18 },
-    { month: "Oct'25", lf: 0.17 }, { month: "Nov'25", lf: 0.16 }, { month: "Dec'25", lf: 0.16 },
-    { month: "Jan'26", lf: 0.17 }, { month: "Feb'26", lf: 0.20 },
-  ]
+// Mirrors the prototype's fixed `billingData` + `demandData` objects exactly
+export function getBillingHistoryData(): BillingHistoryPoint[] {
+  const labels = ["Apr'25", 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', "Jan'26", 'Feb']
+  const kwh = [618, 917, 944, 868, 567, 579, 572, 417, 416, 396, 434]
+  const md = [3.8, 6.2, 6.56, 5.9, 4.1, 4.2, 4.0, 3.2, 3.1, 2.9, 3.0]
+  return labels.map((month, i) => ({ month, kwh: kwh[i], md: md[i] }))
+}
+
+export interface LoadFactorPoint {
+  month: string
+  lf: number
+}
+
+export function getLoadFactorData(): LoadFactorPoint[] {
+  const labels = ["Apr'25", 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', "Jan'26", 'Feb']
+  const lf = [0.23, 0.21, 0.2, 0.21, 0.19, 0.19, 0.2, 0.18, 0.19, 0.19, 0.2]
+  return labels.map((month, i) => ({ month, lf: lf[i] }))
 }
 
 // ─── Load profile (30-min intervals) ─────────────────────────────────────────
-export function getLoadProfileData() {
-  const data = []
-  for (let h = 0; h <= 22; h += 0.5) {
-    const hh = Math.floor(h), mm = h % 1 === 0.5 ? '30' : '00'
-    const label = `${hh < 10 ? '0' : ''}${hh}:${mm}`
-    const isNight = hh < 5, isMorning = hh >= 6 && hh <= 9
-    const isPeak = hh >= 10 && hh <= 16, isEvening = hh >= 17 && hh <= 21
-    const kwh = isNight ? 0.1 + Math.random() * 0.1
-      : isMorning ? 0.4 + Math.random() * 0.3
-      : isPeak ? 1.1 + Math.random() * 0.3
-      : isEvening ? 0.9 + Math.random() * 0.3
-      : 0.2 + Math.random() * 0.1
-    data.push({ time: label, kwh: parseFloat(kwh.toFixed(2)), demand: parseFloat((kwh * 2).toFixed(2)) })
-  }
-  return data
+export interface LoadProfilePoint {
+  time: string
+  kwh: number
+  demand: number
 }
 
-// ─── Tamper events ────────────────────────────────────────────────────────────
-export function getTamperYearlyData(meterId: string) {
-  if (meterId === '884759') {
-    return [
-      { year: '2021', critical: 0, high: 0,   medium: 5  },
-      { year: '2022', critical: 0, high: 14,  medium: 8  },
-      { year: '2023', critical: 0, high: 98,  medium: 12 },
-      { year: '2024', critical: 0, high: 26,  medium: 10 },
-      { year: '2025', critical: 0, high: 28,  medium: 12 },
-      { year: '2026', critical: 0, high: 250, medium: 42 },
-    ]
-  }
-  return [
-    { year: '2021', critical: 2,   high: 4,  medium: 6  },
-    { year: '2022', critical: 50,  high: 12, medium: 8  },
-    { year: '2023', critical: 18,  high: 8,  medium: 6  },
-    { year: '2024', critical: 12,  high: 6,  medium: 4  },
-    { year: '2025', critical: 8,   high: 6,  medium: 4  },
-    { year: '2026', critical: 350, high: 12, medium: 14 },
-  ]
-}
-
-export function getTamperBreakdown(meterId: string) {
-  if (meterId === '884759') return { earth: 0, pf: 100, neutral: 20, magnet: 0, cover: 0, other: 301 }
-  return { earth: 389, pf: 12, neutral: 8, magnet: 4, cover: 3, other: 32 }
+// Mirrors the prototype's fixed `loadSurvey` object exactly (labels/values/demandKw)
+export function getLoadProfileData(): LoadProfilePoint[] {
+  const labels = ['00:00', '02:00', '04:00', '06:00', '08:00', '10:00', '12:00', '14:00', '16:00', '18:00', '20:00', '22:00']
+  const values = [0.12, 0.1, 0.08, 0.32, 0.65, 1.12, 1.45, 1.15, 0.85, 0.95, 1.35, 0.65]
+  const demandKw = [0.24, 0.2, 0.16, 0.64, 1.3, 2.24, 2.9, 2.3, 1.7, 1.9, 2.7, 1.3]
+  return labels.map((time, i) => ({ time, kwh: values[i], demand: demandKw[i] }))
 }
 
 // ─── Last 7 days bar (real meters) ───────────────────────────────────────────

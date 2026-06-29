@@ -45,33 +45,33 @@ function pageForScreen(screen: ScreenName) {
     case 'meters':       return <MetersPage />
     case 'meterDetail':  return <MeterDetailPage />
     case 'cases':        return <CasesPage />
-    case 'diagnostics':  return <DiagnosticsPage />
-    case 'alerts':       return <AlertsPage />
-    case 'analytics':    return <AnalyticsPage />
-    case 'clusters':     return <ClustersPage />
-    case 'nlquery':      return <NLQueryPage />
-    case 'team':         return <TeamPage />
-    case 'rules':        return <RulesPage />
-    case 'settings':     return <SettingsPage />
-    case 'reports':      return <ReportsPage />
-    case 'roi':          return <ROIPage />
-    case 'dtload':       return <DtLoadPage />
-    case 'networkmap':   return <NetworkMapPage />
-    case 'mobile':       return <MobilePage />
-    case 'assessment':   return <AssessmentPage />
-    case 'notices':      return <NoticesPage />
-    case 'executive':    return <ExecutivePage />
-    case 'forecast':     return <ForecastPage />
-    case 'appeals':      return <AppealsPage />
-    case 'audit':        return <AuditPage />
-    case 'compare':      return <ComparePage />
-    case 'dataQuality':  return <DataQualityPage />
-    case 'integrations': return <IntegrationsPage />
-    case 'notifications':return <NotificationsPage />
-    case 'photos':       return <PhotosPage />
-    case 'users':        return <UsersPage />
-    case 'chartShowcase': return <ChartShowcasePage />
-    case 'uiShowcase':   return <UiShowcasePage />
+    // case 'diagnostics':  return <DiagnosticsPage />
+    // case 'alerts':       return <AlertsPage />
+    // case 'analytics':    return <AnalyticsPage />
+    // case 'clusters':     return <ClustersPage />
+    // case 'nlquery':      return <NLQueryPage />
+    // case 'team':         return <TeamPage />
+    // case 'rules':        return <RulesPage />
+    // case 'settings':     return <SettingsPage />
+    // case 'reports':      return <ReportsPage />
+    // case 'roi':          return <ROIPage />
+    // case 'dtload':       return <DtLoadPage />
+    // case 'networkmap':   return <NetworkMapPage />
+    // case 'mobile':       return <MobilePage />
+    // case 'assessment':   return <AssessmentPage />
+    // case 'notices':      return <NoticesPage />
+    // case 'executive':    return <ExecutivePage />
+    // case 'forecast':     return <ForecastPage />
+    // case 'appeals':      return <AppealsPage />
+    // case 'audit':        return <AuditPage />
+    // case 'compare':      return <ComparePage />
+    // case 'dataQuality':  return <DataQualityPage />
+    // case 'integrations': return <IntegrationsPage />
+    // case 'notifications':return <NotificationsPage />
+    // case 'photos':       return <PhotosPage />
+    // case 'users':        return <UsersPage />
+    // case 'chartShowcase': return <ChartShowcasePage />
+    // case 'uiShowcase':   return <UiShowcasePage />
     default:             return <PlaceholderPage screen={screen} />
   }
 }

@@ -7,11 +7,11 @@ import { ExplainabilityPanel } from './components/ExplainabilityPanel'
 import { RemediationCard } from './components/RemediationCard'
 import { RiskProfileTab } from './components/RiskProfileTab'
 import { MeterAnalysisTab } from './components/MeterAnalysisTab'
+import { LoadProfileTab } from './components/LoadProfileTab'
+import { DailyConsumptionTab } from './components/DailyConsumptionTab'
+import { BillingHistoryTab } from './components/BillingHistoryTab'
+import { TamperEventsTab } from './components/TamperEventsTab'
 import {
-  LoadProfileTab,
-  DailyConsumptionTab,
-  BillingHistoryTab,
-  TamperEventsTab,
   MeterInfoTab,
 } from './components/MeterDetailTabs'
 import { useToast } from '@/shared/context/ToastContext'
@@ -75,7 +75,7 @@ export default function MeterDetailPage() {
   }, null)
 
   return (
-    <div className="pb-10">
+    <div className="pb-4">
       {/* Back link */}
       <button
         type="button"

@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
-export type ChartKind = 'line' | 'area' | 'bar'
+export type ChartKind = 'line' | 'area' | 'step' | 'bar'
 export type ViewMode = 'chart' | 'table'
 
 export interface ChartTableData {
@@ -19,6 +19,11 @@ const IconArea = () => (
   <svg viewBox="0 0 14 14" className="size-3.5" fill="none" stroke="currentColor" strokeWidth="1.5">
     <polyline points="1,11 4,6 8,8 13,2" />
     <path d="M1,11 L4,6 L8,8 L13,2 L13,13 L1,13Z" fill="currentColor" opacity="0.15" />
+  </svg>
+)
+const IconStep = () => (
+  <svg viewBox="0 0 14 14" className="size-3.5" fill="none" stroke="currentColor" strokeWidth="1.5">
+    <polyline points="1,11 1,8 5,8 5,5 9,5 9,2 13,2" />
   </svg>
 )
 const IconBar = () => (
@@ -40,6 +45,7 @@ const IconTable = () => (
 const KIND_ICONS: Record<ChartKind, ReactNode> = {
   line: <IconLine />,
   area: <IconArea />,
+  step: <IconStep />,
   bar: <IconBar />,
 }
 
