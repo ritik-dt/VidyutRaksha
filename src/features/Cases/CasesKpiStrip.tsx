@@ -1,105 +1,50 @@
-import { formatIndian } from '@/shared/utils/formatters'
 import { fmtINR } from '@/features/Dashboard/adapter'
+import { formatIndian } from '@/shared/utils/formatters'
 import type { CasesStats } from './types'
 
-interface CasesKpiStripProps {
-  stats: CasesStats
-  activeFilter: string
-  onChangeFilter: (filter: string) => void
-}
+interface Props { stats: CasesStats; onChangeFilter: (f: string) => void }
 
-type KpiItem = {
-  label: string
-  color: string
-  filter: string
-  value: (stats: CasesStats) => string
-  sub: (stats: CasesStats) => string
-  compact?: boolean
-}
-
-const KPI_ITEMS: KpiItem[] = [
-  {
-    label: 'Past SLA',
-    color: 'var(--red)',
-    filter: 'Past SLA',
-    value: (stats: CasesStats) => formatIndian(stats.pastSla),
-    sub: (stats: CasesStats) =>
-      stats.active > 0 ? `${((stats.pastSla / stats.active) * 100).toFixed(1)}% of active` : 'no active cases',
-  },
-  {
-    label: 'Open',
-    color: '#0EA5E9',
-    filter: 'Assigned',
-    value: (stats: CasesStats) => formatIndian(stats.open),
-    sub: () => 'awaiting inspection',
-  },
-  {
-    label: 'In progress',
-    color: 'var(--amber)',
-    filter: 'In Progress',
-    value: (stats: CasesStats) => formatIndian(stats.inProgress),
-    sub: (stats: CasesStats) => `includes ${formatIndian(stats.escalated)} escalated`,
-  },
-  {
-    label: 'Confirmed',
-    color: 'var(--green)',
-    filter: 'Confirmed Theft',
-    value: (stats: CasesStats) => formatIndian(stats.confirmed),
-    sub: () => 'cumulative this fiscal',
-  },
-  {
-    label: 'Avg time-to-close',
-    color: 'var(--navy-light)',
-    filter: '',
-    value: (stats: CasesStats) => `${stats.avgClose} d`,
-    sub: (stats: CasesStats) => `target: 3.0 d ${stats.avgClose > 3 ? '⚠' : '✓'}`,
-  },
-  {
-    label: 'Recovery',
-    color: 'var(--ai-purple)',
-    filter: '',
-    value: (stats: CasesStats) => fmtINR(stats.recovery),
-    sub: () => 'YTD · 62% realization',
-    compact: true,
-  },
-]
-
-export function CasesKpiStrip({ stats, activeFilter, onChangeFilter }: CasesKpiStripProps) {
+export function CasesKpiStrip({ stats, onChangeFilter }: Props) {
   return (
-    <div className="mb-5 flex flex-wrap gap-3">
-      {KPI_ITEMS.map((item) => {
-        const isClickable = Boolean(item.filter)
-        const isActive = activeFilter === item.filter
-
-        return (
-          <button
-            key={item.label}
-            type="button"
-            onClick={isClickable ? () => onChangeFilter(item.filter) : undefined}
-            className="relative min-w-[140px] flex-1 overflow-hidden rounded-xl border border-border bg-card p-4 px-[18px] text-left shadow-[0_1px_3px_rgba(0,0,0,0.06)] transition-all hover:shadow-md disabled:cursor-default"
-            disabled={!isClickable}
-            style={{
-              boxShadow: isClickable && isActive ? '0 0 0 1px rgba(14,165,233,0.14)' : undefined,
-              opacity: isClickable ? 1 : 0.98,
-            }}
-          >
-            <div className="absolute left-0 top-0 h-full w-1 rounded-l-xl" style={{ background: item.color }} />
-            <div className="mb-1 text-[11px] font-medium uppercase tracking-[0.5px] text-text-dim">
-              {item.label}
-            </div>
-            <div
-              className="font-mono font-extrabold"
-              style={{
-                color: item.color,
-                fontSize: item.compact ? '18px' : '24px',
-              }}
-            >
-              {item.value(stats)}
-            </div>
-            <div className="mt-0.5 text-[10px] text-text-mid">{item.sub(stats)}</div>
-          </button>
-        )
-      })}
+    <div className="kpi-row">
+      <div className="kpi-card clickable" onClick={() => onChangeFilter('Past SLA')} title="Cases past their due date — urgent">
+        <div className="kpi-accent" style={{ background: 'var(--red)' }} />
+        <div className="kpi-label">Past SLA</div>
+        <div className="kpi-value" style={{ color: 'var(--red)' }}>{formatIndian(stats.pastSla)}</div>
+        <div className="kpi-sub">{stats.active > 0 ? `${((stats.pastSla / stats.active) * 100).toFixed(1)}% of active` : 'no active cases'}</div>
+      </div>
+      <div className="kpi-card clickable" onClick={() => onChangeFilter('Assigned')} title="Cases assigned to inspector but not yet in progress">
+        <div className="kpi-accent" style={{ background: '#0EA5E9' }} />
+        <div className="kpi-label">Open</div>
+        <div className="kpi-value" style={{ color: '#0EA5E9' }}>{formatIndian(stats.open)}</div>
+        <div className="kpi-sub">awaiting inspection</div>
+      </div>
+      <div className="kpi-card clickable" onClick={() => onChangeFilter('In Progress')} title="Cases under active investigation">
+        <div className="kpi-accent" style={{ background: 'var(--amber)' }} />
+        <div className="kpi-label">In progress</div>
+        <div className="kpi-value" style={{ color: 'var(--amber)' }}>{formatIndian(stats.inProgress)}</div>
+        <div className="kpi-sub">includes {formatIndian(stats.escalated)} escalated</div>
+      </div>
+      <div className="kpi-card clickable" onClick={() => onChangeFilter('Confirmed Theft')} title="Theft confirmed — assessment generated">
+        <div className="kpi-accent" style={{ background: 'var(--green)' }} />
+        <div className="kpi-label">Confirmed</div>
+        <div className="kpi-value" style={{ color: 'var(--green)' }}>{formatIndian(stats.confirmed)}</div>
+        <div className="kpi-sub">cumulative this fiscal</div>
+      </div>
+      <div className="kpi-card" title="Average days from case creation to closure">
+        <div className="kpi-accent" style={{ background: 'var(--navy-light)' }} />
+        <div className="kpi-label">Avg time-to-close</div>
+        <div className="kpi-value" style={{ color: stats.avgClose > 3.5 ? 'var(--amber)' : 'var(--text)' }}>
+          {stats.avgClose} d
+        </div>
+        <div className="kpi-sub">target: 3.0 d {stats.avgClose > 3 ? '⚠' : '✓'}</div>
+      </div>
+      <div className="kpi-card" title="Recovered amount this fiscal year">
+        <div className="kpi-accent" style={{ background: 'var(--ai-purple)' }} />
+        <div className="kpi-label">Recovery</div>
+        <div className="kpi-value" style={{ color: 'var(--ai-purple)', fontSize: 18 }}>{fmtINR(stats.recovery)}</div>
+        <div className="kpi-sub">YTD · 62% realization</div>
+      </div>
     </div>
   )
 }

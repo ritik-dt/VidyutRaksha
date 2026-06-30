@@ -70,3 +70,7 @@ export interface CasesWatchlistItem extends CaseRecord {
   _synth: true
 }
 
+export interface CasesTrendPoint {
+  month: string
+  avgDays: number
+}

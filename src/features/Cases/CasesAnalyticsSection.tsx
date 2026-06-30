@@ -1,156 +1,345 @@
+/**
+ * CasesAnalyticsSection
+ * Uses Chart.js directly — same lib as prototype — so legend-click toggle,
+ * gradient fill, tension and tooltip are byte-for-byte identical.
+ */
+import { useEffect, useRef, useState } from 'react'
 import {
-  Cell,
-  CartesianGrid,
-  Line,
-  LineChart,
-  Pie,
-  PieChart,
-  ResponsiveContainer,
-  ReferenceLine,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts'
-import type { CasesStats } from './types'
+  Chart,
+  ArcElement, DoughnutController,
+  LineElement, PointElement, LineController,
+  CategoryScale, LinearScale,
+  Filler, Legend, Tooltip,
+} from 'chart.js'
+import { useToast } from '@/shared/context/ToastContext'
 import { fmtINR } from '@/features/Dashboard/adapter'
+import { formatIndian } from '@/shared/utils/formatters'
+import type { CasesStats, CasesTrendPoint } from './types'
 
-interface CasesAnalyticsSectionProps {
-  scopeName: string
-  stats: CasesStats
-  trend: Array<{ month: string; value: number }>
+Chart.register(
+  ArcElement, DoughnutController,
+  LineElement, PointElement, LineController,
+  CategoryScale, LinearScale,
+  Filler, Legend, Tooltip,
+)
+
+interface Props { scopeName: string; stats: CasesStats; trend: CasesTrendPoint[] }
+
+/* ─── Donut — exact prototype Chart.js config ─── */
+function DonutChart({ stats }: { stats: CasesStats }) {
+  const ref = useRef<HTMLCanvasElement>(null)
+  const ch  = useRef<Chart | null>(null)
+
+  useEffect(() => {
+    const el = ref.current; if (!el) return
+    try { ch.current?.destroy() } catch (_) {}
+    ch.current = new Chart(el, {
+      type: 'doughnut',
+      data: {
+        labels: ['Past SLA', 'Open', 'In progress', 'Confirmed', 'Closed/FP'],
+        datasets: [{
+          data: [stats.pastSla, stats.open, stats.inProgress, stats.confirmed, stats.closed],
+          backgroundColor: ['#FF4757', '#0EA5E9', '#FFA502', '#28A745', '#9CA3AF'],
+          borderWidth: 2,
+          borderColor: '#fff',
+        }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '62%',
+        plugins: {
+          legend: {
+            display: true,
+            position: 'right',
+            labels: {
+              usePointStyle: true,
+              padding: 14,
+              font: { size: 11, family: 'IBM Plex Sans, sans-serif' },
+              color: '#4A5568',
+            },
+          },
+          tooltip: {
+            backgroundColor: '#fff',
+            titleColor: '#1A1A2E',
+            bodyColor: '#4A5568',
+            borderColor: '#E2E8F0',
+            borderWidth: 1,
+            padding: 10,
+            cornerRadius: 8,
+            titleFont: { size: 11, family: 'IBM Plex Sans, sans-serif' },
+            bodyFont:  { size: 11, family: 'IBM Plex Sans, sans-serif' },
+            callbacks: {
+              label: (ctx: any) => {
+                const tot = (ctx.dataset.data as number[]).reduce((s: number, v: number) => s + v, 0)
+                const pct = tot > 0 ? ((ctx.parsed / tot) * 100).toFixed(1) : '0'
+                return `${ctx.label}: ${ctx.parsed.toLocaleString('en-IN')} (${pct}%)`
+              },
+            },
+          },
+        },
+      },
+    })
+    return () => { try { ch.current?.destroy() } catch (_) {} }
+  }, [stats.pastSla, stats.open, stats.inProgress, stats.confirmed, stats.closed])
+
+  return <canvas ref={ref} />
 }
 
-export function CasesAnalyticsSection({ scopeName, stats, trend }: CasesAnalyticsSectionProps) {
-  const chartData = [
-    { label: 'Past SLA', value: stats.pastSla, color: '#FF4757' },
-    { label: 'Open', value: stats.open, color: '#0EA5E9' },
-    { label: 'In progress', value: stats.inProgress, color: '#FFA502' },
-    { label: 'Confirmed', value: stats.confirmed, color: '#28A745' },
-    { label: 'Closed/FP', value: stats.closed, color: '#9CA3AF' },
-  ]
+/* ─── Trend — exact prototype Chart.js config ─── */
+function TrendChart({ trend, avgClose }: { trend: CasesTrendPoint[]; avgClose: number }) {
+  const ref = useRef<HTMLCanvasElement>(null)
+  const ch  = useRef<Chart | null>(null)
+
+  useEffect(() => {
+    const el = ref.current; if (!el) return
+    try { ch.current?.destroy() } catch (_) {}
+    const months = trend.map((p) => p.month)
+    const data   = trend.map((p) => p.avgDays)
+    ch.current = new Chart(el, {
+      type: 'line',
+      data: {
+        labels: months,
+        datasets: [
+          {
+            label: 'Avg days to close',
+            data,
+            borderColor: '#0EA5E9',
+            backgroundColor: 'rgba(14,165,233,0.08)',
+            fill: true,
+            tension: 0.35,
+            borderWidth: 2.5,
+            pointRadius: 3,
+            pointBackgroundColor: '#0EA5E9',
+          },
+          {
+            label: 'Target (3d)',
+            data: months.map(() => 3.0),
+            borderColor: 'rgba(40,167,69,0.6)',
+            borderDash: [5, 4],
+            borderWidth: 1.5,
+            pointRadius: 0,
+            fill: false,
+          } as any,
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: true,
+            position: 'bottom',
+            labels: {
+              usePointStyle: true,
+              padding: 12,
+              font: { size: 10.5, family: 'IBM Plex Sans, sans-serif' },
+              color: '#4A5568',
+            },
+          },
+          tooltip: {
+            backgroundColor: '#fff',
+            titleColor: '#1A1A2E',
+            bodyColor: '#4A5568',
+            borderColor: '#E2E8F0',
+            borderWidth: 1,
+            padding: 10,
+            cornerRadius: 8,
+            titleFont: { size: 11, family: 'IBM Plex Sans, sans-serif' },
+            bodyFont:  { size: 11, family: 'IBM Plex Sans, sans-serif' },
+            callbacks: {
+              label: (ctx: any) => `${ctx.dataset.label}: ${ctx.parsed.y}d`,
+            },
+          },
+        },
+        scales: {
+          x: {
+            grid: { display: false },
+            ticks: { font: { size: 10, family: 'IBM Plex Sans, sans-serif' }, color: '#8B95A5' },
+            border: { display: false },
+          },
+          y: {
+            grid: { color: '#EDF2F7' },
+            ticks: {
+              font: { size: 10, family: 'IBM Plex Sans, sans-serif' },
+              color: '#8B95A5',
+              callback: (v: any) => `${v}d`,
+            },
+            beginAtZero: true,
+            suggestedMax: Math.max(5, avgClose + 2),
+            border: { display: false, dash: [3, 3] },
+          },
+        },
+      },
+    })
+    return () => { try { ch.current?.destroy() } catch (_) {} }
+  }, [trend, avgClose])
+
+  return <canvas ref={ref} />
+}
+
+/* ─── ActionCard ─── */
+interface ACProps {
+  borderColor: string; icon: string; title: string
+  subColor: string; sub: string; body: React.ReactNode
+  btnLabel: string; btnBase: React.CSSProperties
+  btnHover?: React.CSSProperties; disabled: boolean; onClick: () => void
+}
+function ActionCard({ borderColor, icon, title, subColor, sub, body, btnLabel, btnBase, btnHover, disabled, onClick }: ACProps) {
+  const [hov, setHov] = useState(false)
+  return (
+    <div style={{
+      padding: '18px 16px 16px',
+      background: 'var(--card)',
+      border: '1px solid var(--border)',
+      borderRadius: 10,
+      borderTop: `3px solid ${borderColor}`,
+      display: 'flex', flexDirection: 'column',
+    }}>
+      {/* icon + title */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 10 }}>
+        <span style={{ fontSize: 20, lineHeight: 1, marginTop: 1 }}>{icon}</span>
+        <div>
+          <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--text)', lineHeight: 1.35 }}>{title}</div>
+          <div style={{ fontSize: 10.5, color: subColor, fontWeight: 600, marginTop: 3 }}>{sub}</div>
+        </div>
+      </div>
+      {/* body */}
+      <div style={{ fontSize: 11, color: 'var(--text-mid)', lineHeight: 1.65, marginBottom: 16, flex: 1 }}>{body}</div>
+      {/* CTA */}
+      <button
+        type="button" disabled={disabled} onClick={onClick}
+        onMouseEnter={() => !disabled && setHov(true)}
+        onMouseLeave={() => setHov(false)}
+        style={{
+          width: '100%', padding: '9px 12px', borderRadius: 7,
+          fontSize: 12, fontWeight: 700,
+          cursor: disabled ? 'not-allowed' : 'pointer',
+          transition: 'all .15s ease',
+          ...(hov && !disabled && btnHover ? { ...btnBase, ...btnHover } : btnBase),
+        }}
+      >
+        {btnLabel}
+      </button>
+    </div>
+  )
+}
+
+/* ─── Main ─── */
+export function CasesAnalyticsSection({ scopeName, stats, trend }: Props) {
+  const { showToast } = useToast()
+  const fpCandidates = Math.round(stats.closed  * 0.4)
+  const overCapacity = Math.max(1, Math.round(stats.active / 18))
+  const top42        = Math.round(stats.active  * 0.42)
 
   return (
     <>
-      <div
-        className="card mb-4"
-        style={{
-          background: 'linear-gradient(135deg, rgba(124,58,237,0.04), var(--card) 40%)',
-          border: '1px solid rgba(124,58,237,0.18)',
-        }}
-      >
-        <div className="mb-2 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2 text-[11px] font-bold" style={{ color: 'var(--ai-purple)' }}>
-            <span>✦ AI case advisor</span>
-            <span className="ai-live-badge">Live</span>
-          </div>
-          <span className="text-[10.5px] font-medium text-text-dim">{scopeName}</span>
-        </div>
-        <p className="text-[13px] leading-[1.75] text-text">
-          Across <strong>{scopeName}</strong>, <strong style={{ color: 'var(--red)' }}>
-            {stats.pastSla.toLocaleString('en-IN')} cases are past SLA
-          </strong> - recommend immediate escalation. <strong>{stats.confirmed.toLocaleString('en-IN')} confirmed</strong> theft cases have generated assessments worth <strong>{fmtINR(stats.recovery)}</strong> (at 62% realization). Closure rate is <strong>{stats.avgClose} days</strong>{' '}
-          {stats.avgClose > 3 ? '(above 3-day target - investigate inspector load)' : '(within 3-day target)'}.
-        </p>
-      </div>
+      {/* ══ Charts 2-col ══ */}
+      <div className="grid-2" style={{ marginTop: 14 }}>
 
-      <div className="mb-4 grid gap-4 lg:grid-cols-2">
-        <div className="card">
-          <div className="card-title mb-3">Case status distribution · {scopeName}</div>
-          <div className="text-[11px] text-text-dim">
-            {stats.total.toLocaleString('en-IN')} cases at this scope · {stats.active.toLocaleString('en-IN')} active · {Math.round((stats.confirmed / Math.max(stats.total, 1)) * 100)}% confirmed
+        {/* Donut */}
+        <div className="card" style={{ marginBottom: 0 }}>
+          <div className="card-title">📊 Case status distribution · {scopeName}</div>
+          <div className="page-sub" style={{ margin: '-2px 0 12px', fontSize: 10.5 }}>
+            {formatIndian(stats.total)} cases at this scope · {formatIndian(stats.active)} active ·{' '}
+            {stats.total > 0 ? Math.round((stats.confirmed / stats.total) * 100) : 0}% confirmed
           </div>
-          <div className="h-[270px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie data={chartData} dataKey="value" nameKey="label" innerRadius={72} outerRadius={110} paddingAngle={3}>
-                  {chartData.map((entry) => (
-                    <Cell key={entry.label} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  formatter={((value: unknown) => [Number(value ?? 0).toLocaleString('en-IN'), '']) as any}
-                />
-              </PieChart>
-            </ResponsiveContainer>
+          {/* height matches prototype screenshot exactly */}
+          <div style={{ position: 'relative', height: 240 }}>
+            <DonutChart stats={stats} />
           </div>
         </div>
 
-        <div className="card">
-          <div className="card-title mb-3">Closure-time trend · {scopeName} · 12 months</div>
-          <div className="text-[11px] text-text-dim">
+        {/* Closure trend */}
+        <div className="card" style={{ marginBottom: 0 }}>
+          <div className="card-title">📈 Closure-time trend · {scopeName} · 12 months</div>
+          <div className="page-sub" style={{ margin: '-2px 0 12px', fontSize: 10.5 }}>
             Avg {stats.avgClose}d at {scopeName}{' '}
-            <span style={{ color: stats.avgClose > 3 ? 'var(--amber)' : 'var(--green)', fontWeight: 700 }}>
-              {stats.avgClose > 3 ? 'above 3-day target' : 'within target'}
-            </span>
+            {stats.avgClose <= 3
+              ? <span style={{ color: 'var(--green)', fontWeight: 600 }}>✓ within 3-day target</span>
+              : <span style={{ color: 'var(--amber)', fontWeight: 600 }}>⚠ above 3-day target</span>}
             {' '}· target line dashed
           </div>
-          <div className="h-[270px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={trend}>
-                <CartesianGrid strokeDasharray="4 4" stroke="rgba(148,163,184,0.2)" />
-                <XAxis dataKey="month" tickLine={false} axisLine={{ stroke: 'rgba(148,163,184,0.35)' }} />
-                <YAxis domain={[0, 'auto']} tickLine={false} axisLine={false} />
-                <Tooltip />
-                <Line
-                  type="monotone"
-                  dataKey="value"
-                  stroke="#0EA5E9"
-                  strokeWidth={3}
-                  dot={{ r: 4, strokeWidth: 0, fill: '#0EA5E9' }}
-                  activeDot={{ r: 5 }}
-                />
-                <ReferenceLine y={3} stroke="rgba(34,197,94,0.55)" strokeDasharray="6 5" />
-              </LineChart>
-            </ResponsiveContainer>
+          <div style={{ position: 'relative', height: 240 }}>
+            <TrendChart trend={trend} avgClose={stats.avgClose} />
           </div>
         </div>
       </div>
 
-      <div className="card mb-2">
-        <div className="mb-3 flex items-center justify-between">
-          <div className="flex items-center gap-2 text-[14px] font-bold text-text">
-            <span>✦ AI-recommended actions · {scopeName}</span>
-            <span className="ai-live-badge">Live</span>
-          </div>
-          <span className="text-[11px] text-text-dim">Three highest-impact actions based on current workload</span>
+      {/* ══ AI recommended actions ══ */}
+      <div
+        className="card"
+        style={{
+          marginTop: 14,
+          border: '1px solid rgba(124,58,237,0.18)',
+          background: 'linear-gradient(180deg,rgba(124,58,237,0.025) 0%,rgba(124,58,237,0.005) 100%)',
+        }}
+      >
+        <div className="card-title" style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--ai-purple)', marginBottom: 4 }}>
+          ✦ AI-recommended actions · {scopeName}
+          <span className="ai-live-badge" style={{ marginLeft: 'auto' }}>Live</span>
         </div>
-        <div className="grid gap-3 lg:grid-cols-3">
-          <div className="rounded-xl border border-red-200 bg-white p-4 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
-            <div className="text-[12px] font-bold text-text">Auto-escalate past-SLA cases</div>
-            <div className="mt-1 text-[11px] font-semibold text-red-500">{stats.pastSla.toLocaleString('en-IN')} cases qualify in {scopeName}</div>
-            <p className="mt-3 text-[11.5px] leading-[1.6] text-text-mid">
-              Notify next-level supervisor and tag with priority flag. Escalated cases close faster than the average backlog.
-            </p>
-            <button type="button" className="btn btn-ai mt-4 w-full" style={{ justifyContent: 'center' }}>
-              Escalate {stats.pastSla.toLocaleString('en-IN')} →
-            </button>
-          </div>
+        <div className="page-sub" style={{ margin: '0 0 16px', fontSize: 10.5 }}>
+          Three highest-impact actions based on current workload at{' '}
+          <strong>{scopeName}</strong> · {formatIndian(stats.active)} active cases
+        </div>
 
-          <div className="rounded-xl border border-amber-200 bg-white p-4 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
-            <div className="text-[12px] font-bold text-text">Rebalance inspector load</div>
-            <div className="mt-1 text-[11px] font-semibold" style={{ color: 'var(--amber)' }}>
-              {Math.max(1, Math.round(stats.active * 0.12)).toLocaleString('en-IN')} inspectors over capacity
-            </div>
-            <p className="mt-3 text-[11.5px] leading-[1.6] text-text-mid">
-              Redistribute active cases so no inspector exceeds their practical daily load. The fastest closure teams should absorb overflow.
-            </p>
-            <button type="button" className="btn btn-outline mt-4 w-full" style={{ justifyContent: 'center' }}>
-              Review plan →
-            </button>
-          </div>
+        <div className="grid-3">
+          {/* Card 1 — Auto-escalate */}
+          <ActionCard
+            borderColor="var(--red)" icon="⚠" title="Auto-escalate past-SLA cases"
+            subColor="var(--red)"
+            sub={`${formatIndian(stats.pastSla)} cases qualify in ${scopeName}`}
+            body={<>
+              {stats.pastSla > 0
+                ? <>{formatIndian(stats.pastSla)} active case{stats.pastSla !== 1 ? 's are' : ' is'} past their due date in {scopeName}.</>
+                : <>No past-SLA cases in {scopeName}.</>
+              }{' '}
+              Notify next-level supervisor and tag with priority flag.
+              Escalated cases close <strong>1.4× faster</strong> on average.
+            </>}
+            btnLabel={stats.pastSla > 0 ? `Escalate ${formatIndian(stats.pastSla)} →` : 'Nothing to escalate'}
+            btnBase={stats.pastSla > 0
+              ? { background: 'linear-gradient(135deg,#FF4757 0%,#C0392B 100%)', color: '#fff', border: 'none' }
+              : { background: '#E5E7EB', color: '#9CA3AF', border: 'none', cursor: 'not-allowed' }
+            }
+            btnHover={stats.pastSla > 0 ? { background: 'linear-gradient(135deg,#D63031 0%,#8B1A25 100%)' } : undefined}
+            disabled={stats.pastSla === 0}
+            onClick={() => showToast({ type: 'success', title: 'Auto-escalation queued', message: `${formatIndian(stats.pastSla)} past-SLA cases at ${scopeName} escalated to next-level supervisor.`, duration: 5000 })}
+          />
 
-          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
-            <div className="text-[12px] font-bold text-text">Batch-close stale false positives</div>
-            <div className="mt-1 text-[11px] font-semibold text-text-mid">
-              {Math.max(20, Math.round(stats.closed * 0.18)).toLocaleString('en-IN')} candidates over 30 days in {scopeName}
-            </div>
-            <p className="mt-3 text-[11.5px] leading-[1.6] text-text-mid">
-              Clear out stale false positives that no longer require inspection. This trims clutter and keeps the active queue focused.
-            </p>
-            <button type="button" className="btn btn-outline mt-4 w-full" style={{ justifyContent: 'center' }}>
-              Close 350 →
-            </button>
-          </div>
+          {/* Card 2 — Rebalance */}
+          <ActionCard
+            borderColor="var(--amber)" icon="⚖" title="Rebalance inspector load"
+            subColor="var(--amber)"
+            sub={`${formatIndian(overCapacity)} inspector${overCapacity !== 1 ? 's' : ''} over capacity in ${scopeName}`}
+            body={<>
+              {scopeName}'s top inspectors hold{' '}
+              <strong>{formatIndian(top42)} of {formatIndian(stats.active)} active cases</strong>{' '}
+              (42%). Redistribute to keep per-inspector load under 18 cases.
+            </>}
+            btnLabel="Review plan →"
+            btnBase={{ background: '#fff', border: '1px solid var(--amber)', color: 'var(--amber)' }}
+            btnHover={{ background: 'var(--amber)', color: '#fff', border: '1px solid var(--amber)' }}
+            disabled={false}
+            onClick={() => showToast({ type: 'info', title: 'Rebalancing draft', message: `AI redistribution plan for ${scopeName} ready. Review on Team & Reports.`, duration: 5000 })}
+          />
+
+          {/* Card 3 — Batch-close */}
+          <ActionCard
+            borderColor="#6B7280" icon="🗑" title="Batch-close stale false positives"
+            subColor="#6B7280"
+            sub={`${fpCandidates} candidates ≥ 30d in ${scopeName}`}
+            body={<>
+              {fpCandidates} cases in {scopeName} marked False Positive remain open
+              ≥ 30 days. AI confidence on these closures is <strong>90%+</strong>.
+            </>}
+            btnLabel={`Close ${fpCandidates} →`}
+            btnBase={{ background: '#fff', border: '1px solid var(--border)', color: 'var(--text-mid)' }}
+            btnHover={{ background: '#6B7280', color: '#fff', border: '1px solid #6B7280' }}
+            disabled={fpCandidates === 0}
+            onClick={() => showToast({ type: 'success', title: 'Batch close queued', message: `${fpCandidates} stale false-positive cases at ${scopeName} will be closed.`, duration: 5000 })}
+          />
         </div>
       </div>
     </>

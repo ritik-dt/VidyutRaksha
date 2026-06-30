@@ -11,6 +11,7 @@ import { ROUTE_DEFINITIONS } from './routeConfig'
 import MetersPage from '@/features/Meters/MetersPage'
 import MeterDetailPage from '@/features/Meters/MeterDetailPage'
 import CasesPage from '@/features/Cases/CasesPage'
+import CaseDetailPage from '@/features/Cases/CaseDetailPage'
 import DiagnosticsPage from '@/features/Diagnostics/DiagnosticsPage'
 import AlertsPage from '@/features/Alerts/AlertsPage'
 import AnalyticsPage from '@/features/Analytics/AnalyticsPage'
@@ -45,6 +46,7 @@ function pageForScreen(screen: ScreenName) {
     case 'meters':       return <MetersPage />
     case 'meterDetail':  return <MeterDetailPage />
     case 'cases':        return <CasesPage />
+    case 'caseDetail':   return <CaseDetailPage />
     // case 'diagnostics':  return <DiagnosticsPage />
     // case 'alerts':       return <AlertsPage />
     // case 'analytics':    return <AnalyticsPage />

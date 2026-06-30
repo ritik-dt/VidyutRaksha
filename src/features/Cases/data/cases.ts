@@ -453,11 +453,103 @@ export function getCasesHierarchyRows(scopeId: string): CasesHierarchyRow[] {
     .sort((a, b) => b.pastSla - a.pastSla || b.total - a.total)
 }
 
-export function getCaseListRows(_scopeId: string): CaseRecord[] {
-  return [...CASES_LIST].sort((a, b) => {
-    const seedA = hashSeed(a.id)
-    const seedB = hashSeed(b.id)
-    return seedB - seedA
+const CONSUMER_POOL = [
+  { name: 'RAMESH KUMAR GUPTA',       activity: 'Atta Chakki',       load: 32,  unit: 'KW'  },
+  { name: 'SHIV SHAKTI INDUSTRIES',   activity: 'Manufacturing',      load: 85,  unit: 'KW'  },
+  { name: 'MEERA DEVI',               activity: 'Domestic',           load: 6,   unit: 'KW'  },
+  { name: 'KRISHNA COLD STORAGE',     activity: 'Cold storage',       load: 120, unit: 'KW'  },
+  { name: 'AGARWAL RICE MILL',        activity: 'Rice mill',          load: 95,  unit: 'KW'  },
+  { name: 'NATIONAL STEEL WORKS',     activity: 'Steel rolling mill', load: 220, unit: 'KW'  },
+  { name: 'SUNRISE HOSPITAL PVT LTD', activity: 'Private hospital',   load: 48,  unit: 'KW'  },
+  { name: 'PATEL TRADERS',            activity: 'Commercial',         load: 18,  unit: 'KW'  },
+  { name: 'DURGA FLOUR MILL',         activity: 'Flour mill',         load: 42,  unit: 'KW'  },
+  { name: 'CITY PALACE HOTEL',        activity: 'Hotel',              load: 65,  unit: 'KW'  },
+  { name: 'MODERN TEXTILE MILLS',     activity: 'Power loom',         load: 55,  unit: 'KW'  },
+  { name: 'SHREE RAM WAREHOUSE',      activity: 'Warehouse',          load: 24,  unit: 'KW'  },
+  { name: 'BAJAJ CEMENT WORKS',       activity: 'Manufacturing',      load: 180, unit: 'KW'  },
+  { name: 'SURESH OIL INDUSTRIES',    activity: 'Oil mill',           load: 88,  unit: 'KW'  },
+  { name: 'JANTA BANQUET HALL',       activity: 'Banquet hall',       load: 70,  unit: 'KW'  },
+  { name: 'NEW INDIA CHEMICALS',      activity: 'Chemical plant',     load: 380, unit: 'KW'  },
+  { name: 'SHUBH LAXMI NURSING HOME', activity: 'Private hospital',   load: 38,  unit: 'KW'  },
+  { name: 'HIMALAYA STEEL CORP',      activity: 'Steel rolling mill', load: 310, unit: 'KW'  },
+  { name: 'VISHNU ENTERPRISES',       activity: 'Commercial',         load: 22,  unit: 'KW'  },
+  { name: 'MOTHER DAIRY PLANT',       activity: 'Dairy',              load: 145, unit: 'KW'  },
+]
+
+const CASE_STATUSES: CaseRecord['status'][] = [
+  'Assigned', 'In Progress', 'Escalated', 'Confirmed Theft', 'False Positive', 'Closed',
+]
+
+export function getCaseListRows(scopeId: string): CaseRecord[] {
+  // Always include the 14 real + real-data records as prototype does
+  const base = [...CASES_LIST]
+
+  // Generate synthetic scope-specific rows to pad list (prototype note: same 14 everywhere)
+  // We add synthetic rows so deeper scopes feel populated
+  const scope = hierData[scopeId]
+  if (!scope) return base
+
+  const stats = getCasesScopeStats(scopeId)
+  if (!stats) return base
+
+  // Exact prototype seed for this scope
+  let h = 0
+  for (let ci = 0; ci < scopeId.length; ci++) {
+    h = (h * 31 + scopeId.charCodeAt(ci)) | 0
+  }
+  const scopeSeed = Math.abs(h)
+
+  // Build area pool from scope children or scope name
+  const areaPool: string[] = scope.children?.length
+    ? scope.children.map((ch: { name: string }) => ch.name)
+    : [scope.name]
+
+  // Generate up to 20 synthetic rows for this scope
+  const synthCount = Math.min(20, Math.max(0, stats.total - base.length))
+  const synthRows: CaseRecord[] = []
+
+  for (let i = 0; i < synthCount; i++) {
+    const s = Math.abs((scopeSeed + i * 137) | 0)
+    const consumer  = CONSUMER_POOL[s % CONSUMER_POOL.length]
+    const inspector = INSPECTOR_POOL[(s >> 3) % INSPECTOR_POOL.length]
+    const area      = areaPool[(s >> 5) % areaPool.length]
+    const risk      = 55 + (Math.abs(s >> 7) % 40)
+    const offsetCreated = -(30 + (Math.abs(s >> 9) % 60))
+    const offsetDue     = offsetCreated + (7 + (Math.abs(s >> 11) % 14))
+    const status    = CASE_STATUSES[Math.abs(s >> 13) % CASE_STATUSES.length]
+    const dayPart   = String(15 + (Math.abs(s >> 15) % 14)).padStart(2, '0')
+    const idSuffix  = String(100 + (Math.abs(s >> 17) % 899)).padStart(3, '0')
+    const meterId   = String(1000000 + (Math.abs(s >> 19) % 1000000))
+
+    synthRows.push({
+      id: `C-2026${dayPart}-${idSuffix}`,
+      meter: meterId,
+      consumer: consumer.name,
+      risk,
+      area,
+      status,
+      assignee: inspector,
+      created: buildDueDate(offsetCreated),
+      due: buildDueDate(offsetDue),
+      flags: 1 + (Math.abs(s >> 21) % 4),
+      scopeId,
+      _activity: consumer.activity,
+      _load: consumer.load,
+      _load_unit: consumer.unit,
+    })
+  }
+
+  // Merge: base first, then synthetic, deduplicate by id
+  const seen = new Set<string>()
+  const merged: CaseRecord[] = []
+  for (const r of [...base, ...synthRows]) {
+    if (!seen.has(r.id)) { seen.add(r.id); merged.push(r) }
+  }
+
+  // Sort by due date ascending (overdue first) matching prototype default
+  return merged.sort((a, b) => {
+    try { return +new Date(a.due) - +new Date(b.due) }
+    catch { return 0 }
   })
 }
 
@@ -466,28 +558,45 @@ export function getCasesWatchlist(scopeId: string, limit = 5): CasesWatchlistIte
   if (!stats || stats.pastSla <= 0) return []
 
   const scope = hierData[scopeId]
-  const areaPool = scope?.children?.length
-    ? scope.children.map((child) => child.name)
-    : [scope?.name ?? 'Unknown area']
+
+  // Build area pool from scope's children — exact prototype pattern
+  const areaPool: string[] = []
+  if (scope?.children?.length) {
+    scope.children.forEach((ch: { name: string }) => areaPool.push(ch.name))
+  } else {
+    areaPool.push(scope?.name ?? 'Unknown area')
+  }
+
+  // ── EXACT PROTOTYPE SEED ALGORITHM ─────────────────────────────────────────
+  // Prototype: let h = 0; for each char h = (h * 31 + charCode) | 0; seed = Math.abs(h)
+  // Then per-entry: s = (seed + i * 137) | 0
+  let h = 0
+  for (let ci = 0; ci < scopeId.length; ci++) {
+    h = (h * 31 + scopeId.charCodeAt(ci)) | 0
+  }
+  const scopeSeed = Math.abs(h)
+  // ──────────────────────────────────────────────────────────────────────────
 
   const count = Math.min(limit, stats.pastSla)
   const entries: CasesWatchlistItem[] = []
 
-  for (let i = 0; i < count; i += 1) {
-    const seed = hashSeed(`${scopeId}:${i}`)
-    const consumer = WATCHLIST_CONSUMERS[seed % WATCHLIST_CONSUMERS.length]
-    const inspector = INSPECTOR_POOL[(seed >> 3) % INSPECTOR_POOL.length]
-    const area = areaPool[(seed >> 5) % areaPool.length]
-    const risk = 70 + (seed % 26)
-    const overdueDays = 2 + ((seed >> 9) % 27)
+  for (let i = 0; i < count; i++) {
+    // exact prototype: s = (seed + i * 137) | 0
+    const s = Math.abs((scopeSeed + i * 137) | 0)
+
+    const consumer = WATCHLIST_CONSUMERS[s % WATCHLIST_CONSUMERS.length]
+    const inspector = INSPECTOR_POOL[(s >> 3) % INSPECTOR_POOL.length]
+    const area = areaPool[(s >> 5) % areaPool.length]
+    const risk = 70 + (Math.abs(s >> 7) % 26)
+    const overdueDays = 2 + (Math.abs(s >> 9) % 27)
     const valueScore = (risk / 50) * (1 + consumer.loadKW / 200)
-    const estValue = Math.round(550000 * valueScore + ((seed >> 11) % 200000))
-    const dayMonth = String(15 + ((seed >> 13) % 14)).padStart(2, '0') + 'Mar'
-    const idSuffix = String((seed >> 17) % 999).padStart(3, '0')
-    const caseId = `C-2026${dayMonth.substring(0, 2)}-${idSuffix}`
-    const meterId = String(1500000 + ((seed >> 19) % 500000))
+    const estValue = Math.round(550000 * valueScore + (Math.abs(s >> 11) % 200000))
+    const dayStr = String(15 + (Math.abs(s >> 13) % 14)).padStart(2, '0')
+    const idSuffix = String(Math.abs(s >> 17) % 999).padStart(3, '0')
+    const caseId = `C-2026${dayStr}-${idSuffix}`
+    const meterId = String(1500000 + (Math.abs(s >> 19) % 500000))
     const statusPool: CaseRecord['status'][] = ['Assigned', 'In Progress', 'Escalated']
-    const status = statusPool[(seed >> 21) % statusPool.length]
+    const status = statusPool[Math.abs(s >> 21) % statusPool.length]
 
     entries.push({
       id: caseId,
@@ -499,7 +608,7 @@ export function getCasesWatchlist(scopeId: string, limit = 5): CasesWatchlistIte
       risk,
       created: buildDueDate(-overdueDays - 12),
       due: buildDueDate(-overdueDays),
-      flags: 2 + ((seed >> 7) % 3),
+      flags: 2 + (Math.abs(s >> 7) % 3),
       scopeId,
       overdueDays,
       estValue,
@@ -535,8 +644,13 @@ export function getCaseStatusLabel(statusFilter: string): string {
   }
 }
 
-export function getCasesClosureTrend(scopeId: string, avgClose: number): Array<{ month: string; value: number }> {
-  const seed = hashSeed(scopeId)
+export function getCasesClosureTrend(scopeId: string, avgClose: number): Array<{ month: string; avgDays: number }> {
+  // Exact prototype seed: h = (h * 31 + charCode) | 0, then Math.abs(h)
+  let h = 0
+  for (let ci = 0; ci < scopeId.length; ci++) {
+    h = (h * 31 + scopeId.charCodeAt(ci)) | 0
+  }
+  const seed = Math.abs(h)
   const months = ['May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar', 'Apr']
   const startVal = avgClose + 1.4
   const endVal = avgClose
@@ -544,10 +658,7 @@ export function getCasesClosureTrend(scopeId: string, avgClose: number): Array<{
     const t = index / (months.length - 1)
     const linear = startVal + (endVal - startVal) * t
     const noise = (((seed >> (index % 12)) % 7) - 3) * 0.08
-    return {
-      month,
-      value: +(linear + noise).toFixed(2),
-    }
+    return { month, avgDays: +(linear + noise).toFixed(2) }
   })
 }
 
