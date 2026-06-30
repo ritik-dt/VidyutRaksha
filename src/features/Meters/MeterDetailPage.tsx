@@ -11,9 +11,7 @@ import { LoadProfileTab } from './components/LoadProfileTab'
 import { DailyConsumptionTab } from './components/DailyConsumptionTab'
 import { BillingHistoryTab } from './components/BillingHistoryTab'
 import { TamperEventsTab } from './components/TamperEventsTab'
-import {
-  MeterInfoTab,
-} from './components/MeterDetailTabs'
+import { MeterInfoTab } from './components/MeterInfoTab'
 import { useToast } from '@/shared/context/ToastContext'
 import { getPathForScreen } from '@/shared/utils/navigation'
 import {
@@ -75,7 +73,7 @@ export default function MeterDetailPage() {
   }, null)
 
   return (
-    <div className="pb-4">
+    <div className="pb-2">
       {/* Back link */}
       <button
         type="button"
