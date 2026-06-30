@@ -39,7 +39,7 @@ export default function RulesPage() {
   }
 
   return (
-    <div className="pb-8">
+    <div className="pb-2">
       <PageHeader
         title="🔧 Detection rules"
         subtitle="Configure the rule engine powering the suspicious meter detection pipeline"

@@ -18,7 +18,7 @@ export default function MobilePage() {
   const { showToast } = useToast()
 
   return (
-    <div className="pb-8">
+    <div className="pb-2">
       <PageHeader
         title="📱 Inspector mobile app"
         subtitle="Full-featured field app — offline mode, photo capture, geo-tag, e-signature"

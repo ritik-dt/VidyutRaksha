@@ -50,7 +50,7 @@ export default function ReportsPage() {
   })
 
   return (
-    <div className="pb-8">
+    <div className="pb-2">
       <PageHeader
         title="📄 Reports"
         subtitle="Statutory filings, operational summaries, and AI-generated analytics reports"

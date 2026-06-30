@@ -64,7 +64,7 @@ export default function TeamPage() {
   }))
 
   return (
-    <div className="pb-8">
+    <div className="pb-2">
       <PageHeader
         title="👥 Team & inspectors"
         subtitle={`${INSPECTORS.length} inspectors · ${inField} in field · ${utilPct}% capacity utilized`}

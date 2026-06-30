@@ -39,7 +39,7 @@ export default function NetworkMapPage() {
   const selectedFeeder = selected ? FEEDERS.find((f) => f.id === selected) : null
 
   return (
-    <div className="pb-8">
+    <div className="pb-2">
       <PageHeader
         title="🗺️ Network map"
         subtitle="Feeder-level GIS view · click any feeder to drill in"

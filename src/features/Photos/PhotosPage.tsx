@@ -44,7 +44,7 @@ export default function PhotosPage() {
   const verified = PHOTOS.filter((p) => p.verified).length
 
   return (
-    <div className="pb-8">
+    <div className="pb-2">
       <PageHeader
         title="📷 Field evidence photos"
         subtitle="AI-verified, geo-tagged inspection photos — court-ready evidence"

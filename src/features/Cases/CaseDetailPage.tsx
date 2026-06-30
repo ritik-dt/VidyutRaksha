@@ -168,7 +168,7 @@ export default function CaseDetailPage() {
   const showDossier = ['Confirmed Theft','In Progress','Escalated','Assigned'].includes(cs.status)
 
   return (
-    <div className="pb-8">
+    <div className="pb-2">
       {/* back link */}
       <button type="button" className="back-link" onClick={() => navigate('/cases')}>
         ← Back to cases

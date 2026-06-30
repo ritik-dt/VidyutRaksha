@@ -42,7 +42,7 @@ export default function ForecastPage() {
   const { showToast } = useToast()
 
   return (
-    <div className="pb-8">
+    <div className="pb-2">
       <PageHeader
         title="📈 Forecast"
         subtitle="AI-powered AT&C loss trajectory and demand forecasting · UPPCL FY26"

@@ -97,7 +97,7 @@ export default function NLQueryPage() {
   }
 
   return (
-    <div className="pb-8">
+    <div className="pb-2">
       <div className="mx-auto max-w-[680px]">
         {/* Hero */}
         <div className="mb-6 text-center">

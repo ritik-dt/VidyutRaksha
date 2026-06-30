@@ -70,7 +70,7 @@ export default function AuditPage() {
   })
 
   return (
-    <div className="pb-8">
+    <div className="pb-2">
       <PageHeader
         title="🔍 Audit trail"
         subtitle="Immutable, tamper-evident log of all system and user actions · cryptographically signed"

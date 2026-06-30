@@ -46,7 +46,7 @@ export default function NotificationsPage() {
   }
 
   return (
-    <div className="pb-8">
+    <div className="pb-2">
       <PageHeader
         title="🔔 Notifications"
         subtitle={`${unreadCount} unread · mentions, assignments, AI alerts, and system events`}

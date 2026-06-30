@@ -39,7 +39,7 @@ export default function CasesPage() {
   const drawerRecords = drawerState ? getCaseListRows(drawerState.scopeId) : []
 
   return (
-    <div className="pb-8">
+    <div className="pb-2">
       {/* ── PAGE HEADER ── */}
       <div className="page-header">
         <div>

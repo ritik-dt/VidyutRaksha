@@ -15,7 +15,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="dashboard-page space-y-0 pb-8">
+    <div className="dashboard-page space-y-0 pb-2">
       <DashboardHeader />
       <DashboardKpis />
       {/* <DashboardAiAnalysis /> */}

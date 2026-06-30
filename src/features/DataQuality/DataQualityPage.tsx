@@ -44,7 +44,7 @@ export default function DataQualityPage() {
   const overallHealth = Math.round((healthyCount / SOURCES.length) * 100)
 
   return (
-    <div className="pb-8">
+    <div className="pb-2">
       <PageHeader
         title="📡 Data quality monitoring"
         subtitle="Real-time health of MRI ingestion pipeline, meter communication, and data completeness"

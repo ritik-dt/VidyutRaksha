@@ -66,7 +66,7 @@ export default function MetersPage() {
   }
 
   return (
-    <div className="pb-8">
+    <div className="pb-2">
       {/* ===== Page header ===== */}
       <PageHeader
         title="⚠️ Suspicious meters"

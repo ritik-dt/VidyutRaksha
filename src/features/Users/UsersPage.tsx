@@ -52,7 +52,7 @@ export default function UsersPage() {
   const active = USERS.filter(u => u.status === 'Active').length
 
   return (
-    <div className="pb-8">
+    <div className="pb-2">
       <PageHeader
         title="👥 Users & access"
         subtitle="Manage VidyutRaksha users, roles, and permissions"

@@ -67,7 +67,7 @@ export default function ComparePage() {
   const newRoi = newRecovery / 1.8
 
   return (
-    <div className="pb-8">
+    <div className="pb-2">
       <PageHeader
         title="⇄ Comparative & trend analysis"
         subtitle="Peer comparison, year-over-year, before/after impact, and percentile ranking"

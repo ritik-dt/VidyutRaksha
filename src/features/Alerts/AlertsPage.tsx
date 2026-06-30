@@ -95,7 +95,7 @@ export default function AlertsPage() {
   }
 
   return (
-    <div className="pb-8">
+    <div className="pb-2">
       <PageHeader
         title="🔔 Alerts & notifications"
         subtitle="Real-time alerts from detection engine, network health, and program events"

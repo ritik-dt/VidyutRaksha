@@ -28,7 +28,7 @@ export default function ExecutivePage() {
   const { showToast } = useToast()
 
   return (
-    <div className="pb-8">
+    <div className="pb-2">
       <PageHeader
         title="👔 Executive view"
         subtitle="Chairman / CMD dashboard · UPPCL state-wide performance · FY 2025-26"

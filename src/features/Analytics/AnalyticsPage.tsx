@@ -57,7 +57,7 @@ export default function AnalyticsPage() {
   const avgAsai = (SAIDI_DATA.reduce((s, d) => s + d.asai, 0) / SAIDI_DATA.length).toFixed(2)
 
   return (
-    <div className="pb-8">
+    <div className="pb-2">
       <PageHeader
         title="Energy audit & analytics"
         subtitle={`Scoped to: ${scopeName} · ${level?.type ?? 'State'}`}

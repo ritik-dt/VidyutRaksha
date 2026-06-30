@@ -73,7 +73,7 @@ export default function NoticesPage() {
   const filtered = NOTICES.filter((n) => filter === 'all' || n.status === filter)
 
   return (
-    <div className="pb-8">
+    <div className="pb-2">
       <PageHeader
         title="📄 Consumer notices"
         subtitle="Auto-generated Section 135 notices · track dispatch, acknowledgement and appeals"

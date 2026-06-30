@@ -55,7 +55,7 @@ export default function AssessmentPage() {
   const pendingAmount = assessments.filter((a: Assessment) => !a.approved && a.status !== 'Disputed').reduce((s: number, a: Assessment) => s + a.amount, 0)
 
   return (
-    <div className="pb-8">
+    <div className="pb-2">
       <PageHeader
         title="⚖️ Assessment"
         subtitle="Revenue assessment workflow — create, review, approve and generate recovery notices"

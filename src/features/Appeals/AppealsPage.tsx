@@ -40,7 +40,7 @@ export default function AppealsPage() {
   const settled = APPEALS.filter((a) => a.status === 'Settled' || a.status === 'Dismissed').length
 
   return (
-    <div className="pb-8">
+    <div className="pb-2">
       <PageHeader
         title="⚖️ Appeals"
         subtitle="Consumer appeals against Section 135 assessments · track hearings and outcomes"

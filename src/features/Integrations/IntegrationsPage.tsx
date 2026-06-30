@@ -22,7 +22,7 @@ export default function IntegrationsPage() {
   const warning = INTEGRATIONS.filter(i => i.status === 'Warning').length
 
   return (
-    <div className="pb-8">
+    <div className="pb-2">
       <PageHeader
         title="🔗 Integrations"
         subtitle="Connected systems, data pipelines, and third-party services"

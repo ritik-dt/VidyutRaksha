@@ -36,7 +36,7 @@ export default function DiagnosticsPage() {
       : 'no reports trending up'
 
   return (
-    <div className="pb-8">
+    <div className="pb-2">
       <PageHeader
         title="🚨 Tamper & anomaly reports"
         subtitle={

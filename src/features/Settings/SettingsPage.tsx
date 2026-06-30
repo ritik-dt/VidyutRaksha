@@ -53,7 +53,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="pb-8">
+    <div className="pb-2">
       <PageHeader
         title="⚙️ Settings"
         subtitle={`Notification preferences for ${role?.label ?? 'your role'} · changes apply to your role only`}

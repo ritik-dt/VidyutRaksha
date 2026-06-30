@@ -66,7 +66,7 @@ export default function DtLoadPage() {
   const highLoss = DTS.filter((d) => d.loss > 15).length
 
   return (
-    <div className="pb-8">
+    <div className="pb-2">
       <PageHeader
         title="⚡ Load management"
         subtitle="Distribution transformer health, loading, loss and 90-day projection"

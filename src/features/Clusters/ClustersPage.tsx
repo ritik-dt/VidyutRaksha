@@ -47,7 +47,7 @@ export default function ClustersPage() {
   const totalConfirmed = CLUSTERS.reduce((s, c) => s + c.confirmed, 0)
 
   return (
-    <div className="pb-8">
+    <div className="pb-2">
       <PageHeader
         title="🕸️ Coordinated theft clusters"
         subtitle="AI-detected groups where multiple consumers in the same DTR or feeder show synchronized theft patterns"

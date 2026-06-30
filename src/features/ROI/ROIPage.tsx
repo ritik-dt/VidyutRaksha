@@ -26,7 +26,7 @@ export default function ROIPage() {
   const { showToast } = useToast()
 
   return (
-    <div className="pb-8">
+    <div className="pb-2">
       <PageHeader
         title="💼 ROI & business case"
         subtitle="Financial case for state-wide rollout · UPPCL · 15-lakh smart-meter footprint · Procurement grade"
