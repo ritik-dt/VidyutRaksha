@@ -30,7 +30,7 @@ export function AiActionsPanel({ scopeName, criticalCount, highCount, estMonthly
       }}
     >
       <div className="card-title mb-3 flex items-center justify-between">
-        <span className="flex items-center gap-2">
+        <span className="flex items-center gap-2 font-bold">
           ✦ <span>AI-recommended actions for {scopeName}</span>
           <span className="ai-live-badge">Live</span>
         </span>
