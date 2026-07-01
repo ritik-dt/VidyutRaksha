@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type RefObject, type MouseEvent, type ChangeEvent, type FocusEvent } from 'react'
+import { useEffect, useRef, useState, type RefObject, type MouseEvent as ReactMouseEvent, type ChangeEvent, type FocusEvent } from 'react'
 import { useScope } from '@/shared/context/ScopeContext'
 import { ScopeTree } from './ScopeTree'
 
@@ -26,7 +26,7 @@ export function ScopePicker({ anchorRef }: ScopePickerProps) {
       return
     }
 
-    const handleClickOutside = (event: MouseEvent) => {
+    const handleClickOutside = (event: globalThis.MouseEvent) => {
       const target = event.target as Node
       if (
         menuRef.current?.contains(target) ||
@@ -122,10 +122,10 @@ export function ScopePicker({ anchorRef }: ScopePickerProps) {
               padding: '2px 6px',
               borderRadius: 4,
             }}
-            onMouseEnter={(event: MouseEvent<HTMLButtonElement>) => {
+            onMouseEnter={(event: ReactMouseEvent<HTMLButtonElement>) => {
               event.currentTarget.style.background = 'var(--bg)'
             }}
-            onMouseLeave={(event: MouseEvent<HTMLButtonElement>) => {
+            onMouseLeave={(event: ReactMouseEvent<HTMLButtonElement>) => {
               event.currentTarget.style.background = 'transparent'
             }}
           >

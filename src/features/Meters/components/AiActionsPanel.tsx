@@ -1,7 +1,5 @@
-import { useNavigate } from 'react-router-dom'
 import { fmtINR } from '@/features/Dashboard/adapter'
 import { useToast } from '@/shared/context/ToastContext'
-import { getPathForScreen } from '@/shared/utils/navigation'
 
 interface AiActionsPanelProps {
   scopeName: string
@@ -15,7 +13,6 @@ interface AiActionsPanelProps {
  * 1. Auto-create critical cases  2. Schedule field-inspection batch  3. Draft Section 135 notices
  */
 export function AiActionsPanel({ scopeName, criticalCount, highCount, estMonthlyLoss }: AiActionsPanelProps) {
-  const navigate = useNavigate()
   const { showToast } = useToast()
 
   const topN = Math.min(20, criticalCount)

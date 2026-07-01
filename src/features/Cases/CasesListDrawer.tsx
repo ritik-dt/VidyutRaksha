@@ -1,6 +1,6 @@
 /**
  * CasesListDrawer — exact port of prototype's openCaseList + renderCaseListPage
- * panel.style: maxWidth:800px, height:100vh, borderRadius:14px 0 0 14px
+ * panel: maxWidth 800px, height 100vh, rounded left side
  */
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -21,23 +21,18 @@ interface Props {
 }
 
 /* ── status badge — exact prototype sBadge() map ── */
-const STATUS_MAP: Record<string, { c: string; bg: string }> = {
-  'Assigned':        { c: '#0EA5E9', bg: 'rgba(14,165,233,0.1)'  },
-  'In Progress':     { c: '#E6921E', bg: 'rgba(230,146,30,0.1)'  },
-  'Escalated':       { c: '#DC3545', bg: 'rgba(220,53,69,0.1)'   },
-  'Confirmed Theft': { c: '#28A745', bg: 'rgba(40,167,69,0.1)'   },
-  'False Positive':  { c: '#6B7280', bg: 'rgba(107,114,128,0.1)' },
-  'Closed':          { c: '#6B7280', bg: 'rgba(107,114,128,0.1)' },
+const STATUS_MAP: Record<string, string> = {
+  'Assigned':        'border-[#0EA5E94d] bg-[rgba(14,165,233,0.1)] text-[#0EA5E9]',
+  'In Progress':     'border-[#E6921E4d] bg-[rgba(230,146,30,0.1)] text-[#E6921E]',
+  'Escalated':       'border-[#DC35454d] bg-[rgba(220,53,69,0.1)] text-[#DC3545]',
+  'Confirmed Theft': 'border-[#28A7454d] bg-[rgba(40,167,69,0.1)] text-[#28A745]',
+  'False Positive':  'border-[#6B72804d] bg-[rgba(107,114,128,0.1)] text-[#6B7280]',
+  'Closed':          'border-[#6B72804d] bg-[rgba(107,114,128,0.1)] text-[#6B7280]',
 }
 function StatusBadge({ status }: { status: string }) {
-  const x = STATUS_MAP[status] ?? { c: 'var(--text-dim)', bg: 'rgba(0,0,0,0.05)' }
+  const cls = STATUS_MAP[status] ?? 'border-[rgba(0,0,0,0.05)] bg-[rgba(0,0,0,0.05)] text-text-dim'
   return (
-    <span style={{
-      display: 'inline-block', padding: '2px 8px',
-      background: x.bg, color: x.c,
-      border: `1px solid ${x.c}40`,
-      borderRadius: 10, fontSize: 9.5, fontWeight: 700, letterSpacing: '.2px',
-    }}>
+    <span className={`inline-block rounded-[10px] border px-2 py-0.5 text-[9.5px] font-bold tracking-[0.2px] ${cls}`}>
       {status}
     </span>
   )
@@ -56,25 +51,23 @@ function isPastSla(c: CaseRecord) {
   } catch { return false }
 }
 
-/* ── status pill button — exact prototype inline style ── */
-function Pill({
-  label, active, activeColor,
-  baseColor, baseBg, borderBase, onClick,
-}: {
-  label: string; active: boolean; activeColor: string
-  baseColor: string; baseBg: string; borderBase: string; onClick: () => void
-}) {
+/* ── status pill button — variant-based Tailwind classes ── */
+type PillVariant = 'all' | 'pastsla' | 'open' | 'inprogress' | 'confirmed' | 'closed'
+const PILL_CLASSES: Record<PillVariant, { active: string; inactive: string }> = {
+  all:        { active: 'border-[#0EA5E9] bg-[#0EA5E9] text-white', inactive: 'border-border bg-card text-text' },
+  pastsla:    { active: 'border-[#FF4757] bg-[#FF4757] text-white', inactive: 'border-[rgba(255,71,87,0.3)] bg-[rgba(255,71,87,0.08)] text-[#D43645]' },
+  open:       { active: 'border-[#0EA5E9] bg-[#0EA5E9] text-white', inactive: 'border-[rgba(14,165,233,0.3)] bg-[rgba(14,165,233,0.08)] text-[#0284C7]' },
+  inprogress: { active: 'border-[#E6921E] bg-[#E6921E] text-white', inactive: 'border-[rgba(230,146,30,0.3)] bg-[rgba(230,146,30,0.08)] text-[var(--amber-dark)]' },
+  confirmed:  { active: 'border-[#28A745] bg-[#28A745] text-white', inactive: 'border-[rgba(40,167,69,0.3)] bg-[rgba(40,167,69,0.08)] text-[#1E7E34]' },
+  closed:     { active: 'border-[#6B7280] bg-[#6B7280] text-white', inactive: 'border-[rgba(107,114,128,0.3)] bg-[rgba(107,114,128,0.08)] text-[#4B5563]' },
+}
+function Pill({ label, active, variant, onClick }: { label: string; active: boolean; variant: PillVariant; onClick: () => void }) {
+  const cls = active ? PILL_CLASSES[variant].active : PILL_CLASSES[variant].inactive
   return (
     <button
       type="button"
       onClick={onClick}
-      style={{
-        padding: '5px 11px', borderRadius: 14, fontSize: 11, fontWeight: 600,
-        cursor: 'pointer', transition: 'all .15s',
-        border: `1px solid ${active ? activeColor : borderBase}`,
-        background: active ? activeColor : baseBg,
-        color: active ? '#fff' : baseColor,
-      }}
+      className={`cursor-pointer rounded-[14px] border px-[11px] py-[5px] text-[11px] font-semibold transition-all duration-150 ${cls}`}
     >
       {label}
     </button>
@@ -87,22 +80,7 @@ function ViewBtn({ onClick }: { onClick: (e: React.MouseEvent) => void }) {
     <button
       type="button"
       onClick={onClick}
-      style={{
-        padding: '4px 10px', background: 'transparent',
-        border: '1px solid var(--border)', borderRadius: 6,
-        fontSize: 10.5, fontWeight: 600, color: '#0EA5E9',
-        cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all .15s',
-      }}
-      onMouseOver={(e) => {
-        e.currentTarget.style.background = '#0EA5E9'
-        e.currentTarget.style.color = '#fff'
-        e.currentTarget.style.borderColor = '#0EA5E9'
-      }}
-      onMouseOut={(e) => {
-        e.currentTarget.style.background = 'transparent'
-        e.currentTarget.style.color = '#0EA5E9'
-        e.currentTarget.style.borderColor = 'var(--border)'
-      }}
+      className="cursor-pointer rounded-md border border-border px-2.5 py-1 text-[10.5px] font-semibold whitespace-nowrap text-[#0EA5E9] transition-all duration-150 hover:border-[#0EA5E9] hover:bg-[#0EA5E9] hover:text-white"
     >
       View →
     </button>
@@ -115,13 +93,7 @@ function PageBtn({ label, active, onClick }: { label: string; active?: boolean; 
     <button
       type="button"
       onClick={onClick}
-      style={{
-        padding: '5px 11px', minWidth: 30,
-        border: `1px solid ${active ? '#0EA5E9' : 'var(--border)'}`,
-        background: active ? '#0EA5E9' : '#fff',
-        color: active ? '#fff' : 'var(--text)',
-        borderRadius: 6, fontSize: 11, fontWeight: active ? 700 : 600, cursor: 'pointer',
-      }}
+      className={`min-w-[30px] rounded-md border px-[11px] py-[5px] text-[11px] ${active ? 'border-[#0EA5E9] bg-[#0EA5E9] font-bold text-white' : 'border-border bg-white font-semibold text-text'}`}
     >
       {label}
     </button>
@@ -239,87 +211,75 @@ export function CasesListDrawer({ scopeName, scopeType, stats, records, initialS
     : statusFilter === 'Closed'          ? 'Showing Closed cases'
     : 'All cases at this scope'
 
+  const breakdownBars: [string, string, string][] = [
+    ['#FF4757', pPct, `Past SLA: ${formatIndian(stats.pastSla)}`],
+    ['#0EA5E9', oPct, `Open: ${formatIndian(stats.open)}`],
+    ['#FFA502', iPct, `In progress: ${formatIndian(stats.inProgress)}`],
+    ['#28A745', cPct, `Confirmed: ${formatIndian(stats.confirmed)}`],
+    ['#9CA3AF', xPct, `Closed: ${formatIndian(stats.closed)}`],
+  ]
+  const breakdownLegend: [string, string][] = [
+    ['#FF4757', `Past SLA ${formatIndian(stats.pastSla)} (${Math.round(+pPct)}%)`],
+    ['#0EA5E9', `Open ${formatIndian(stats.open)} (${Math.round(+oPct)}%)`],
+    ['#FFA502', `In progress ${formatIndian(stats.inProgress)} (${Math.round(+iPct)}%)`],
+    ['#28A745', `Confirmed ${formatIndian(stats.confirmed)} (${Math.round(+cPct)}%)`],
+    ['#9CA3AF', `Closed ${formatIndian(stats.closed)} (${Math.round(+xPct)}%)`],
+  ]
+
   return (
     <>
       {/* backdrop */}
-      <div
-        style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)', backdropFilter: 'blur(2px)', zIndex: 40 }}
-        onClick={onClose}
-      />
+      <div className="fixed inset-0 z-40 bg-black/35 backdrop-blur-[2px]" onClick={onClose} />
 
       {/* panel — exact prototype: maxWidth:800px, width:90vw, height:100vh */}
-      <div
-        style={{
-          position: 'fixed', right: 0, top: 0, zIndex: 50,
-          maxWidth: 800, width: '90vw', height: '100vh',
-          display: 'flex', flexDirection: 'column',
-          borderRadius: '14px 0 0 14px', overflow: 'hidden',
-          boxShadow: '-16px 0 48px rgba(15,23,42,0.22)',
-          background: 'var(--card)',
-        }}
-      >
+      <div className="fixed top-0 right-0 z-50 flex h-screen w-[90vw] max-w-[800px] flex-col overflow-hidden rounded-l-[14px] bg-card shadow-[-16px_0_48px_rgba(15,23,42,0.22)]">
         {/* ═══ HEADER ═══ */}
-        <div style={{
-          background: 'linear-gradient(135deg,rgba(14,165,233,0.95) 0%,rgba(2,132,199,0.95) 100%)',
-          color: '#fff', padding: '18px 22px 0', flexShrink: 0,
-        }}>
+        <div className="shrink-0 bg-[linear-gradient(135deg,rgba(14,165,233,0.95)_0%,rgba(2,132,199,0.95)_100%)] px-[22px] pt-[18px] text-white">
           {/* top row */}
-          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 14 }}>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 9.5, fontWeight: 700, letterSpacing: '.6px', textTransform: 'uppercase', color: 'rgba(255,255,255,0.75)', marginBottom: 4 }}>
-                <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: '#fff', boxShadow: '0 0 8px #fff' }} />
+          <div className="flex items-start justify-between gap-3.5">
+            <div className="min-w-0 flex-1">
+              <div className="mb-1 flex items-center gap-2 text-[9.5px] font-bold tracking-[0.6px] text-[rgba(255,255,255,0.75)] uppercase">
+                <span className="inline-block size-1.5 rounded-full bg-white shadow-[0_0_8px_#fff]" />
                 Live case workload · {scopeType} scope
               </div>
-              <div style={{ fontSize: 20, fontWeight: 800, lineHeight: 1.2, marginBottom: 5 }}>{scopeName}</div>
-              <div style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.85)', fontWeight: 500 }}>
+              <div className="mb-[5px] text-xl leading-[1.2] font-extrabold">{scopeName}</div>
+              <div className="text-[11.5px] font-medium text-[rgba(255,255,255,0.85)]">
                 {filterLabel} · <strong>{filtered.length} matching{filtered.length !== records.length ? ` of ${formatIndian(records.length)}` : ''}</strong>
               </div>
             </div>
             {/* totals */}
-            <div style={{ display: 'flex', gap: 14, alignItems: 'center', flexShrink: 0 }}>
-              <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: 9.5, color: 'rgba(255,255,255,0.7)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.4px' }}>Total cases</div>
-                <div style={{ fontSize: 22, fontWeight: 800, lineHeight: 1.1, fontFamily: 'var(--mono)' }}>{formatIndian(stats.total)}</div>
-                <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.7)' }}>{formatIndian(stats.active)} active · {stats.avgClose}d avg close</div>
+            <div className="flex shrink-0 items-center gap-3.5">
+              <div className="text-right">
+                <div className="text-[9.5px] font-bold tracking-[0.4px] text-[rgba(255,255,255,0.7)] uppercase">Total cases</div>
+                <div className="font-mono text-[22px] leading-[1.1] font-extrabold">{formatIndian(stats.total)}</div>
+                <div className="text-[10px] text-[rgba(255,255,255,0.7)]">{formatIndian(stats.active)} active · {stats.avgClose}d avg close</div>
               </div>
-              <div style={{ width: 1, height: 46, background: 'rgba(255,255,255,0.25)' }} />
-              <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: 9.5, color: 'rgba(255,255,255,0.7)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.4px' }}>Recovery YTD</div>
-                <div style={{ fontSize: 22, fontWeight: 800, lineHeight: 1.1, color: '#FFD93D', fontFamily: 'var(--mono)' }}>{fmtINR(stats.recovery)}</div>
-                <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.7)' }}>62% realization</div>
+              <div className="h-[46px] w-px bg-[rgba(255,255,255,0.25)]" />
+              <div className="text-right">
+                <div className="text-[9.5px] font-bold tracking-[0.4px] text-[rgba(255,255,255,0.7)] uppercase">Recovery YTD</div>
+                <div className="font-mono text-[22px] leading-[1.1] font-extrabold text-[#FFD93D]">{fmtINR(stats.recovery)}</div>
+                <div className="text-[10px] text-[rgba(255,255,255,0.7)]">62% realization</div>
               </div>
               {/* close */}
               <button
                 type="button" onClick={onClose}
-                style={{ background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.2)', cursor: 'pointer', fontSize: 18, color: '#fff', lineHeight: 1, width: 30, height: 30, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', alignSelf: 'flex-start', flexShrink: 0 }}
-                onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.22)' }}
-                onMouseOut={(e)  => { e.currentTarget.style.background = 'rgba(255,255,255,0.12)' }}
+                className="flex size-[30px] shrink-0 cursor-pointer items-center justify-center self-start rounded-lg border border-[rgba(255,255,255,0.2)] bg-[rgba(255,255,255,0.12)] text-lg leading-none text-white transition-colors hover:bg-[rgba(255,255,255,0.22)]"
               >×</button>
             </div>
           </div>
 
           {/* ── STATUS BREAKDOWN BAR ── */}
-          <div style={{ marginTop: 14, paddingBottom: 14 }}>
-            <div style={{ display: 'flex', height: 6, borderRadius: 4, overflow: 'hidden', background: 'rgba(255,255,255,0.15)', boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.15)' }}>
-              {[ ['#FF4757', pPct, `Past SLA: ${formatIndian(stats.pastSla)}`],
-                 ['#0EA5E9', oPct, `Open: ${formatIndian(stats.open)}`],
-                 ['#FFA502', iPct, `In progress: ${formatIndian(stats.inProgress)}`],
-                 ['#28A745', cPct, `Confirmed: ${formatIndian(stats.confirmed)}`],
-                 ['#9CA3AF', xPct, `Closed: ${formatIndian(stats.closed)}`],
-              ].map(([color, pct, title]) => (
-                +pct > 0 && <div key={color as string} style={{ background: color as string, width: `${pct}%` }} title={title as string} />
+          <div className="mt-3.5 pb-3.5">
+            <div className="flex h-1.5 overflow-hidden rounded-[4px] bg-[rgba(255,255,255,0.15)] shadow-[inset_0_1px_2px_rgba(0,0,0,0.15)]">
+              {breakdownBars.map(([color, pct, title]) => (
+                +pct > 0 && <div key={color} style={{ background: color, width: `${pct}%` }} title={title} />
               ))}
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, fontWeight: 600, marginTop: 5, color: 'rgba(255,255,255,0.85)', flexWrap: 'wrap', gap: 6 }}>
-              {[ ['#FF4757', `Past SLA ${formatIndian(stats.pastSla)} (${Math.round(+pPct)}%)`],
-                 ['#0EA5E9', `Open ${formatIndian(stats.open)} (${Math.round(+oPct)}%)`],
-                 ['#FFA502', `In progress ${formatIndian(stats.inProgress)} (${Math.round(+iPct)}%)`],
-                 ['#28A745', `Confirmed ${formatIndian(stats.confirmed)} (${Math.round(+cPct)}%)`],
-                 ['#9CA3AF', `Closed ${formatIndian(stats.closed)} (${Math.round(+xPct)}%)`],
-              ].map(([color, label]) => (
-                <span key={color as string} style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-                  <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: 2, background: color as string }} />
-                  {label as string}
+            <div className="mt-[5px] flex flex-wrap justify-between gap-1.5 text-[10px] font-semibold text-[rgba(255,255,255,0.85)]">
+              {breakdownLegend.map(([color, label]) => (
+                <span key={color} className="inline-flex items-center gap-[5px]">
+                  <span className="inline-block size-2 rounded-[2px]" style={{ background: color }} />
+                  {label}
                 </span>
               ))}
             </div>
@@ -327,34 +287,32 @@ export function CasesListDrawer({ scopeName, scopeType, stats, records, initialS
         </div>
 
         {/* ═══ FILTER BAR ═══ */}
-        <div style={{ padding: '12px 18px', background: 'var(--bg-soft)', borderBottom: '1px solid var(--border-light)', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 9 }}>
+        <div className="flex shrink-0 flex-col gap-2.5 border-b border-border-light bg-bg-soft px-[18px] py-3">
           {/* status pills */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-            <span style={{ fontSize: 9.5, fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '.5px', marginRight: 4 }}>Status:</span>
-            <Pill label={`All ${formatIndian(stats.total)}`} active={!statusFilter} activeColor="#0EA5E9" baseColor="var(--text)" baseBg="var(--card)" borderBase="var(--border)" onClick={() => setStatusFilter('')} />
-            <Pill label={`⚠ Past SLA ${formatIndian(stats.pastSla)}`} active={statusFilter === 'Past SLA'} activeColor="#FF4757" baseColor="#D43645" baseBg="rgba(255,71,87,0.08)" borderBase="rgba(255,71,87,0.3)" onClick={() => setStatusFilter('Past SLA')} />
-            <Pill label={`Open ${formatIndian(stats.open)}`} active={statusFilter === 'Assigned'} activeColor="#0EA5E9" baseColor="#0284C7" baseBg="rgba(14,165,233,0.08)" borderBase="rgba(14,165,233,0.3)" onClick={() => setStatusFilter('Assigned')} />
-            <Pill label={`In progress ${formatIndian(stats.inProgress)}`} active={statusFilter === 'In Progress'} activeColor="#E6921E" baseColor="var(--amber-dark,#B45309)" baseBg="rgba(230,146,30,0.08)" borderBase="rgba(230,146,30,0.3)" onClick={() => setStatusFilter('In Progress')} />
-            <Pill label={`Confirmed ${formatIndian(stats.confirmed)}`} active={statusFilter === 'Confirmed Theft'} activeColor="#28A745" baseColor="#1E7E34" baseBg="rgba(40,167,69,0.08)" borderBase="rgba(40,167,69,0.3)" onClick={() => setStatusFilter('Confirmed Theft')} />
-            <Pill label={`Closed ${formatIndian(stats.closed)}`} active={statusFilter === 'Closed'} activeColor="#6B7280" baseColor="#4B5563" baseBg="rgba(107,114,128,0.08)" borderBase="rgba(107,114,128,0.3)" onClick={() => setStatusFilter('Closed')} />
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="mr-1 text-[9.5px] font-bold tracking-[0.5px] text-text-dim uppercase">Status:</span>
+            <Pill label={`All ${formatIndian(stats.total)}`} active={!statusFilter} variant="all" onClick={() => setStatusFilter('')} />
+            <Pill label={`⚠ Past SLA ${formatIndian(stats.pastSla)}`} active={statusFilter === 'Past SLA'} variant="pastsla" onClick={() => setStatusFilter('Past SLA')} />
+            <Pill label={`Open ${formatIndian(stats.open)}`} active={statusFilter === 'Assigned'} variant="open" onClick={() => setStatusFilter('Assigned')} />
+            <Pill label={`In progress ${formatIndian(stats.inProgress)}`} active={statusFilter === 'In Progress'} variant="inprogress" onClick={() => setStatusFilter('In Progress')} />
+            <Pill label={`Confirmed ${formatIndian(stats.confirmed)}`} active={statusFilter === 'Confirmed Theft'} variant="confirmed" onClick={() => setStatusFilter('Confirmed Theft')} />
+            <Pill label={`Closed ${formatIndian(stats.closed)}`} active={statusFilter === 'Closed'} variant="closed" onClick={() => setStatusFilter('Closed')} />
           </div>
           {/* search + sort */}
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-            <div style={{ position: 'relative', flex: 1, minWidth: 240 }}>
-              <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dim)', fontSize: 13, pointerEvents: 'none' }}>🔍</span>
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative min-w-[240px] flex-1">
+              <span className="pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2 text-[13px] text-text-dim">🔍</span>
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search consumer, meter #, case ID, area, assignee…"
-                style={{ width: '100%', padding: '7px 10px 7px 32px', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12, fontFamily: 'var(--font-sans)', background: 'var(--card)', outline: 'none', boxSizing: 'border-box' }}
-                onFocus={(e)  => { e.target.style.borderColor = '#0EA5E9'; e.target.style.boxShadow = '0 0 0 3px rgba(14,165,233,0.1)' }}
-                onBlur={(e)   => { e.target.style.borderColor = 'var(--border)'; e.target.style.boxShadow = 'none' }}
+                className="box-border w-full rounded-lg border border-border bg-card py-1.5 pr-2.5 pl-8 font-sans text-xs outline-none focus:border-[#0EA5E9] focus:shadow-[0_0_0_3px_rgba(14,165,233,0.1)]"
               />
             </div>
             <select
               value={sortKey}
               onChange={(e) => setSortKey(e.target.value)}
-              style={{ padding: '7px 10px', border: '1px solid var(--border)', borderRadius: 8, fontSize: 11.5, background: 'var(--card)', cursor: 'pointer', outline: 'none' }}
+              className="cursor-pointer rounded-lg border border-border bg-card px-2.5 py-1.5 text-[11.5px] outline-none"
             >
               <option value="due">Sort: Due date (overdue first)</option>
               <option value="risk">Sort: Risk score (highest)</option>
@@ -366,17 +324,17 @@ export function CasesListDrawer({ scopeName, scopeType, stats, records, initialS
 
         {/* ═══ SELECTION BAR ═══ */}
         {selected.size > 0 && (
-          <div style={{ padding: '9px 18px', background: '#0EA5E9', color: '#fff', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
-            <div style={{ fontSize: 12, fontWeight: 600 }}>{selected.size} selected</div>
-            <div style={{ display: 'flex', gap: 6 }}>
+          <div className="flex shrink-0 items-center justify-between gap-2.5 bg-[#0EA5E9] px-[18px] py-2.5 text-white">
+            <div className="text-xs font-semibold">{selected.size} selected</div>
+            <div className="flex gap-1.5">
               {[['reassign','👤 Reassign inspector'],['escalate','⚠ Escalate'],['close','✓ Bulk close']].map(([action, label]) => (
                 <button key={action} type="button" onClick={() => bulkAction(action)}
-                  style={{ padding: '5px 12px', background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.25)', borderRadius: 6, fontSize: 11, fontWeight: 600, color: '#fff', cursor: 'pointer' }}>
+                  className="cursor-pointer rounded-md border border-[rgba(255,255,255,0.25)] bg-[rgba(255,255,255,0.15)] px-3 py-1.5 text-[11px] font-semibold text-white">
                   {label}
                 </button>
               ))}
               <button type="button" onClick={clearSelection}
-                style={{ padding: '5px 10px', background: 'transparent', border: '1px solid rgba(255,255,255,0.4)', borderRadius: 6, fontSize: 11, color: '#fff', cursor: 'pointer' }}>
+                className="cursor-pointer rounded-md border border-[rgba(255,255,255,0.4)] bg-transparent px-2.5 py-1.5 text-[11px] text-white">
                 Clear
               </button>
             </div>
@@ -384,20 +342,20 @@ export function CasesListDrawer({ scopeName, scopeType, stats, records, initialS
         )}
 
         {/* ═══ BODY ═══ */}
-        <div ref={bodyRef} style={{ overflowY: 'auto', flex: 1, padding: 0, background: 'var(--card)' }}>
+        <div ref={bodyRef} className="flex-1 overflow-y-auto bg-card p-0">
           {/* sticky row count */}
-          <div style={{ padding: '9px 18px', fontSize: 10.5, color: 'var(--text-dim)', background: 'var(--bg-soft)', position: 'sticky', top: 0, zIndex: 2, borderBottom: '1px solid var(--border-light)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div className="sticky top-0 z-2 flex items-center justify-between border-b border-border-light bg-bg-soft px-[18px] py-2.5 text-[10.5px] text-text-dim">
             <div>
-              Showing <strong style={{ color: 'var(--text)' }}>{start + 1}–{Math.min(start + PAGE_SIZE, filtered.length)}</strong>{' '}
-              of <strong style={{ color: 'var(--text)' }}>{filtered.length}</strong>
+              Showing <strong className="text-text">{start + 1}–{Math.min(start + PAGE_SIZE, filtered.length)}</strong>{' '}
+              of <strong className="text-text">{filtered.length}</strong>
               {search ? ' matching' : ''}{filtered.length !== records.length ? ' (filtered)' : ''}
             </div>
-            <label style={{ display: 'inline-flex', alignItems: 'center', gap: 5, cursor: 'pointer', fontWeight: 600, color: 'var(--text-mid)', fontSize: 10.5 }}>
+            <label className="inline-flex cursor-pointer items-center gap-[5px] text-[10.5px] font-semibold text-text-mid">
               <input
                 type="checkbox"
                 checked={slice.length > 0 && slice.every((c) => selected.has(c.id))}
                 onChange={(e) => selectVisible(e.target.checked)}
-                style={{ cursor: 'pointer', width: 14, height: 14 }}
+                className="size-3.5 cursor-pointer"
               />
               Select visible page
             </label>
@@ -405,70 +363,78 @@ export function CasesListDrawer({ scopeName, scopeType, stats, records, initialS
 
           {/* table */}
           {slice.length === 0 ? (
-            <div style={{ padding: '60px 24px', textAlign: 'center' }}>
-              <div style={{ fontSize: 38, marginBottom: 12, opacity: .4 }}>📋</div>
-              <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-mid)', marginBottom: 4 }}>No cases match the current filters</div>
-              <div style={{ fontSize: 11, color: 'var(--text-dim)' }}>Try clearing the search or selecting a different status.</div>
+            <div className="px-6 py-[60px] text-center">
+              <div className="mb-3 text-[38px] opacity-40">📋</div>
+              <div className="mb-1 text-[13px] font-semibold text-text-mid">No cases match the current filters</div>
+              <div className="text-[11px] text-text-dim">Try clearing the search or selecting a different status.</div>
             </div>
           ) : (
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11.5 }}>
+            <table className="w-full border-collapse text-[11.5px]">
               <thead>
-                <tr style={{ background: 'var(--bg-soft)', position: 'sticky', top: 32, zIndex: 1 }}>
-                  <th style={{ padding: '9px 10px 9px 18px', textAlign: 'left', width: 36 }} />
+                <tr className="sticky top-8 z-1 bg-bg-soft">
+                  <th className="w-9 px-2.5 py-2.5 pl-[18px] text-left" />
                   {['Risk','Case · Consumer','Area','Inspector','Due','Status','Action'].map((h, i) => (
-                    <th key={h} style={{ padding: '9px 10px', textAlign: i === 6 ? 'right' : 'left', fontSize: 10, fontWeight: 700, color: 'var(--text-mid)', textTransform: 'uppercase', letterSpacing: '.5px', ...(i === 6 ? { paddingRight: 18 } : {}) }}>{h}</th>
+                    <th
+                      key={h}
+                      className={`px-2.5 py-2.5 text-[10px] font-bold tracking-[0.5px] text-text-mid uppercase ${i === 6 ? 'pr-[18px] text-right' : 'text-left'}`}
+                    >
+                      {h}
+                    </th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {slice.map((c) => {
-                  const col   = c.risk >= 80 ? '#DC3545' : c.risk >= 60 ? '#E6921E' : 'var(--amber-dark,#B45309)'
-                  const colBg = c.risk >= 80 ? 'rgba(220,53,69,0.08)' : c.risk >= 60 ? 'rgba(230,146,30,0.08)' : 'rgba(180,117,24,0.08)'
+                  const riskTier = c.risk >= 80 ? 'high' : c.risk >= 60 ? 'mid' : 'low'
+                  const riskClasses =
+                    riskTier === 'high'
+                      ? 'border-[#DC3545] bg-[rgba(220,53,69,0.08)] text-[#DC3545]'
+                      : riskTier === 'mid'
+                        ? 'border-[#E6921E] bg-[rgba(230,146,30,0.08)] text-[#E6921E]'
+                        : 'border-[var(--amber-dark)] bg-[rgba(180,117,24,0.08)] text-[var(--amber-dark)]'
                   const past  = isPastSla(c)
                   const isSel = selected.has(c.id)
                   const consumer = (c.consumer || '').length > 28 ? c.consumer.substring(0, 28) + '…' : c.consumer
                   return (
                     <tr
                       key={c.id}
-                      style={{ borderBottom: '1px solid var(--border-light)', cursor: 'pointer', background: isSel ? 'rgba(14,165,233,0.07)' : 'transparent', transition: 'background .12s' }}
-                      onMouseOver={(e) => { if (!isSel) e.currentTarget.style.background = 'var(--bg-soft)' }}
-                      onMouseOut={(e)  => { if (!isSel) e.currentTarget.style.background = 'transparent' }}
+                      className={`cursor-pointer border-b border-border-light transition-colors duration-150 ${isSel ? 'bg-[rgba(14,165,233,0.07)]' : 'bg-transparent hover:bg-bg-soft'}`}
                       onClick={() => { onClose(); navigate(`/cases/${c.id}`) }}
                     >
                       {/* checkbox */}
-                      <td style={{ padding: '11px 10px 11px 18px' }}>
-                        <input type="checkbox" checked={isSel} onChange={() => {}} onClick={(e) => toggleRow(c.id, e)} style={{ cursor: 'pointer', width: 14, height: 14 }} />
+                      <td className="py-[11px] pr-2.5 pl-[18px]">
+                        <input type="checkbox" checked={isSel} onChange={() => {}} onClick={(e) => toggleRow(c.id, e)} className="size-3.5 cursor-pointer" />
                       </td>
                       {/* risk badge */}
-                      <td style={{ padding: '11px 10px' }}>
-                        <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 34, height: 34, borderRadius: 8, background: colBg, border: `2px solid ${col}`, color: col, fontSize: 12, fontWeight: 800, fontFamily: 'var(--mono)' }}>
+                      <td className="px-2.5 py-[11px]">
+                        <div className={`inline-flex h-[34px] w-[34px] items-center justify-center rounded-lg border-2 font-mono text-xs font-extrabold ${riskClasses}`}>
                           {c.risk}
                         </div>
                       </td>
                       {/* case · consumer */}
-                      <td style={{ padding: '11px 10px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
-                          <span style={{ fontSize: 10.5, fontFamily: 'var(--mono)', fontWeight: 700, color: 'var(--id-text)' }}>{c.id}</span>
-                          {c._real && <span style={{ display: 'inline-block', padding: '1px 5px', background: 'rgba(40,167,69,.12)', color: 'var(--green)', border: '1px solid rgba(40,167,69,.3)', borderRadius: 5, fontSize: 8.5, fontWeight: 800 }}>✓ REAL</span>}
-                          {past && <span style={{ display: 'inline-block', padding: '1px 5px', background: 'rgba(220,53,69,0.12)', color: 'var(--red)', border: '1px solid rgba(220,53,69,0.3)', borderRadius: 5, fontSize: 8.5, fontWeight: 800 }}>⚠ PAST SLA</span>}
+                      <td className="px-2.5 py-[11px]">
+                        <div className="flex flex-wrap items-center gap-1">
+                          <span className="font-mono text-[10.5px] font-bold text-id-text">{c.id}</span>
+                          {c._real && <span className="inline-block rounded-[5px] border border-[rgba(40,167,69,0.3)] bg-[rgba(40,167,69,0.12)] px-[5px] py-px text-[8.5px] font-extrabold text-green">✓ REAL</span>}
+                          {past && <span className="inline-block rounded-[5px] border border-[rgba(220,53,69,0.3)] bg-[rgba(220,53,69,0.12)] px-[5px] py-px text-[8.5px] font-extrabold text-red">⚠ PAST SLA</span>}
                         </div>
-                        <div style={{ fontWeight: 600, fontSize: 11.5, color: 'var(--text)', marginTop: 2, lineHeight: 1.3 }}>{consumer}</div>
-                        <div style={{ fontSize: 9.5, color: 'var(--text-dim)', fontFamily: 'var(--mono)', marginTop: 2 }}>M#{c.meter}</div>
+                        <div className="mt-0.5 text-[11.5px] leading-[1.3] font-semibold text-text">{consumer}</div>
+                        <div className="mt-0.5 font-mono text-[9.5px] text-text-dim">M#{c.meter}</div>
                       </td>
                       {/* area */}
-                      <td style={{ padding: '11px 10px' }}>
-                        <div style={{ fontSize: 10.5, color: 'var(--text-mid)' }}>
+                      <td className="px-2.5 py-[11px]">
+                        <div className="text-[10.5px] text-text-mid">
                           {(c.area || '—').substring(0, 30)}{(c.area || '').length > 30 ? '…' : ''}
                         </div>
                       </td>
                       {/* inspector */}
-                      <td style={{ padding: '11px 10px', fontSize: 10.5, color: 'var(--text-mid)' }}>{c.assignee || '—'}</td>
+                      <td className="px-2.5 py-[11px] text-[10.5px] text-text-mid">{c.assignee || '—'}</td>
                       {/* due */}
-                      <td style={{ padding: '11px 10px', fontSize: 10.5, color: past ? 'var(--red)' : 'var(--text-dim)', fontFamily: 'var(--mono)', fontWeight: past ? 700 : 400 }}>{c.due || '—'}</td>
+                      <td className={`px-2.5 py-[11px] font-mono text-[10.5px] ${past ? 'font-bold text-red' : 'font-normal text-text-dim'}`}>{c.due || '—'}</td>
                       {/* status */}
-                      <td style={{ padding: '11px 10px' }}><StatusBadge status={c.status || '—'} /></td>
+                      <td className="px-2.5 py-[11px]"><StatusBadge status={c.status || '—'} /></td>
                       {/* action */}
-                      <td style={{ padding: '11px 18px 11px 10px', textAlign: 'right' }}>
+                      <td className="py-[11px] pr-[18px] pl-2.5 text-right">
                         <ViewBtn onClick={(e) => { e.stopPropagation(); onClose(); navigate(`/cases/${c.id}`) }} />
                       </td>
                     </tr>
@@ -480,31 +446,31 @@ export function CasesListDrawer({ scopeName, scopeType, stats, records, initialS
 
           {/* pagination */}
           {totalPages > 1 && (
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 18px', borderTop: '1px solid var(--border-light)', background: 'var(--bg-soft)' }}>
-              <div style={{ fontSize: 10.5, color: 'var(--text-dim)' }}>Page {curPage} of {totalPages}</div>
-              <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>{paginationButtons()}</div>
+            <div className="flex items-center justify-between border-t border-border-light bg-bg-soft px-[18px] py-3.5">
+              <div className="text-[10.5px] text-text-dim">Page {curPage} of {totalPages}</div>
+              <div className="flex items-center gap-1">{paginationButtons()}</div>
             </div>
           )}
         </div>
 
         {/* ═══ FOOTER ═══ */}
-        <div style={{ padding: '11px 18px', borderTop: '1px solid var(--border-light)', background: 'linear-gradient(180deg,var(--bg-soft) 0%,#EEF1F7 100%)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
-          <div style={{ fontSize: 10.5, color: 'var(--text-mid)', fontWeight: 600 }}>
-            <span style={{ color: 'var(--ai-purple)' }}>✦</span>{' '}
+        <div className="flex shrink-0 items-center justify-between gap-2.5 border-t border-border-light bg-[linear-gradient(180deg,var(--bg-soft)_0%,#EEF1F7_100%)] px-[18px] py-2.5">
+          <div className="text-[10.5px] font-semibold text-text-mid">
+            <span className="text-ai-purple">✦</span>{' '}
             <strong>AI suggestion:</strong> Auto-escalate the {formatIndian(stats.pastSla)} past-SLA cases under {scopeName} to next-level supervisor.
           </div>
-          <div style={{ display: 'flex', gap: 6 }}>
+          <div className="flex gap-1.5">
             <button
               type="button"
               onClick={() => showToast({ type: 'info', title: 'CSV export started', message: `Exporting ${formatIndian(stats.total)} cases from ${scopeName}.`, duration: 4000 })}
-              style={{ padding: '7px 13px', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 7, fontSize: 11.5, fontWeight: 600, color: 'var(--text)', cursor: 'pointer' }}
+              className="cursor-pointer rounded-[7px] border border-border bg-card px-[13px] py-1.5 text-[11.5px] font-semibold text-text"
             >
               📥 Export {formatIndian(stats.total)}
             </button>
             <button
               type="button"
               onClick={() => { showToast({ type: 'success', title: 'Auto-escalated', message: `${formatIndian(stats.pastSla)} past-SLA cases escalated to next-level supervisor.`, duration: 5000 }); onClose() }}
-              style={{ padding: '7px 14px', background: 'linear-gradient(135deg,#FF4757 0%,#A8222F 100%)', color: '#fff', border: 'none', borderRadius: 7, fontSize: 11.5, fontWeight: 700, cursor: 'pointer', boxShadow: '0 2px 8px rgba(255,71,87,0.3)' }}
+              className="cursor-pointer rounded-[7px] border-none bg-[linear-gradient(135deg,#FF4757_0%,#A8222F_100%)] px-3.5 py-1.5 text-[11.5px] font-bold text-white shadow-[0_2px_8px_rgba(255,71,87,0.3)]"
             >
               ⚠ Escalate {formatIndian(stats.pastSla)} past-SLA
             </button>

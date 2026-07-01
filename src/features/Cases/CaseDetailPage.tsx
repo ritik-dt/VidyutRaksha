@@ -63,18 +63,18 @@ const REMEDIATION_KB: Record<string, {
 }
 
 /* ── status badge — exact prototype sb() ── */
-const STATUS_STYLES: Record<string, { bg: string; color: string; border: string }> = {
-  'Assigned':        { bg: 'rgba(14,165,233,0.1)',  color: '#0EA5E9', border: 'rgba(14,165,233,0.3)'  },
-  'In Progress':     { bg: 'rgba(230,146,30,0.1)',  color: '#E6921E', border: 'rgba(230,146,30,0.3)'  },
-  'Escalated':       { bg: 'rgba(220,53,69,0.1)',   color: '#DC3545', border: 'rgba(220,53,69,0.3)'   },
-  'Confirmed Theft': { bg: 'rgba(40,167,69,0.1)',   color: '#28A745', border: 'rgba(40,167,69,0.3)'   },
-  'False Positive':  { bg: 'rgba(107,114,128,0.1)', color: '#6B7280', border: 'rgba(107,114,128,0.3)' },
-  'Closed':          { bg: 'rgba(107,114,128,0.1)', color: '#6B7280', border: 'rgba(107,114,128,0.3)' },
+const STATUS_STYLES: Record<string, string> = {
+  'Assigned':        'bg-[rgba(14,165,233,0.1)] text-[#0EA5E9] border-[rgba(14,165,233,0.3)]',
+  'In Progress':     'bg-[rgba(230,146,30,0.1)] text-[#E6921E] border-[rgba(230,146,30,0.3)]',
+  'Escalated':       'bg-[rgba(220,53,69,0.1)] text-[#DC3545] border-[rgba(220,53,69,0.3)]',
+  'Confirmed Theft': 'bg-[rgba(40,167,69,0.1)] text-[#28A745] border-[rgba(40,167,69,0.3)]',
+  'False Positive':  'bg-[rgba(107,114,128,0.1)] text-[#6B7280] border-[rgba(107,114,128,0.3)]',
+  'Closed':          'bg-[rgba(107,114,128,0.1)] text-[#6B7280] border-[rgba(107,114,128,0.3)]',
 }
 function StatusBadge({ status }: { status: string }) {
-  const s = STATUS_STYLES[status] ?? STATUS_STYLES['Assigned']
+  const cls = STATUS_STYLES[status] ?? STATUS_STYLES['Assigned']
   return (
-    <span style={{ padding: '3px 10px', background: s.bg, color: s.color, border: `1px solid ${s.border}`, borderRadius: 10, fontSize: 11, fontWeight: 700 }}>
+    <span className={`rounded-[10px] border px-2.5 py-[3px] text-[11px] font-bold ${cls}`}>
       {status}
     </span>
   )
@@ -83,27 +83,44 @@ function StatusBadge({ status }: { status: string }) {
 /* ── lifecycle dot ── */
 function LcDot({ done }: { done: boolean }) {
   return (
-    <div style={{
-      width: 20, height: 20, borderRadius: '50%', flexShrink: 0, marginTop: 2,
-      background: done ? 'rgba(40,167,69,0.12)' : 'var(--bg-soft)',
-      border: `2px solid ${done ? 'var(--green)' : 'var(--border)'}`,
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-    }}>
+    <div className={`mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full border-2 ${done ? 'border-green bg-[rgba(40,167,69,0.12)]' : 'border-border bg-bg-soft'}`}>
       {done && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--green)" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>}
     </div>
   )
 }
 
-/* ── timeline dot ── */
+/* ── timeline dot — color comes from a small fixed CSS-var palette ── */
+const TL_DOT_CLASS: Record<string, string> = {
+  'var(--red)': 'bg-red shadow-[0_0_0_2px_var(--red)]',
+  'var(--id-text)': 'bg-id-text shadow-[0_0_0_2px_var(--id-text)]',
+  '#0D9488': 'bg-[#0D9488] shadow-[0_0_0_2px_#0D9488]',
+  'var(--ai-purple)': 'bg-ai-purple shadow-[0_0_0_2px_var(--ai-purple)]',
+  'var(--green)': 'bg-green shadow-[0_0_0_2px_var(--green)]',
+  'var(--amber)': 'bg-amber shadow-[0_0_0_2px_var(--amber)]',
+  'var(--text-dim)': 'bg-text-dim shadow-[0_0_0_2px_var(--text-dim)]',
+}
 function TlDot({ color }: { color: string }) {
   return (
-    <div style={{
-      position: 'absolute', left: -26, top: 4,
-      width: 10, height: 10, borderRadius: '50%',
-      background: color, border: '2px solid #fff',
-      boxShadow: `0 0 0 2px ${color}`,
-    }} />
+    <div className={`absolute top-1 -left-[26px] size-2.5 rounded-full border-2 border-white ${TL_DOT_CLASS[color] ?? 'bg-text-dim'}`} />
   )
+}
+
+/* ── small color->class helper for text colors drawn from the same fixed palette ── */
+const TEXT_COLOR_CLASS: Record<string, string> = {
+  'var(--red)': 'text-red',
+  'var(--id-text)': 'text-id-text',
+  '#0D9488': 'text-[#0D9488]',
+  'var(--ai-purple)': 'text-ai-purple',
+  'var(--green)': 'text-green',
+  'var(--amber)': 'text-amber',
+  'var(--text-dim)': 'text-text-dim',
+}
+function textColorClass(c: string) {
+  return TEXT_COLOR_CLASS[c] ?? 'text-text-dim'
+}
+const BORDER_COLOR_CLASS: Record<string, string> = {
+  'var(--red)': 'border-l-red',
+  'var(--amber)': 'border-l-amber',
 }
 
 export default function CaseDetailPage() {
@@ -165,6 +182,12 @@ export default function CaseDetailPage() {
     { i: '✉️', n: 'consumer_response.eml', s: '42 KB'  },
   ]
 
+  const LINKED_CASES = [
+    { id: 'C-20260310-015', consumer: 'BHUWAL JAISWAL',         desc: 'Same DTR · Earth loading', match: '94%', color: 'var(--red)'   },
+    { id: 'C-20260312-022', consumer: 'ANAND PRAKASH AGARWAL',  desc: 'Same DTR · Tariff misuse', match: '76%', color: 'var(--amber)' },
+    { id: 'C-20260314-030', consumer: 'ISHANT',                 desc: 'Same DTR · Direct hooking', match: '72%', color: 'var(--amber)' },
+  ]
+
   const showDossier = ['Confirmed Theft','In Progress','Escalated','Assigned'].includes(cs.status)
 
   return (
@@ -180,13 +203,13 @@ export default function CaseDetailPage() {
           <div className="page-title">Case {cs.id}</div>
           <div className="page-sub">Meter #{cs.meter} • {cs.area}</div>
         </div>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+        <div className="flex items-center gap-2">
           <StatusBadge status={cs.status} />
           {showDossier && (
             <button
               type="button"
               onClick={() => showToast({ type: 'success', title: 'Generating dossier…', message: `Court-ready dossier for ${cs.consumer} is being compiled.`, duration: 4000 })}
-              style={{ padding: '6px 12px', background: 'var(--ai-gradient)', color: '#fff', border: 'none', borderRadius: 8, fontSize: 11, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, boxShadow: '0 2px 8px rgba(124,58,237,0.25)' }}
+              className="flex cursor-pointer items-center gap-[5px] rounded-lg border-none bg-[var(--ai-gradient)] px-3 py-1.5 text-[11px] font-bold text-white shadow-[0_2px_8px_rgba(124,58,237,0.25)]"
             >
               ⚖️ Court-ready dossier
             </button>
@@ -196,14 +219,14 @@ export default function CaseDetailPage() {
 
       {/* real case panel */}
       {cs._real && (
-        <div style={{ background: 'linear-gradient(135deg,rgba(40,167,69,.06),rgba(255,255,255,1) 30%)', border: '2px solid rgba(40,167,69,.4)', borderRadius: 10, padding: '12px 16px', marginBottom: 14, display: 'flex', alignItems: 'flex-start', gap: 14 }}>
-          <div style={{ width: 36, height: 36, borderRadius: 8, background: 'var(--green)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>✓</div>
-          <div style={{ flex: 1 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-              <span style={{ padding: '2px 8px', background: 'rgba(40,167,69,.15)', color: 'var(--green)', borderRadius: 10, fontSize: 9.5, fontWeight: 800, letterSpacing: '.3px' }}>REAL CASE</span>
-              <span style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--text)' }}>From Mar-2026 KVVNL tamper event report (1,371 events)</span>
+        <div className="mb-3.5 flex items-start gap-3.5 rounded-[10px] border-2 border-[rgba(40,167,69,0.4)] bg-[linear-gradient(135deg,rgba(40,167,69,0.06),rgba(255,255,255,1)_30%)] px-4 py-3">
+          <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-green text-[18px] text-white">✓</div>
+          <div className="flex-1">
+            <div className="mb-1 flex items-center gap-2">
+              <span className="rounded-[10px] bg-[rgba(40,167,69,0.15)] px-2 py-0.5 text-[9.5px] font-extrabold tracking-[0.3px] text-green">REAL CASE</span>
+              <span className="text-[11.5px] font-bold text-text">From Mar-2026 KVVNL tamper event report (1,371 events)</span>
             </div>
-            <div style={{ fontSize: 11, color: 'var(--text-mid)', lineHeight: 1.5 }}>
+            <div className="text-[11px] leading-[1.5] text-text-mid">
               <strong>Account #{cs._account}</strong> · {cs.consumer} · {cs._activity || '—'} · {cs._load}{cs._load_unit || ''} sanctioned · Tariff {cs._tariff || '—'} · {cs._zone || '—'} zone
             </div>
           </div>
@@ -211,11 +234,11 @@ export default function CaseDetailPage() {
       )}
 
       {/* AI briefing */}
-      <div className="ai-insight" style={{ marginBottom: 14 }}>
+      <div className="ai-insight mb-3.5">
         <div className="ai-insight-header">✦ AI case briefing</div>
         <div className="ai-insight-body">
           This case involves a <strong>{cs.risk}-risk meter</strong> with {cs.flags} flag triggers. Based on similar cases in your network, I predict a{' '}
-          <strong style={{ color: 'var(--ai-purple)' }}>68% probability of confirmed theft</strong>. If confirmed, the inspection outcome will automatically retrain my model for better future detection.
+          <strong className="text-ai-purple">68% probability of confirmed theft</strong>. If confirmed, the inspection outcome will automatically retrain my model for better future detection.
         </div>
       </div>
 
@@ -223,21 +246,21 @@ export default function CaseDetailPage() {
       <div className="grid-2">
         {/* Details card */}
         <div className="card">
-          <div className="card-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div className="card-title flex items-center justify-between">
             <span>Details</span>
             <button
               type="button"
               onClick={() => showToast({ type: 'info', title: 'Reassign inspector', message: `Opening reassignment flow for case ${cs.id}.`, duration: 3000 })}
-              style={{ padding: '5px 12px', background: 'var(--ai-gradient)', color: '#fff', border: 'none', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
+              className="flex cursor-pointer items-center gap-1 rounded-md border-none bg-[var(--ai-gradient)] px-3 py-[5px] text-[11px] font-bold text-white"
             >
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>
               Reassign inspector
             </button>
           </div>
           {[['Assigned', cs.assignee], ['Created', cs.created], ['Due', cs.due], ['Risk', cs.risk], ['Flags', cs.flags]].map(([k, v]) => (
-            <div key={String(k)} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--border-light)', fontSize: 12 }}>
-              <span style={{ color: 'var(--text-dim)' }}>{k}</span>
-              <span style={{ fontWeight: 600 }}>{v}</span>
+            <div key={String(k)} className="flex justify-between border-b border-border-light py-2 text-xs">
+              <span className="text-text-dim">{k}</span>
+              <span className="font-semibold">{v}</span>
             </div>
           ))}
         </div>
@@ -245,13 +268,13 @@ export default function CaseDetailPage() {
         {/* Case lifecycle card */}
         <div className="card">
           <div className="card-title">Case lifecycle</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 4 }}>
+          <div className="mt-1 flex flex-col gap-2.5">
             {steps.map((step, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+              <div key={i} className="flex items-start gap-2.5">
                 <LcDot done={step.done} />
                 <div>
-                  <div style={{ fontSize: 12, fontWeight: 500, color: step.done ? 'var(--text)' : 'var(--text-dim)' }}>{step.s}</div>
-                  <div style={{ fontSize: 10, color: 'var(--text-dim)' }}>{step.d}</div>
+                  <div className={`text-xs font-medium ${step.done ? 'text-text' : 'text-text-dim'}`}>{step.s}</div>
+                  <div className="text-[10px] text-text-dim">{step.d}</div>
                 </div>
               </div>
             ))}
@@ -261,56 +284,56 @@ export default function CaseDetailPage() {
 
       {/* AI inspection guide */}
       {rem && (
-        <div className="card" style={{ border: '1px solid rgba(124,58,237,.2)', marginBottom: 14 }}>
-          <div style={{ height: 3, background: 'var(--ai-gradient)', borderRadius: 3, margin: '-18px -18px 14px', width: 'calc(100% + 36px)' }} />
-          <div className="card-title" style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--ai-purple)' }}>
+        <div className="card mb-3.5 border border-[rgba(124,58,237,0.2)]">
+          <div className="-mx-[18px] -mt-[18px] mb-3.5 h-[3px] w-[calc(100%+36px)] rounded-[3px] bg-[var(--ai-gradient)]" />
+          <div className="card-title flex items-center gap-1.5 text-ai-purple">
             ✦ AI inspection guide — {rem.type}
           </div>
-          <div style={{ display: 'flex', gap: 14, marginBottom: 12 }}>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--red)', marginBottom: 4 }}>⚠ Safety first</div>
+          <div className="mb-3 flex gap-3.5">
+            <div className="flex-1">
+              <div className="mb-1 text-[11px] font-semibold text-red">⚠ Safety first</div>
               {rem.safety.map((s, i) => (
-                <div key={i} style={{ fontSize: 11, padding: '2px 0', display: 'flex', gap: 4 }}>
-                  <span style={{ color: 'var(--red)' }}>●</span>{s}
+                <div key={i} className="flex gap-1 py-0.5 text-[11px]">
+                  <span className="text-red">●</span>{s}
                 </div>
               ))}
             </div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--id-text)', marginBottom: 4 }}>📋 Evidence to collect</div>
+            <div className="flex-1">
+              <div className="mb-1 text-[11px] font-semibold text-id-text">📋 Evidence to collect</div>
               {rem.evidence.slice(0, 4).map((e, i) => (
-                <div key={i} style={{ fontSize: 11, padding: '2px 0', display: 'flex', gap: 4 }}>
+                <div key={i} className="flex gap-1 py-0.5 text-[11px]">
                   <span>📎</span>{e}
                 </div>
               ))}
             </div>
           </div>
-          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--ai-purple)', marginBottom: 6 }}>✦ Step-by-step inspection checklist</div>
+          <div className="mb-1.5 text-[11px] font-semibold text-ai-purple">✦ Step-by-step inspection checklist</div>
           {rem.checklist.map((c, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '5px 0', borderBottom: '1px solid var(--border-light)', fontSize: 12 }}>
-              <span style={{ color: 'var(--ai-purple)', fontWeight: 600, minWidth: 18 }}>{i + 1}.</span>
+            <div key={i} className="flex items-start gap-2 border-b border-border-light py-[5px] text-xs">
+              <span className="min-w-[18px] font-semibold text-ai-purple">{i + 1}.</span>
               <span>{c}</span>
             </div>
           ))}
-          <div style={{ marginTop: 10, padding: '8px 10px', background: 'var(--ai-purple-light)', borderRadius: 6, fontSize: 10, color: 'var(--ai-purple)' }}>
+          <div className="mt-2.5 rounded-md bg-ai-purple-light px-2.5 py-2 text-[10px] text-ai-purple">
             <strong>Assessment formula:</strong> {rem.formula}
           </div>
         </div>
       )}
 
       {/* Timeline + Right column */}
-      <div className="grid-2" style={{ gap: 14, marginBottom: 14 }}>
+      <div className="grid-2 mb-3.5 gap-3.5">
         {/* Timeline */}
         <div className="card">
           <div className="card-title">📅 Case timeline</div>
-          <div style={{ position: 'relative', paddingLeft: 20, borderLeft: '2px solid var(--border)', margin: '14px 0' }}>
+          <div className="relative my-3.5 border-l-2 border-border pl-5">
             {timelineEvents.map((ev, i) => (
-              <div key={i} style={{ position: 'relative', marginBottom: 12 }}>
+              <div key={i} className="relative mb-3">
                 <TlDot color={ev.c} />
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 2 }}>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: ev.c }}>{ev.e}</div>
-                  <div style={{ fontSize: 10, color: 'var(--text-dim)', fontFamily: 'var(--mono)' }}>{ev.d}</div>
+                <div className="mb-0.5 flex items-start justify-between">
+                  <div className={`text-xs font-bold ${textColorClass(ev.c)}`}>{ev.e}</div>
+                  <div className="font-mono text-[10px] text-text-dim">{ev.d}</div>
                 </div>
-                <div style={{ fontSize: 11, color: 'var(--text-mid)', lineHeight: 1.4 }}>{ev.desc}</div>
+                <div className="text-[11px] leading-[1.4] text-text-mid">{ev.desc}</div>
               </div>
             ))}
           </div>
@@ -319,53 +342,49 @@ export default function CaseDetailPage() {
         {/* Right column: linked cases + tasks + attachments */}
         <div>
           {/* Linked cases */}
-          <div className="card" style={{ marginBottom: 12 }}>
+          <div className="card mb-3">
             <div className="card-title">🔗 Linked cases — AI cluster</div>
-            <div style={{ fontSize: 11, color: 'var(--text-mid)', marginBottom: 8 }}>
+            <div className="mb-2 text-[11px] text-text-mid">
               AI identified <strong>3 related cases</strong> under same DTR showing coordinated pattern
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              {[
-                { id: 'C-20260310-015', consumer: 'BHUWAL JAISWAL',       desc: 'Same DTR · Earth loading', match: '94%', color: 'var(--red)'   },
-                { id: 'C-20260312-022', consumer: 'ANAND PRAKASH AGARWAL', desc: 'Same DTR · Tariff misuse', match: '76%', color: 'var(--amber)' },
-                { id: 'C-20260314-030', consumer: 'ISHANT',               desc: 'Same DTR · Direct hooking', match: '72%', color: 'var(--amber)' },
-              ].map((lc) => (
+            <div className="flex flex-col gap-1.5">
+              {LINKED_CASES.map((lc) => (
                 <div
                   key={lc.id}
                   onClick={() => navigate(`/cases/${lc.id}`)}
-                  style={{ padding: '8px 10px', background: 'var(--bg-soft)', borderRadius: 6, borderLeft: `3px solid ${lc.color}`, cursor: 'pointer' }}
+                  className={`cursor-pointer rounded-md border-l-[3px] bg-bg-soft px-2.5 py-2 ${BORDER_COLOR_CLASS[lc.color] ?? 'border-l-amber'}`}
                 >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div style={{ fontWeight: 700, fontSize: 11, color: lc.color }}>{lc.id}</div>
-                    <span style={{ padding: '1px 6px', background: 'rgba(14,165,233,0.1)', color: '#0EA5E9', borderRadius: 8, fontSize: 9, fontWeight: 700 }}>{lc.match} match</span>
+                  <div className="flex items-center justify-between">
+                    <div className={`text-[11px] font-bold ${textColorClass(lc.color)}`}>{lc.id}</div>
+                    <span className="rounded-lg bg-[rgba(14,165,233,0.1)] px-1.5 py-px text-[9px] font-bold text-[#0EA5E9]">{lc.match} match</span>
                   </div>
-                  <div style={{ fontSize: 10, color: 'var(--text-mid)', marginTop: 2 }}>{lc.consumer} · {lc.desc}</div>
+                  <div className="mt-0.5 text-[10px] text-text-mid">{lc.consumer} · {lc.desc}</div>
                 </div>
               ))}
             </div>
-            <button type="button" className="btn btn-ai btn-sm" style={{ width: '100%', marginTop: 10, fontSize: 11, justifyContent: 'center' }}
+            <button type="button" className="btn btn-ai btn-sm mt-2.5 w-full justify-center text-[11px]"
               onClick={() => showToast({ type: 'info', title: 'Batch inspection', message: 'Batch inspection for all 4 cases queued.', duration: 3000 })}>
               ✦ Create batch inspection for all 4
             </button>
           </div>
 
           {/* Tasks */}
-          <div className="card" style={{ marginBottom: 12 }}>
+          <div className="card mb-3">
             <div className="card-title">✅ Tasks</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <div className="flex flex-col gap-1.5">
               {tasks.map((task, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: 6, background: 'var(--bg-soft)', borderRadius: 4 }}>
+                <div key={i} className="flex items-center gap-2 rounded bg-bg-soft p-1.5">
                   <input type="checkbox" checked={task.done} onChange={() => {
                     setTasks((prev) => prev.map((t, j) => j === i ? { ...t, done: !t.done } : t))
-                  }} style={{ cursor: 'pointer', width: 14, height: 14, flexShrink: 0 }} />
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 11, textDecoration: task.done ? 'line-through' : 'none', color: task.done ? 'var(--text-dim)' : 'var(--text)' }}>{task.t}</div>
-                    <div style={{ fontSize: 10, color: 'var(--text-dim)' }}>Due {task.d} · {task.who}</div>
+                  }} className="size-3.5 shrink-0 cursor-pointer" />
+                  <div className="flex-1">
+                    <div className={`text-[11px] ${task.done ? 'text-text-dim line-through' : 'text-text no-underline'}`}>{task.t}</div>
+                    <div className="text-[10px] text-text-dim">Due {task.d} · {task.who}</div>
                   </div>
                 </div>
               ))}
             </div>
-            <button type="button" className="btn btn-outline btn-sm" style={{ width: '100%', marginTop: 8, fontSize: 11 }}
+            <button type="button" className="btn btn-outline btn-sm mt-2 w-full text-[11px]"
               onClick={() => showToast({ type: 'info', title: 'Add task', message: 'Task creation dialog would open here.', duration: 2500 })}>
               + Add task
             </button>
@@ -374,19 +393,19 @@ export default function CaseDetailPage() {
           {/* Attachments */}
           <div className="card">
             <div className="card-title">📎 Attachments ({ATTACHMENTS.length})</div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+            <div className="grid grid-cols-2 gap-1.5">
               {ATTACHMENTS.map((a) => (
-                <div key={a.n} style={{ padding: 6, background: 'var(--bg-soft)', borderRadius: 4, display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}
+                <div key={a.n} className="flex cursor-pointer items-center gap-1.5 rounded bg-bg-soft p-1.5"
                   onClick={() => showToast({ type: 'info', title: 'Opening file', message: a.n, duration: 2000 })}>
-                  <span style={{ fontSize: 16 }}>{a.i}</span>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 10, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.n}</div>
-                    <div style={{ fontSize: 9, color: 'var(--text-dim)' }}>{a.s}</div>
+                  <span className="text-base">{a.i}</span>
+                  <div className="min-w-0 flex-1">
+                    <div className="overflow-hidden text-[10px] font-semibold text-ellipsis whitespace-nowrap">{a.n}</div>
+                    <div className="text-[9px] text-text-dim">{a.s}</div>
                   </div>
                 </div>
               ))}
             </div>
-            <button type="button" className="btn btn-outline btn-sm" style={{ width: '100%', marginTop: 8, fontSize: 11 }}
+            <button type="button" className="btn btn-outline btn-sm mt-2 w-full text-[11px]"
               onClick={() => showToast({ type: 'info', title: 'Upload', message: 'File upload dialog would open here.', duration: 2000 })}>
               + Upload
             </button>
@@ -395,57 +414,56 @@ export default function CaseDetailPage() {
       </div>
 
       {/* Comments */}
-      <div className="card" style={{ marginBottom: 14 }}>
+      <div className="card mb-3.5">
         <div className="card-title">💬 Comments & collaboration</div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 12 }}>
+        <div className="mb-3 flex flex-col gap-2.5">
           {/* RK comment */}
-          <div style={{ display: 'flex', gap: 10, padding: 10, background: 'var(--bg-soft)', borderRadius: 6 }}>
-            <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--ai-gradient)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 11, flexShrink: 0 }}>RK</div>
-            <div style={{ flex: 1 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 3 }}>
-                <div style={{ fontSize: 11, fontWeight: 700 }}>Rajesh Kumar <span style={{ color: 'var(--text-dim)', fontWeight: 400, marginLeft: 4 }}>· Inspector</span></div>
-                <div style={{ fontSize: 10, color: 'var(--text-dim)' }}>07 Mar · 1:20 PM</div>
+          <div className="flex gap-2.5 rounded-md bg-bg-soft p-2.5">
+            <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[var(--ai-gradient)] text-[11px] font-bold text-white">RK</div>
+            <div className="flex-1">
+              <div className="mb-[3px] flex items-center justify-between">
+                <div className="text-[11px] font-bold">Rajesh Kumar <span className="ml-1 font-normal text-text-dim">· Inspector</span></div>
+                <div className="text-[10px] text-text-dim">07 Mar · 1:20 PM</div>
               </div>
-              <div style={{ fontSize: 11, lineHeight: 1.5, color: 'var(--text-mid)' }}>Consumer was cooperative. Tamper was clearly visible — earth wire was attached directly to neutral terminal inside panel. 6 photos uploaded including close-ups. Consumer admitted installing it "due to business loss" but requested installment payment.</div>
+              <div className="text-[11px] leading-[1.5] text-text-mid">Consumer was cooperative. Tamper was clearly visible — earth wire was attached directly to neutral terminal inside panel. 6 photos uploaded including close-ups. Consumer admitted installing it "due to business loss" but requested installment payment.</div>
             </div>
           </div>
           {/* RM comment */}
-          <div style={{ display: 'flex', gap: 10, padding: 10, background: 'var(--bg-soft)', borderRadius: 6 }}>
-            <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--amber)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 11, flexShrink: 0 }}>RM</div>
-            <div style={{ flex: 1 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 3 }}>
-                <div style={{ fontSize: 11, fontWeight: 700 }}>Rajiv Mehta <span style={{ color: 'var(--text-dim)', fontWeight: 400, marginLeft: 4 }}>· Vigilance Officer</span></div>
-                <div style={{ fontSize: 10, color: 'var(--text-dim)' }}>08 Mar · 3:15 PM</div>
+          <div className="flex gap-2.5 rounded-md bg-bg-soft p-2.5">
+            <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-amber text-[11px] font-bold text-white">RM</div>
+            <div className="flex-1">
+              <div className="mb-[3px] flex items-center justify-between">
+                <div className="text-[11px] font-bold">Rajiv Mehta <span className="ml-1 font-normal text-text-dim">· Vigilance Officer</span></div>
+                <div className="text-[10px] text-text-dim">08 Mar · 3:15 PM</div>
               </div>
-              <div style={{ fontSize: 11, lineHeight: 1.5, color: 'var(--text-mid)' }}>Good work <span style={{ color: 'var(--ai-purple)', fontWeight: 700 }}>@RajeshKumar</span>. Proceeding with Section 135 notice. Given good cooperation, I'll approve 6-month installment plan if consumer applies formally. Please document the FIR promptly.</div>
+              <div className="text-[11px] leading-[1.5] text-text-mid">Good work <span className="font-bold text-ai-purple">@RajeshKumar</span>. Proceeding with Section 135 notice. Given good cooperation, I'll approve 6-month installment plan if consumer applies formally. Please document the FIR promptly.</div>
             </div>
           </div>
           {/* AI comment */}
-          <div style={{ display: 'flex', gap: 10, padding: 10, background: 'var(--ai-purple-light)', borderRadius: 6, borderLeft: '3px solid var(--ai-purple)' }}>
-            <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--ai-purple)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 11, flexShrink: 0 }}>✦</div>
-            <div style={{ flex: 1 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 3 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--ai-purple)' }}>AI Assistant</div>
-                <div style={{ fontSize: 10, color: 'var(--text-dim)' }}>08 Apr · 2:45 PM</div>
+          <div className="flex gap-2.5 rounded-md border-l-[3px] border-ai-purple bg-ai-purple-light p-2.5">
+            <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-ai-purple text-[11px] font-bold text-white">✦</div>
+            <div className="flex-1">
+              <div className="mb-[3px] flex items-center justify-between">
+                <div className="text-[11px] font-bold text-ai-purple">AI Assistant</div>
+                <div className="text-[10px] text-text-dim">08 Apr · 2:45 PM</div>
               </div>
-              <div style={{ fontSize: 11, lineHeight: 1.5, color: 'var(--ai-purple)' }}>Consumer has filed appeal (AP-2026-018) disputing baseline methodology. I've prepared counter-arguments for the hearing on 22 Apr. Key point: consumer's own 3-year historical average (21.4 kWh/day) exceeds the disputed peer baseline (19.2 kWh/day) — their argument is self-contradictory.</div>
+              <div className="text-[11px] leading-[1.5] text-ai-purple">Consumer has filed appeal (AP-2026-018) disputing baseline methodology. I've prepared counter-arguments for the hearing on 22 Apr. Key point: consumer's own 3-year historical average (21.4 kWh/day) exceeds the disputed peer baseline (19.2 kWh/day) — their argument is self-contradictory.</div>
             </div>
           </div>
         </div>
         {/* compose */}
-        <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
-          <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--ai-gradient)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 11, flexShrink: 0 }}>YO</div>
-          <div style={{ flex: 1 }}>
+        <div className="flex items-start gap-2">
+          <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[var(--ai-gradient)] text-[11px] font-bold text-white">YO</div>
+          <div className="flex-1">
             <textarea
-              className="form-input"
+              className="form-input box-border min-h-[60px] w-full resize-y p-2.5 text-xs"
               placeholder="Add a comment... use @name to mention others"
               value={comment}
               onChange={(e) => setComment(e.target.value)}
-              style={{ width: '100%', minHeight: 60, fontSize: 12, padding: 10, resize: 'vertical', boxSizing: 'border-box' }}
             />
-            <div style={{ marginTop: 6, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ fontSize: 10, color: 'var(--text-dim)' }}>Supports <strong>@mentions</strong> and <strong>markdown</strong></div>
-              <button type="button" className="btn btn-ai btn-sm" style={{ fontSize: 11 }}
+            <div className="mt-1.5 flex items-center justify-between">
+              <div className="text-[10px] text-text-dim">Supports <strong>@mentions</strong> and <strong>markdown</strong></div>
+              <button type="button" className="btn btn-ai btn-sm text-[11px]"
                 onClick={() => { showToast({ type: 'success', title: 'Comment posted', message: 'Your comment has been added to the case.', duration: 3000 }); setComment('') }}>
                 Post comment
               </button>
@@ -491,7 +509,7 @@ export default function CaseDetailPage() {
             <textarea className="form-textarea" rows={3} placeholder="Observations from field visit..." value={inspectorNotes} onChange={(e) => setInspectorNotes(e.target.value)} />
           </div>
         </div>
-        <div style={{ display: 'flex', gap: 6, marginTop: 14, justifyContent: 'flex-end' }}>
+        <div className="mt-3.5 flex justify-end gap-1.5">
           <button type="button" className="btn btn-outline btn-sm"
             onClick={() => showToast({ type: 'info', title: 'Draft saved', message: 'Inspection outcome saved as draft.', duration: 2500 })}>
             Save draft

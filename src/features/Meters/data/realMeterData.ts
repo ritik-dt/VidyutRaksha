@@ -6,9 +6,9 @@ export interface RealMeterDailyPoint {
   date: string
   kwh: number
   kvah: number
-  pf: number
-  volt_min: number
-  volt_max: number
+  pf: number | null
+  volt_min: number | null
+  volt_max: number | null
   zero_pct: number
 }
 

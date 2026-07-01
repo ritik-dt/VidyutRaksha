@@ -88,7 +88,7 @@ export default function ForecastPage() {
             <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
             <XAxis dataKey="month" tick={{ fontSize: 11, fill: 'var(--text-dim)' }} />
             <YAxis domain={[15, 24]} unit="%" tick={{ fontSize: 11, fill: 'var(--text-dim)' }} />
-            <Tooltip formatter={(v: number | null) => v != null ? `${v}%` : '—'} />
+            <Tooltip formatter={(v: any) => v != null ? `${v}%` : '—'} />
             <Legend wrapperStyle={{ fontSize: 11 }} />
             <ReferenceLine y={18} stroke="var(--green)" strokeDasharray="6 3" label={{ value: '18% target', position: 'insideLeft', fontSize: 10, fill: 'var(--green)' }} />
             <Line type="monotone" dataKey="actual" stroke="var(--navy-light)" strokeWidth={2.5} dot={{ r: 4 }} name="Actual" connectNulls={false} />
@@ -107,7 +107,7 @@ export default function ForecastPage() {
             <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
             <XAxis dataKey="month" tick={{ fontSize: 11, fill: 'var(--text-dim)' }} />
             <YAxis tick={{ fontSize: 11, fill: 'var(--text-dim)' }} unit="MU" />
-            <Tooltip formatter={(v: number | null) => v != null ? `${v.toLocaleString('en-IN')} MU` : '—'} />
+            <Tooltip formatter={(v: any) => v != null ? `${v.toLocaleString('en-IN')} MU` : '—'} />
             <Area type="monotone" dataKey="actual" stroke="var(--navy-light)" fill="rgba(6,35,71,0.2)" name="Actual" />
             <Area type="monotone" dataKey="forecast" stroke="var(--ai-purple)" fill="rgba(124,58,237,0.12)" strokeDasharray="5 3" name="Forecast" />
           </AreaChart>

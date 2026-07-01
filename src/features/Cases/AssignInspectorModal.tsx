@@ -34,17 +34,10 @@ export function AssignInspectorModal({ caseRecord: cs, onClose }: AssignInspecto
       <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-[2px]" onClick={onClose} />
 
       <div
-        className="fixed left-1/2 top-1/2 z-[60] w-[480px] max-w-[95vw] -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-card shadow-[0_24px_64px_rgba(0,0,0,0.2)]"
-        style={{ border: '1px solid var(--border)' }}
+        className="fixed left-1/2 top-1/2 z-[60] w-[480px] max-w-[95vw] -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-border bg-card shadow-[0_24px_64px_rgba(0,0,0,0.2)]"
       >
         {/* Header */}
-        <div
-          className="flex items-center justify-between rounded-t-2xl p-4"
-          style={{
-            background: 'linear-gradient(135deg, var(--navy) 0%, var(--navy-light) 100%)',
-            borderBottom: '1px solid rgba(255,255,255,0.08)',
-          }}
-        >
+        <div className="flex items-center justify-between rounded-t-2xl border-b border-[rgba(255,255,255,0.08)] bg-[linear-gradient(135deg,var(--navy)_0%,var(--navy-light)_100%)] p-4">
           <div>
             <div className="font-bold text-white">Assign inspector</div>
             <div className="text-[11px] text-[rgba(255,255,255,0.5)]">Case {cs.id} · Meter #{cs.meter}</div>
@@ -72,17 +65,12 @@ export function AssignInspectorModal({ caseRecord: cs, onClose }: AssignInspecto
                   key={insp.name}
                   type="button"
                   onClick={() => setSelected(insp.name)}
-                  className="w-full rounded-xl border p-3 text-left transition-all duration-150"
-                  style={{
-                    borderColor: isSelected ? 'var(--ai-purple)' : 'var(--border)',
-                    background: isSelected ? 'rgba(124,58,237,0.07)' : 'var(--bg)',
-                  }}
+                  className={`w-full rounded-xl border p-3 text-left transition-all duration-150 ${isSelected ? 'border-ai-purple bg-[rgba(124,58,237,0.07)]' : 'border-border bg-bg'}`}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2.5">
                       <div
-                        className="flex size-8 shrink-0 items-center justify-center rounded-full font-bold text-white text-[12px]"
-                        style={{ background: isSelected ? 'var(--ai-purple)' : 'var(--navy-light)' }}
+                        className={`flex size-8 shrink-0 items-center justify-center rounded-full text-[12px] font-bold text-white ${isSelected ? 'bg-ai-purple' : 'bg-[var(--navy-light)]'}`}
                       >
                         {insp.name.split(' ').map((n) => n[0]).join('')}
                       </div>
@@ -104,16 +92,14 @@ export function AssignInspectorModal({ caseRecord: cs, onClose }: AssignInspecto
           <div className="mt-4 flex gap-2">
             <button
               type="button"
-              className="btn btn-outline flex-1"
-              style={{ justifyContent: 'center' }}
+              className="btn btn-outline flex-1 justify-center"
               onClick={onClose}
             >
               Cancel
             </button>
             <button
               type="button"
-              className="btn btn-ai flex-1"
-              style={{ justifyContent: 'center' }}
+              className="btn btn-ai flex-1 justify-center"
               onClick={handleAssign}
               disabled={!selected}
             >

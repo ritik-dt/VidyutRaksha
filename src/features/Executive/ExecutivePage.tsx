@@ -82,7 +82,7 @@ export default function ExecutivePage() {
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
               <XAxis dataKey="q" tick={{ fontSize: 10, fill: 'var(--text-dim)' }} />
               <YAxis domain={[18, 26]} unit="%" tick={{ fontSize: 10, fill: 'var(--text-dim)' }} />
-              <Tooltip formatter={(v: number) => `${v}%`} />
+              <Tooltip formatter={(v: any) => `${v}%`} />
               <Line type="monotone" dataKey="atc" stroke="var(--ai-purple)" strokeWidth={2.5} dot={{ fill: 'var(--ai-purple)', r: 4 }} name="AT&C Loss" />
             </LineChart>
           </ResponsiveContainer>

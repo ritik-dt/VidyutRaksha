@@ -1,4 +1,4 @@
-import { useEffect, useRef, type RefObject, type MouseEvent } from 'react'
+import { useEffect, useRef, type RefObject, type MouseEvent as ReactMouseEvent } from 'react'
 import { ROLES } from '@/data/roles'
 import { useRole } from '@/shared/context/RoleContext'
 import type { RoleId } from '@/shared/types'
@@ -18,7 +18,7 @@ export function RoleMenu({ open, onClose, anchorRef }: RoleMenuProps) {
       return
     }
 
-    const handleClickOutside = (event: MouseEvent) => {
+    const handleClickOutside = (event: globalThis.MouseEvent) => {
       const target = event.target as Node
       if (
         menuRef.current?.contains(target) ||
@@ -114,12 +114,12 @@ export function RoleMenu({ open, onClose, anchorRef }: RoleMenuProps) {
               textAlign: 'left',
               fontFamily: 'inherit',
             }}
-            onMouseEnter={(event: MouseEvent<HTMLButtonElement>) => {
+            onMouseEnter={(event: ReactMouseEvent<HTMLButtonElement>) => {
               event.currentTarget.style.background = selected
                 ? 'var(--ai-purple-light)'
                 : 'var(--bg)'
             }}
-            onMouseLeave={(event: MouseEvent<HTMLButtonElement>) => {
+            onMouseLeave={(event: ReactMouseEvent<HTMLButtonElement>) => {
               event.currentTarget.style.background = selected
                 ? 'var(--ai-purple-light)'
                 : 'transparent'

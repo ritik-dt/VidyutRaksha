@@ -38,17 +38,10 @@ export function CaseDetailPanel({ caseRecord: cs, onClose, onAssign }: CaseDetai
       <div className="fixed inset-0 z-40 bg-black/30 backdrop-blur-[2px]" onClick={onClose} />
 
       <div
-        className="assign-panel fixed right-0 top-0 z-50 flex h-full w-[520px] max-w-full flex-col overflow-y-auto bg-card shadow-[-8px_0_32px_rgba(0,0,0,0.12)]"
-        style={{ borderLeft: '1px solid var(--border)' }}
+        className="assign-panel fixed right-0 top-0 z-50 flex h-full w-[520px] max-w-full flex-col overflow-y-auto border-l border-border bg-card shadow-[-8px_0_32px_rgba(0,0,0,0.12)]"
       >
         {/* Header */}
-        <div
-          className="flex items-start justify-between p-4 pb-3"
-          style={{
-            background: 'linear-gradient(135deg, var(--navy) 0%, var(--navy-light) 100%)',
-            borderBottom: '1px solid rgba(255,255,255,0.08)',
-          }}
-        >
+        <div className="flex items-start justify-between border-b border-[rgba(255,255,255,0.08)] bg-[linear-gradient(135deg,var(--navy)_0%,var(--navy-light)_100%)] p-4 pb-3">
           <div>
             <div className="font-mono text-[15px] font-bold text-white">{cs.id}</div>
             <div className="text-[11px] text-[rgba(255,255,255,0.55)]">
@@ -72,21 +65,14 @@ export function CaseDetailPanel({ caseRecord: cs, onClose, onAssign }: CaseDetai
           {/* Real case badge */}
           {cs._real && (
             <div
-              className="mb-3 flex items-start gap-3 rounded-xl p-3"
-              style={{ background: 'rgba(34,197,94,0.06)', border: '2px solid rgba(34,197,94,0.35)' }}
+              className="mb-3 flex items-start gap-3 rounded-xl border-2 border-[rgba(34,197,94,0.35)] bg-[rgba(34,197,94,0.06)] p-3"
             >
-              <div
-                className="flex size-9 shrink-0 items-center justify-center rounded-lg text-[18px] text-white"
-                style={{ background: 'var(--green)' }}
-              >
+              <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-green text-[18px] text-white">
                 ✓
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <span
-                    className="rounded-full px-2 py-px text-[9.5px] font-extrabold uppercase tracking-wider text-white"
-                    style={{ background: 'rgba(34,197,94,0.8)' }}
-                  >
+                  <span className="rounded-full bg-[rgba(34,197,94,0.8)] px-2 py-px text-[9.5px] font-extrabold tracking-wider text-white uppercase">
                     REAL CASE
                   </span>
                   <span className="text-[11.5px] font-bold text-text">From Mar-2026 KVVNL tamper event report</span>
@@ -103,11 +89,8 @@ export function CaseDetailPanel({ caseRecord: cs, onClose, onAssign }: CaseDetai
           )}
 
           {/* AI briefing */}
-          <div
-            className="mb-3 rounded-xl p-[12px_14px]"
-            style={{ background: 'rgba(124,58,237,0.06)', border: '1px solid rgba(124,58,237,0.15)' }}
-          >
-            <div className="mb-1 flex items-center gap-1.5 text-[11px] font-bold" style={{ color: 'var(--ai-purple)' }}>
+          <div className="mb-3 rounded-xl border border-[rgba(124,58,237,0.15)] bg-[rgba(124,58,237,0.06)] px-3.5 py-3">
+            <div className="mb-1 flex items-center gap-1.5 text-[11px] font-bold text-ai-purple">
               ✦ AI case briefing
             </div>
             <p className="text-[11.5px] leading-[1.55] text-text-mid">
@@ -126,8 +109,7 @@ export function CaseDetailPanel({ caseRecord: cs, onClose, onAssign }: CaseDetai
                 {(cs.status === 'Assigned' || cs.status === 'In Progress' || cs.status === 'New') && (
                   <button
                     type="button"
-                    className="btn btn-ai"
-                    style={{ padding: '4px 10px', fontSize: '10px' }}
+                    className="btn btn-ai px-2.5 py-1 text-[10px]"
                     onClick={() => onAssign(cs.id)}
                   >
                     {cs.assignee && cs.assignee !== 'Unassigned' ? 'Reassign' : 'Assign'} inspector
@@ -156,11 +138,7 @@ export function CaseDetailPanel({ caseRecord: cs, onClose, onAssign }: CaseDetai
                 {steps.map((step) => (
                   <div key={step.label} className="flex items-start gap-2">
                     <div
-                      className="mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full text-[9px] font-bold"
-                      style={{
-                        background: step.done ? 'var(--green)' : 'var(--border)',
-                        color: step.done ? '#fff' : 'var(--text-dim)',
-                      }}
+                      className={`mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full text-[9px] font-bold ${step.done ? 'bg-green text-white' : 'bg-border text-text-dim'}`}
                     >
                       {step.done ? '✓' : ''}
                     </div>
@@ -179,15 +157,13 @@ export function CaseDetailPanel({ caseRecord: cs, onClose, onAssign }: CaseDetai
             <div className="flex gap-2">
               <button
                 type="button"
-                className="btn btn-ai flex-1"
-                style={{ justifyContent: 'center', fontSize: '11.5px' }}
+                className="btn btn-ai flex-1 justify-center text-[11.5px]"
               >
                 ⚖️ Court-ready dossier
               </button>
               <button
                 type="button"
-                className="btn btn-outline flex-1"
-                style={{ justifyContent: 'center', fontSize: '11px' }}
+                className="btn btn-outline flex-1 justify-center text-[11px]"
               >
                 📁 Download evidence
               </button>

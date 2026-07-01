@@ -78,8 +78,7 @@ export function TheftSignaturesChart({ scopeId, scopeName }: TheftSignaturesChar
             nameKey="name"
             stroke="none"
             isAnimationActive={false}
-            activeIndex={activeIndex}
-            activeShape={renderActiveShape}
+            {...({ activeIndex, activeShape: renderActiveShape } as object)}
             onMouseEnter={(_, index) => setActiveIndex(index)}
             onMouseLeave={() => setActiveIndex(undefined)}
           >
@@ -87,7 +86,7 @@ export function TheftSignaturesChart({ scopeId, scopeName }: TheftSignaturesChar
               <Cell key={entry.name} fill={entry.color} />
             ))}
           </Pie>
-          <Tooltip formatter={(v: number) => `${v}%`} />
+          <Tooltip formatter={(v: any) => `${v}%`} />
         </PieChart>
 
         <div className="flex flex-col gap-1.5">

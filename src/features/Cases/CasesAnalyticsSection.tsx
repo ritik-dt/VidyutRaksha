@@ -3,7 +3,7 @@
  * Uses Chart.js directly — same lib as prototype — so legend-click toggle,
  * gradient fill, tension and tooltip are byte-for-byte identical.
  */
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import {
   Chart,
   ArcElement, DoughnutController,
@@ -12,7 +12,6 @@ import {
   Filler, Legend, Tooltip,
 } from 'chart.js'
 import { useToast } from '@/shared/context/ToastContext'
-import { fmtINR } from '@/features/Dashboard/adapter'
 import { formatIndian } from '@/shared/utils/formatters'
 import type { CasesStats, CasesTrendPoint } from './types'
 
@@ -32,7 +31,7 @@ function DonutChart({ stats }: { stats: CasesStats }) {
 
   useEffect(() => {
     const el = ref.current; if (!el) return
-    try { ch.current?.destroy() } catch (_) {}
+    try { ch.current?.destroy() } catch { /* noop */ }
     ch.current = new Chart(el, {
       type: 'doughnut',
       data: {
@@ -80,7 +79,7 @@ function DonutChart({ stats }: { stats: CasesStats }) {
         },
       },
     })
-    return () => { try { ch.current?.destroy() } catch (_) {} }
+    return () => { try { ch.current?.destroy() } catch { /* noop */ } }
   }, [stats.pastSla, stats.open, stats.inProgress, stats.confirmed, stats.closed])
 
   return <canvas ref={ref} />
@@ -93,7 +92,7 @@ function TrendChart({ trend, avgClose }: { trend: CasesTrendPoint[]; avgClose: n
 
   useEffect(() => {
     const el = ref.current; if (!el) return
-    try { ch.current?.destroy() } catch (_) {}
+    try { ch.current?.destroy() } catch { /* noop */ }
     const months = trend.map((p) => p.month)
     const data   = trend.map((p) => p.avgDays)
     ch.current = new Chart(el, {
@@ -172,52 +171,54 @@ function TrendChart({ trend, avgClose }: { trend: CasesTrendPoint[]; avgClose: n
         },
       },
     })
-    return () => { try { ch.current?.destroy() } catch (_) {} }
+    return () => { try { ch.current?.destroy() } catch { /* noop */ } }
   }, [trend, avgClose])
 
   return <canvas ref={ref} />
 }
 
 /* ─── ActionCard ─── */
-interface ACProps {
-  borderColor: string; icon: string; title: string
-  subColor: string; sub: string; body: React.ReactNode
-  btnLabel: string; btnBase: React.CSSProperties
-  btnHover?: React.CSSProperties; disabled: boolean; onClick: () => void
+type ACVariant = 'red' | 'amber' | 'gray'
+
+const TOP_BORDER: Record<ACVariant, string> = {
+  red: 'border-t-red',
+  amber: 'border-t-amber',
+  gray: 'border-t-[#6B7280]',
 }
-function ActionCard({ borderColor, icon, title, subColor, sub, body, btnLabel, btnBase, btnHover, disabled, onClick }: ACProps) {
-  const [hov, setHov] = useState(false)
+const SUB_COLOR: Record<ACVariant, string> = {
+  red: 'text-red',
+  amber: 'text-amber',
+  gray: 'text-[#6B7280]',
+}
+const BTN_ACTIVE: Record<ACVariant, string> = {
+  red: 'border-none bg-[linear-gradient(135deg,#FF4757_0%,#C0392B_100%)] text-white hover:bg-[linear-gradient(135deg,#D63031_0%,#8B1A25_100%)]',
+  amber: 'border border-amber bg-white text-amber hover:bg-amber hover:text-white',
+  gray: 'border border-border bg-white text-text-mid hover:border-[#6B7280] hover:bg-[#6B7280] hover:text-white',
+}
+const BTN_DISABLED = 'cursor-not-allowed border-none bg-[#E5E7EB] text-[#9CA3AF]'
+
+interface ACProps {
+  variant: ACVariant; icon: string; title: string
+  sub: string; body: React.ReactNode
+  btnLabel: string; disabled: boolean; onClick: () => void
+}
+function ActionCard({ variant, icon, title, sub, body, btnLabel, disabled, onClick }: ACProps) {
   return (
-    <div style={{
-      padding: '18px 16px 16px',
-      background: 'var(--card)',
-      border: '1px solid var(--border)',
-      borderRadius: 10,
-      borderTop: `3px solid ${borderColor}`,
-      display: 'flex', flexDirection: 'column',
-    }}>
+    <div className={`flex flex-col rounded-[10px] border border-border bg-card px-4 pt-4.5 pb-4 border-t-[3px] ${TOP_BORDER[variant]}`}>
       {/* icon + title */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 10 }}>
-        <span style={{ fontSize: 20, lineHeight: 1, marginTop: 1 }}>{icon}</span>
+      <div className="mb-2.5 flex items-start gap-2.5">
+        <span className="mt-px text-xl leading-none">{icon}</span>
         <div>
-          <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--text)', lineHeight: 1.35 }}>{title}</div>
-          <div style={{ fontSize: 10.5, color: subColor, fontWeight: 600, marginTop: 3 }}>{sub}</div>
+          <div className="text-[12.5px] leading-[1.35] font-bold text-text">{title}</div>
+          <div className={`mt-[3px] text-[10.5px] font-semibold ${SUB_COLOR[variant]}`}>{sub}</div>
         </div>
       </div>
       {/* body */}
-      <div style={{ fontSize: 11, color: 'var(--text-mid)', lineHeight: 1.65, marginBottom: 16, flex: 1 }}>{body}</div>
+      <div className="mb-4 flex-1 text-[11px] leading-[1.65] text-text-mid">{body}</div>
       {/* CTA */}
       <button
         type="button" disabled={disabled} onClick={onClick}
-        onMouseEnter={() => !disabled && setHov(true)}
-        onMouseLeave={() => setHov(false)}
-        style={{
-          width: '100%', padding: '9px 12px', borderRadius: 7,
-          fontSize: 12, fontWeight: 700,
-          cursor: disabled ? 'not-allowed' : 'pointer',
-          transition: 'all .15s ease',
-          ...(hov && !disabled && btnHover ? { ...btnBase, ...btnHover } : btnBase),
-        }}
+        className={`w-full rounded-[7px] px-3 py-2.5 text-xs font-bold transition-all duration-150 ${disabled ? BTN_DISABLED : `cursor-pointer ${BTN_ACTIVE[variant]}`}`}
       >
         {btnLabel}
       </button>
@@ -235,51 +236,44 @@ export function CasesAnalyticsSection({ scopeName, stats, trend }: Props) {
   return (
     <>
       {/* ══ Charts 2-col ══ */}
-      <div className="grid-2" style={{ marginTop: 14 }}>
+      <div className="grid-2 mt-3.5">
 
         {/* Donut */}
-        <div className="card" style={{ marginBottom: 0 }}>
+        <div className="card mb-0">
           <div className="card-title">📊 Case status distribution · {scopeName}</div>
-          <div className="page-sub" style={{ margin: '-2px 0 12px', fontSize: 10.5 }}>
+          <div className="page-sub my-[-2px] mb-3 text-[10.5px]">
             {formatIndian(stats.total)} cases at this scope · {formatIndian(stats.active)} active ·{' '}
             {stats.total > 0 ? Math.round((stats.confirmed / stats.total) * 100) : 0}% confirmed
           </div>
           {/* height matches prototype screenshot exactly */}
-          <div style={{ position: 'relative', height: 240 }}>
+          <div className="relative h-[240px]">
             <DonutChart stats={stats} />
           </div>
         </div>
 
         {/* Closure trend */}
-        <div className="card" style={{ marginBottom: 0 }}>
+        <div className="card mb-0">
           <div className="card-title">📈 Closure-time trend · {scopeName} · 12 months</div>
-          <div className="page-sub" style={{ margin: '-2px 0 12px', fontSize: 10.5 }}>
+          <div className="page-sub my-[-2px] mb-3 text-[10.5px]">
             Avg {stats.avgClose}d at {scopeName}{' '}
             {stats.avgClose <= 3
-              ? <span style={{ color: 'var(--green)', fontWeight: 600 }}>✓ within 3-day target</span>
-              : <span style={{ color: 'var(--amber)', fontWeight: 600 }}>⚠ above 3-day target</span>}
+              ? <span className="font-semibold text-green">✓ within 3-day target</span>
+              : <span className="font-semibold text-amber">⚠ above 3-day target</span>}
             {' '}· target line dashed
           </div>
-          <div style={{ position: 'relative', height: 240 }}>
+          <div className="relative h-[240px]">
             <TrendChart trend={trend} avgClose={stats.avgClose} />
           </div>
         </div>
       </div>
 
       {/* ══ AI recommended actions ══ */}
-      <div
-        className="card"
-        style={{
-          marginTop: 14,
-          border: '1px solid rgba(124,58,237,0.18)',
-          background: 'linear-gradient(180deg,rgba(124,58,237,0.025) 0%,rgba(124,58,237,0.005) 100%)',
-        }}
-      >
-        <div className="card-title" style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--ai-purple)', marginBottom: 4 }}>
+      <div className="card mt-3.5 border border-[rgba(124,58,237,0.18)] bg-[linear-gradient(180deg,rgba(124,58,237,0.025)_0%,rgba(124,58,237,0.005)_100%)]">
+        <div className="card-title mb-1 flex items-center gap-2 text-ai-purple">
           ✦ AI-recommended actions · {scopeName}
-          <span className="ai-live-badge" style={{ marginLeft: 'auto' }}>Live</span>
+          <span className="ai-live-badge ml-auto">Live</span>
         </div>
-        <div className="page-sub" style={{ margin: '0 0 16px', fontSize: 10.5 }}>
+        <div className="page-sub mb-4 text-[10.5px]">
           Three highest-impact actions based on current workload at{' '}
           <strong>{scopeName}</strong> · {formatIndian(stats.active)} active cases
         </div>
@@ -287,8 +281,7 @@ export function CasesAnalyticsSection({ scopeName, stats, trend }: Props) {
         <div className="grid-3">
           {/* Card 1 — Auto-escalate */}
           <ActionCard
-            borderColor="var(--red)" icon="⚠" title="Auto-escalate past-SLA cases"
-            subColor="var(--red)"
+            variant="red" icon="⚠" title="Auto-escalate past-SLA cases"
             sub={`${formatIndian(stats.pastSla)} cases qualify in ${scopeName}`}
             body={<>
               {stats.pastSla > 0
@@ -299,19 +292,13 @@ export function CasesAnalyticsSection({ scopeName, stats, trend }: Props) {
               Escalated cases close <strong>1.4× faster</strong> on average.
             </>}
             btnLabel={stats.pastSla > 0 ? `Escalate ${formatIndian(stats.pastSla)} →` : 'Nothing to escalate'}
-            btnBase={stats.pastSla > 0
-              ? { background: 'linear-gradient(135deg,#FF4757 0%,#C0392B 100%)', color: '#fff', border: 'none' }
-              : { background: '#E5E7EB', color: '#9CA3AF', border: 'none', cursor: 'not-allowed' }
-            }
-            btnHover={stats.pastSla > 0 ? { background: 'linear-gradient(135deg,#D63031 0%,#8B1A25 100%)' } : undefined}
             disabled={stats.pastSla === 0}
             onClick={() => showToast({ type: 'success', title: 'Auto-escalation queued', message: `${formatIndian(stats.pastSla)} past-SLA cases at ${scopeName} escalated to next-level supervisor.`, duration: 5000 })}
           />
 
           {/* Card 2 — Rebalance */}
           <ActionCard
-            borderColor="var(--amber)" icon="⚖" title="Rebalance inspector load"
-            subColor="var(--amber)"
+            variant="amber" icon="⚖" title="Rebalance inspector load"
             sub={`${formatIndian(overCapacity)} inspector${overCapacity !== 1 ? 's' : ''} over capacity in ${scopeName}`}
             body={<>
               {scopeName}'s top inspectors hold{' '}
@@ -319,24 +306,19 @@ export function CasesAnalyticsSection({ scopeName, stats, trend }: Props) {
               (42%). Redistribute to keep per-inspector load under 18 cases.
             </>}
             btnLabel="Review plan →"
-            btnBase={{ background: '#fff', border: '1px solid var(--amber)', color: 'var(--amber)' }}
-            btnHover={{ background: 'var(--amber)', color: '#fff', border: '1px solid var(--amber)' }}
             disabled={false}
             onClick={() => showToast({ type: 'info', title: 'Rebalancing draft', message: `AI redistribution plan for ${scopeName} ready. Review on Team & Reports.`, duration: 5000 })}
           />
 
           {/* Card 3 — Batch-close */}
           <ActionCard
-            borderColor="#6B7280" icon="🗑" title="Batch-close stale false positives"
-            subColor="#6B7280"
+            variant="gray" icon="🗑" title="Batch-close stale false positives"
             sub={`${fpCandidates} candidates ≥ 30d in ${scopeName}`}
             body={<>
               {fpCandidates} cases in {scopeName} marked False Positive remain open
               ≥ 30 days. AI confidence on these closures is <strong>90%+</strong>.
             </>}
             btnLabel={`Close ${fpCandidates} →`}
-            btnBase={{ background: '#fff', border: '1px solid var(--border)', color: 'var(--text-mid)' }}
-            btnHover={{ background: '#6B7280', color: '#fff', border: '1px solid #6B7280' }}
             disabled={fpCandidates === 0}
             onClick={() => showToast({ type: 'success', title: 'Batch close queued', message: `${fpCandidates} stale false-positive cases at ${scopeName} will be closed.`, duration: 5000 })}
           />

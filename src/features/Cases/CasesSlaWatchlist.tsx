@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { useToast } from '@/shared/context/ToastContext'
 import { fmtINR } from '@/features/Dashboard/adapter'
 import { formatIndian } from '@/shared/utils/formatters'
@@ -10,23 +9,21 @@ interface CasesSlaWatchlistProps {
   totalPastSla?: number
 }
 
+const thBase = 'px-2.5 py-2 text-[9.5px] font-bold tracking-[0.5px] uppercase'
+
 export function CasesSlaWatchlist({ scopeName, items, totalPastSla }: CasesSlaWatchlistProps) {
   const { showToast } = useToast()
-  const [hoveredRow, setHoveredRow] = useState<string | null>(null)
 
   /* ── empty state ─────────────────────────────────────────────────────────── */
   if (items.length === 0) {
     return (
-      <div
-        className="card"
-        style={{ marginTop: 14, borderLeft: '3px solid var(--green)' }}
-      >
-        <div className="card-title" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div className="card mt-3.5 border-l-[3px] border-l-green">
+        <div className="card-title flex items-center justify-between">
           <span>✅ SLA breach watchlist · {scopeName}</span>
-          <span style={{ fontSize: 10.5, color: 'var(--green)', fontWeight: 600 }}>All clear at this scope</span>
+          <span className="text-[10.5px] font-semibold text-green">All clear at this scope</span>
         </div>
-        <div style={{ padding: 18, textAlign: 'center', color: 'var(--text-mid)', fontSize: 11.5 }}>
-          <div style={{ fontSize: 28, marginBottom: 6, opacity: 0.5 }}>🎯</div>
+        <div className="p-4.5 text-center text-[11.5px] text-text-mid">
+          <div className="mb-1.5 text-[28px] opacity-50">🎯</div>
           No active cases are past SLA at <strong>{scopeName}</strong>.
           Inspector closure rate is meeting the 3-day target.
         </div>
@@ -39,69 +36,54 @@ export function CasesSlaWatchlist({ scopeName, items, totalPastSla }: CasesSlaWa
   const qualifyCount = items.filter((c) => (c.overdueDays ?? 0) >= 2).length
 
   return (
-    <div
-      className="card"
-      style={{ marginTop: 14, borderLeft: '3px solid var(--red)' }}
-    >
+    <div className="card mt-3.5 border-l-[3px] border-l-red">
       {/* ── HEADER ── */}
-      <div
-        className="card-title"
-        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
-      >
+      <div className="card-title flex items-center justify-between">
         <span>
           🔥 SLA breach watchlist · {scopeName} · top {items.length}
           {totalPastSla && totalPastSla > items.length ? ` of ${formatIndian(totalPastSla)}` : ''}
         </span>
-        <span style={{ fontSize: 10.5, color: 'var(--text-dim)', fontWeight: 400 }}>
+        <span className="text-[10.5px] font-normal text-text-dim">
           ranked by overdue days × est. value · {fmtINR(totalExposure)} combined exposure
         </span>
       </div>
 
       {/* ── SUB DESCRIPTION ── */}
-      <div className="page-sub" style={{ margin: '-2px 0 10px', fontSize: 10.5 }}>
+      <div className="page-sub my-[-2px] mb-2.5 text-[10.5px]">
         Cases past due date in this scope's territory — escalation recommended.
         Production wiring would auto-page next-level supervisor after 48h overdue.
       </div>
 
       {/* ── TABLE ── */}
-      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11.5 }}>
+      <table className="w-full border-collapse text-[11.5px]">
         <thead>
-          <tr style={{ background: 'var(--bg-soft)', borderBottom: '1px solid var(--border)' }}>
-            <th style={th('left')}>Risk</th>
-            <th style={th('left')}>Case · Consumer</th>
-            <th style={th('left')}>Inspector</th>
-            <th style={th('right', 'var(--red)')}>Overdue</th>
-            <th style={th('right')}>Est. value</th>
-            <th style={th('center')}>Action</th>
+          <tr className="border-b border-border bg-bg-soft">
+            <th className={`${thBase} text-left text-text-mid`}>Risk</th>
+            <th className={`${thBase} text-left text-text-mid`}>Case · Consumer</th>
+            <th className={`${thBase} text-left text-text-mid`}>Inspector</th>
+            <th className={`${thBase} text-right text-red`}>Overdue</th>
+            <th className={`${thBase} text-right text-text-mid`}>Est. value</th>
+            <th className={`${thBase} text-center text-text-mid`}>Action</th>
           </tr>
         </thead>
         <tbody>
           {items.map((c) => {
-            const col =
-              c.risk >= 80 ? '#DC3545'
-              : c.risk >= 60 ? '#E6921E'
-              : 'var(--amber-dark)'
-            const colBg =
-              c.risk >= 80 ? 'rgba(220,53,69,0.08)'
-              : c.risk >= 60 ? 'rgba(230,146,30,0.08)'
-              : 'rgba(180,117,24,0.08)'
+            const riskTier = c.risk >= 80 ? 'high' : c.risk >= 60 ? 'mid' : 'low'
+            const riskClasses =
+              riskTier === 'high'
+                ? 'border-[#DC3545] bg-[rgba(220,53,69,0.08)] text-[#DC3545]'
+                : riskTier === 'mid'
+                  ? 'border-[#E6921E] bg-[rgba(230,146,30,0.08)] text-[#E6921E]'
+                  : 'border-[var(--amber-dark)] bg-[rgba(180,117,24,0.08)] text-[var(--amber-dark)]'
             const consumerShort =
               (c.consumer || '').length > 26
                 ? c.consumer.substring(0, 26) + '…'
                 : c.consumer
-            const isHovered = hoveredRow === c.id
 
             return (
               <tr
                 key={c.id}
-                style={{
-                  borderBottom: '1px solid var(--border-light)',
-                  cursor: 'pointer',
-                  background: isHovered ? 'var(--bg-soft)' : 'transparent',
-                  transition: 'background 0.12s',
-                }}
-                onMouseEnter={() => setHoveredRow(c.id)}
-                onMouseLeave={() => setHoveredRow(null)}
+                className="cursor-pointer border-b border-border-light transition-colors duration-150 hover:bg-bg-soft"
                 onClick={() =>
                   showToast({
                     type: 'info',
@@ -112,79 +94,45 @@ export function CasesSlaWatchlist({ scopeName, items, totalPastSla }: CasesSlaWa
                 }
               >
                 {/* RISK */}
-                <td style={{ padding: 10 }}>
-                  <div
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      width: 32,
-                      height: 32,
-                      borderRadius: 7,
-                      background: colBg,
-                      border: `2px solid ${col}`,
-                      color: col,
-                      fontSize: 11,
-                      fontWeight: 800,
-                      fontFamily: 'var(--mono)',
-                    }}
-                  >
+                <td className="p-2.5">
+                  <div className={`inline-flex h-8 w-8 items-center justify-center rounded-[7px] border-2 font-mono text-[11px] font-extrabold ${riskClasses}`}>
                     {c.risk}
                   </div>
                 </td>
 
                 {/* CASE · CONSUMER */}
-                <td style={{ padding: 10 }}>
-                  <div style={{ fontSize: 10.5, fontFamily: 'var(--mono)', fontWeight: 700, color: 'var(--id-text)' }}>
+                <td className="p-2.5">
+                  <div className="font-mono text-[10.5px] font-bold text-id-text">
                     {c.id}
                   </div>
-                  <div style={{ fontWeight: 600, fontSize: 11.5, color: 'var(--text)', marginTop: 2 }}>
+                  <div className="mt-0.5 text-[11.5px] font-semibold text-text">
                     {consumerShort}
                   </div>
-                  <div style={{ fontSize: 9.5, color: 'var(--text-dim)', marginTop: 1 }}>
+                  <div className="mt-px text-[9.5px] text-text-dim">
                     {c._activity} · {c._load}{c._load_unit}
                   </div>
                 </td>
 
                 {/* INSPECTOR */}
-                <td style={{ padding: 10, fontSize: 10.5, color: 'var(--text-mid)' }}>
+                <td className="p-2.5 text-[10.5px] text-text-mid">
                   {c.assignee || '—'}
                 </td>
 
                 {/* OVERDUE */}
-                <td style={{ padding: 10, textAlign: 'right' }}>
-                  <span
-                    style={{
-                      display: 'inline-block',
-                      padding: '3px 8px',
-                      background: 'rgba(220,53,69,0.1)',
-                      color: 'var(--red)',
-                      border: '1px solid rgba(220,53,69,0.3)',
-                      borderRadius: 5,
-                      fontSize: 10.5,
-                      fontWeight: 800,
-                    }}
-                  >
+                <td className="p-2.5 text-right">
+                  <span className="inline-block rounded-[5px] border border-[rgba(220,53,69,0.3)] bg-[rgba(220,53,69,0.1)] px-2 py-[3px] text-[10.5px] font-extrabold text-red">
                     ⚠ {c.overdueDays}d
                   </span>
                 </td>
 
                 {/* EST. VALUE */}
-                <td
-                  style={{
-                    padding: 10,
-                    textAlign: 'right',
-                    fontFamily: 'var(--mono)',
-                    fontWeight: 600,
-                    color: 'var(--ai-purple)',
-                  }}
-                >
+                <td className="p-2.5 text-right font-mono font-semibold text-ai-purple">
                   {fmtINR(c.estValue)}
                 </td>
 
                 {/* ACTION */}
-                <td style={{ padding: 10, textAlign: 'center' }}>
-                  <div style={{ display: 'flex', gap: 4, justifyContent: 'center' }}>
+                <td className="p-2.5 text-center">
+                  <div className="flex justify-center gap-1">
                     <button
                       type="button"
                       onClick={(e) => {
@@ -196,16 +144,7 @@ export function CasesSlaWatchlist({ scopeName, items, totalPastSla }: CasesSlaWa
                           duration: 4000,
                         })
                       }}
-                      style={{
-                        padding: '3px 9px',
-                        background: 'linear-gradient(135deg,#FF4757 0%,#A8222F 100%)',
-                        color: '#fff',
-                        border: 'none',
-                        borderRadius: 5,
-                        fontSize: 10,
-                        fontWeight: 700,
-                        cursor: 'pointer',
-                      }}
+                      className="cursor-pointer rounded-[5px] border-none bg-[linear-gradient(135deg,#FF4757_0%,#A8222F_100%)] px-2.5 py-[3px] text-[10px] font-bold text-white"
                     >
                       ⚠ Escalate
                     </button>
@@ -220,16 +159,7 @@ export function CasesSlaWatchlist({ scopeName, items, totalPastSla }: CasesSlaWa
                           duration: 4000,
                         })
                       }}
-                      style={{
-                        padding: '3px 9px',
-                        background: 'transparent',
-                        border: '1px solid var(--border)',
-                        borderRadius: 5,
-                        fontSize: 10,
-                        fontWeight: 600,
-                        color: 'var(--text-mid)',
-                        cursor: 'pointer',
-                      }}
+                      className="cursor-pointer rounded-[5px] border border-border bg-transparent px-2.5 py-[3px] text-[10px] font-semibold text-text-mid"
                     >
                       Reassign
                     </button>
@@ -242,17 +172,7 @@ export function CasesSlaWatchlist({ scopeName, items, totalPastSla }: CasesSlaWa
       </table>
 
       {/* ── AI FOOTER ── */}
-      <div
-        style={{
-          marginTop: 12,
-          padding: '10px 12px',
-          background: 'var(--ai-purple-light)',
-          borderRadius: 7,
-          fontSize: 10.5,
-          color: 'var(--ai-purple)',
-          lineHeight: 1.5,
-        }}
-      >
+      <div className="mt-3 rounded-[7px] bg-ai-purple-light p-2.5 px-3 text-[10.5px] leading-[1.5] text-ai-purple">
         <strong>✦ AI:</strong> The combined exposure on past-SLA cases shown is{' '}
         <strong>{fmtINR(totalExposure)}</strong>.{' '}
         {moreCases > 0 && totalPastSla ? (
@@ -267,19 +187,4 @@ export function CasesSlaWatchlist({ scopeName, items, totalPastSla }: CasesSlaWa
       </div>
     </div>
   )
-}
-
-function th(
-  align: 'left' | 'right' | 'center',
-  color = 'var(--text-mid)',
-): React.CSSProperties {
-  return {
-    padding: '8px 10px',
-    textAlign: align,
-    fontSize: 9.5,
-    fontWeight: 700,
-    color,
-    textTransform: 'uppercase',
-    letterSpacing: '0.5px',
-  }
 }

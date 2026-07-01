@@ -119,7 +119,7 @@ export default function ComparePage() {
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                 <XAxis dataKey="name" tick={{ fontSize: 10, fill: 'var(--text-dim)' }} />
                 <YAxis unit="%" tick={{ fontSize: 10, fill: 'var(--text-dim)' }} />
-                <Tooltip formatter={(v: number) => `${v}%`} />
+                <Tooltip formatter={(v: any) => `${v}%`} />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
                 <Bar dataKey="atc" name="AT&C loss" radius={[3,3,0,0]}>
                   {PEER_DATA.map((entry, i) => (

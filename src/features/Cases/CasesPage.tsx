@@ -47,13 +47,13 @@ export default function CasesPage() {
           <div className="page-sub">
             Hierarchical view · drill into any {childLabel} or scope down to see actual cases
             {realCount > 0 && (
-              <span style={{ color: 'var(--green)', fontWeight: 700 }}>
+              <span className="font-bold text-green">
                 {' '}· {realCount} from real Mar-2026 KVVNL tamper report
               </span>
             )}
           </div>
         </div>
-        <div style={{ display: 'flex', gap: 6 }}>
+        <div className="flex gap-1.5">
           <button
             type="button"
             className="btn btn-outline btn-sm"
@@ -74,22 +74,20 @@ export default function CasesPage() {
       {/* ── SCOPE BREADCRUMB ── */}
       <ScopeBreadcrumb
         rightActions={
-          <span style={{ marginLeft: 'auto', display: 'flex', gap: 6, alignItems: 'center' }}>
-            <span style={{ fontSize: 10.5, color: 'var(--text-mid)', fontWeight: 600 }}>
+          <span className="ml-auto flex items-center gap-1.5">
+            <span className="text-[10.5px] font-semibold text-text-mid">
               {formatIndian(safeStats.total)} total · {formatIndian(safeStats.active)} active
             </span>
             <button
               type="button"
-              className="btn btn-outline btn-sm"
-              style={{ fontSize: '10px', padding: '3px 9px', color: 'var(--ai-purple)', borderColor: 'rgba(124,58,237,0.3)' }}
+              className="btn btn-outline btn-sm border-[rgba(124,58,237,0.3)] px-[9px] py-[3px] text-[10px] text-ai-purple"
               onClick={toggleScopePicker}
             >
               ↕ Change scope
             </button>
             <button
               type="button"
-              className="btn btn-outline btn-sm"
-              style={{ fontSize: '10px', padding: '3px 9px' }}
+              className="btn btn-outline btn-sm px-[9px] py-[3px] text-[10px]"
               onClick={() => openDrawer(scopeId)}
             >
               📋 View {formatIndian(safeStats.total)} cases →
@@ -99,14 +97,14 @@ export default function CasesPage() {
       />
 
       {/* ── AI INSIGHT BANNER ── */}
-      <div className="ai-insight" style={{ marginBottom: 14 }}>
+      <div className="ai-insight mb-3.5">
         <div className="ai-insight-header">
           ✦ AI case advisor
           <span className="ai-live-badge">Live</span>
         </div>
         <div className="ai-insight-body">
           Across <strong>{scopeName}</strong>,{' '}
-          <strong style={{ color: 'var(--red)' }}>
+          <strong className="text-red">
             {formatIndian(safeStats.pastSla)} cases are past SLA
           </strong>{' '}
           — recommend immediate escalation.{' '}
@@ -114,7 +112,7 @@ export default function CasesPage() {
           generated assessments worth{' '}
           <strong>{fmtINR(safeStats.recovery)}</strong> (at 62% realization). Closure rate
           is{' '}
-          <strong style={{ color: safeStats.avgClose > 3 ? 'var(--amber)' : 'var(--green)' }}>
+          <strong className={safeStats.avgClose > 3 ? 'text-amber' : 'text-green'}>
             {safeStats.avgClose} days
           </strong>{' '}
           {safeStats.avgClose > 3

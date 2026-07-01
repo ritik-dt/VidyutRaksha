@@ -210,11 +210,6 @@ function createRandom(seedRef: { value: number }) {
   }
 }
 
-function safeNumber(value: unknown, fallback: number): number {
-  const num = Number(value)
-  return Number.isFinite(num) ? num : fallback
-}
-
 function getScopeInfo(scopeId: string) {
   const scope = hierData[scopeId] ?? hierData.uppcl
   if (scope && typeof enrichLevel === 'function') {

@@ -130,7 +130,7 @@ function AuditTab({ level, scopeName, feederLoss, dtLoss }: { level: ReturnType<
             <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
             <XAxis dataKey="month" tick={{ fontSize: 11, fill: 'var(--text-dim)' }} />
             <YAxis tick={{ fontSize: 11, fill: 'var(--text-dim)' }} unit="%" />
-            <Tooltip formatter={(v: number) => `${v}%`} />
+            <Tooltip formatter={(v: any) => `${v}%`} />
             <Legend wrapperStyle={{ fontSize: 11 }} />
             <Area type="monotone" dataKey="theft" stackId="1" stroke="var(--red)" fill="rgba(220,53,69,0.3)" name="Theft losses" />
             <Area type="monotone" dataKey="technical" stackId="1" stroke="var(--amber)" fill="rgba(230,146,30,0.3)" name="Technical losses" />
@@ -257,7 +257,7 @@ function RevenueTab({ level }: { level: ReturnType<typeof enrichLevel> | null })
             <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
             <XAxis dataKey="month" tick={{ fontSize: 11, fill: 'var(--text-dim)' }} />
             <YAxis tick={{ fontSize: 11, fill: 'var(--text-dim)' }} unit="L" />
-            <Tooltip formatter={(v: number) => `₹${v}L`} />
+            <Tooltip formatter={(v: any) => `₹${v}L`} />
             <Legend wrapperStyle={{ fontSize: 11 }} />
             <Bar dataKey="assessed" fill="rgba(124,58,237,0.5)" name="Assessed" radius={[3, 3, 0, 0]} />
             <Bar dataKey="realized" fill="rgba(34,197,94,0.6)" name="Realized" radius={[3, 3, 0, 0]} />

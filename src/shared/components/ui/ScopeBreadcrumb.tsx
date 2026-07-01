@@ -7,7 +7,7 @@ interface ScopeBreadcrumbProps {
 }
 
 export function ScopeBreadcrumb({ rightActions }: ScopeBreadcrumbProps) {
-  const { hierPath, hierData, navigateToPathIndex, toggleScopePicker } = useScope()
+  const { hierPath, hierData, navigateToPathIndex } = useScope()
 
   if (!hierPath.length) return null
 

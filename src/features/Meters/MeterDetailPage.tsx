@@ -15,7 +15,7 @@ import { MeterInfoTab } from './components/MeterInfoTab'
 import { useToast } from '@/shared/context/ToastContext'
 import { getPathForScreen } from '@/shared/utils/navigation'
 import {
-  LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, Dot,
+  LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Dot,
 } from 'recharts'
 
 // Tamper event colors, matching the prototype's stacked year-bar legend
@@ -56,7 +56,7 @@ export default function MeterDetailPage() {
   // Derived forensic KPIs (computed from the real 61-day load survey, same formulas the prototype uses)
   const daily = realData?.daily ?? []
   const avgPf60 = daily.length >= 60
-    ? (daily.slice(0, 60).reduce((s, d) => s + d.pf, 0) / 60).toFixed(3)
+    ? (daily.slice(0, 60).reduce((s, d) => s + (d.pf ?? 0), 0) / 60).toFixed(3)
     : null
   const avgKwhDay = daily.length
     ? (daily.reduce((s, d) => s + d.kwh, 0) / daily.length).toFixed(1)
@@ -202,15 +202,15 @@ export default function MeterDetailPage() {
               <ResponsiveContainer width="100%" height={170}>
                 <LineChart
                   data={daily}
-                  onClick={(p: { activeTooltipIndex?: number } | null) => {
+                  onClick={(p: any) => {
                     if (p?.activeTooltipIndex != null) setDrillDayIdx(p.activeTooltipIndex)
                   }}
                 >
                   <XAxis dataKey="date" tick={false} axisLine={{ stroke: 'var(--border)' }} tickLine={false} />
                   <YAxis hide domain={[0, 'auto']} />
                   <Tooltip
-                    formatter={(v: number) => `${v} kWh`}
-                    labelFormatter={(l: string) => l}
+                    formatter={(v: any) => `${v} kWh`}
+                    labelFormatter={(l: any) => l}
                   />
                   <Line
                     type="monotone"

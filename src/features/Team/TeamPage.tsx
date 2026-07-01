@@ -116,7 +116,7 @@ export default function TeamPage() {
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" horizontal={false} />
               <XAxis type="number" domain={[0, 100]} unit="%" tick={{ fontSize: 10, fill: 'var(--text-dim)' }} />
               <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: 'var(--text-mid)' }} width={55} />
-              <Tooltip formatter={(v: number) => `${v}%`} />
+              <Tooltip formatter={(v: any) => `${v}%`} />
               <Bar dataKey="hitRate" radius={[0, 3, 3, 0]}
                 fill="var(--green)"
                 label={false} />
@@ -130,7 +130,7 @@ export default function TeamPage() {
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" horizontal={false} />
               <XAxis type="number" domain={[0, 100]} unit="%" tick={{ fontSize: 10, fill: 'var(--text-dim)' }} />
               <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: 'var(--text-mid)' }} width={55} />
-              <Tooltip formatter={(v: number) => `${v}%`} />
+              <Tooltip formatter={(v: any) => `${v}%`} />
               <Bar dataKey="load" radius={[0, 3, 3, 0]}
                 fill="var(--amber)" />
             </BarChart>
