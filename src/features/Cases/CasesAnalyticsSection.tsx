@@ -245,8 +245,8 @@ export function CasesAnalyticsSection({ scopeName, stats, trend }: Props) {
             {formatIndian(stats.total)} cases at this scope · {formatIndian(stats.active)} active ·{' '}
             {stats.total > 0 ? Math.round((stats.confirmed / stats.total) * 100) : 0}% confirmed
           </div>
-          {/* height matches prototype screenshot exactly */}
-          <div className="relative h-[240px] min-w-0">
+          {/* chart-container = 200px, matches prototype + Meters' Theft signatures chart */}
+          <div className="chart-container min-w-0">
             <DonutChart stats={stats} />
           </div>
         </div>
@@ -261,14 +261,17 @@ export function CasesAnalyticsSection({ scopeName, stats, trend }: Props) {
               : <span className="font-semibold text-amber">⚠ above 3-day target</span>}
             {' '}· target line dashed
           </div>
-          <div className="relative h-[240px] min-w-0">
+          <div className="chart-container min-w-0">
             <TrendChart trend={trend} avgClose={stats.avgClose} />
           </div>
         </div>
       </div>
 
       {/* ══ AI recommended actions ══ */}
-      <div className="card mt-3.5 border border-[rgba(124,58,237,0.18)] bg-[linear-gradient(180deg,rgba(124,58,237,0.025)_0%,rgba(124,58,237,0.005)_100%)]">
+      <div
+        className="card mt-3.5 border border-[rgba(124,58,237,0.18)]"
+        style={{ background: 'linear-gradient(180deg, rgba(124,58,237,0.02) 0%, rgba(124,58,237,0.005) 100%)' }}
+      >
         <div className="card-title flex items-center gap-2 text-ai-purple">
           ✦ AI-recommended actions · {scopeName}
           <span className="ai-live-badge ml-auto">Live</span>
