@@ -204,7 +204,7 @@ interface ACProps {
 }
 function ActionCard({ variant, icon, title, sub, body, btnLabel, disabled, onClick }: ACProps) {
   return (
-    <div className={`flex flex-col rounded-[10px] border border-border bg-card px-4 pt-4.5 pb-4 border-t-[3px] ${TOP_BORDER[variant]}`}>
+    <div className={`flex flex-col rounded-[10px] border border-border bg-card p-3.5 border-t-[3px] ${TOP_BORDER[variant]}`}>
       {/* icon + title */}
       <div className="mb-2.5 flex items-start gap-2.5">
         <span className="mt-px text-xl leading-none">{icon}</span>
@@ -239,20 +239,20 @@ export function CasesAnalyticsSection({ scopeName, stats, trend }: Props) {
       <div className="grid-2 mt-3.5">
 
         {/* Donut */}
-        <div className="card mb-0">
+        <div className="card mb-0 min-w-0">
           <div className="card-title">📊 Case status distribution · {scopeName}</div>
           <div className="page-sub my-[-2px] mb-3 text-[10.5px]">
             {formatIndian(stats.total)} cases at this scope · {formatIndian(stats.active)} active ·{' '}
             {stats.total > 0 ? Math.round((stats.confirmed / stats.total) * 100) : 0}% confirmed
           </div>
           {/* height matches prototype screenshot exactly */}
-          <div className="relative h-[240px]">
+          <div className="relative h-[240px] min-w-0">
             <DonutChart stats={stats} />
           </div>
         </div>
 
         {/* Closure trend */}
-        <div className="card mb-0">
+        <div className="card mb-0 min-w-0">
           <div className="card-title">📈 Closure-time trend · {scopeName} · 12 months</div>
           <div className="page-sub my-[-2px] mb-3 text-[10.5px]">
             Avg {stats.avgClose}d at {scopeName}{' '}
@@ -261,7 +261,7 @@ export function CasesAnalyticsSection({ scopeName, stats, trend }: Props) {
               : <span className="font-semibold text-amber">⚠ above 3-day target</span>}
             {' '}· target line dashed
           </div>
-          <div className="relative h-[240px]">
+          <div className="relative h-[240px] min-w-0">
             <TrendChart trend={trend} avgClose={stats.avgClose} />
           </div>
         </div>
@@ -269,7 +269,7 @@ export function CasesAnalyticsSection({ scopeName, stats, trend }: Props) {
 
       {/* ══ AI recommended actions ══ */}
       <div className="card mt-3.5 border border-[rgba(124,58,237,0.18)] bg-[linear-gradient(180deg,rgba(124,58,237,0.025)_0%,rgba(124,58,237,0.005)_100%)]">
-        <div className="card-title mb-1 flex items-center gap-2 text-ai-purple">
+        <div className="card-title flex items-center gap-2 text-ai-purple">
           ✦ AI-recommended actions · {scopeName}
           <span className="ai-live-badge ml-auto">Live</span>
         </div>

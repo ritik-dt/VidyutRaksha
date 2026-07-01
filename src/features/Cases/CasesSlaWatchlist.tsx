@@ -17,7 +17,7 @@ export function CasesSlaWatchlist({ scopeName, items, totalPastSla }: CasesSlaWa
   /* ── empty state ─────────────────────────────────────────────────────────── */
   if (items.length === 0) {
     return (
-      <div className="card mt-3.5 border-l-[3px] border-l-green">
+      <div className="card mt-3.5" style={{ borderLeft: '3px solid var(--green)' }}>
         <div className="card-title flex items-center justify-between">
           <span>✅ SLA breach watchlist · {scopeName}</span>
           <span className="text-[10.5px] font-semibold text-green">All clear at this scope</span>
@@ -36,7 +36,7 @@ export function CasesSlaWatchlist({ scopeName, items, totalPastSla }: CasesSlaWa
   const qualifyCount = items.filter((c) => (c.overdueDays ?? 0) >= 2).length
 
   return (
-    <div className="card mt-3.5 border-l-[3px] border-l-red">
+    <div className="card mt-3.5" style={{ borderLeft: '3px solid var(--red)' }}>
       {/* ── HEADER ── */}
       <div className="card-title flex items-center justify-between">
         <span>
