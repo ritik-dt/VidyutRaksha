@@ -39,7 +39,7 @@ export function AppShell() {
         <Topbar />
         <ProvenanceBar />
         <div className="flex flex-1 overflow-hidden">
-          <div className="content-scroll flex-1 overflow-auto p-5 px-6" id="content">
+          <div className="content-scroll flex-1 overflow-auto p-3 px-6" id="content">
             <Outlet key={scopeVersion} />
           </div>
           <ToastContainer />

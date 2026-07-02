@@ -122,7 +122,8 @@ export default function MetersPage() {
 
       {/* ===== AI theft-triage banner ===== */}
       <AiInsightBanner title="AI theft-triage">
-        Across <strong>{scopeName}</strong> (
+        Across{" "}
+        <strong style={{ color: "var(--ai-purple)" }}>{scopeName}</strong> (
         {formatIndian(level?.meters ?? 1500000)} consumers),{" "}
         <strong style={{ color: "var(--red)" }}>
           {formatIndian(criticalCount)} are critical priority
@@ -131,10 +132,15 @@ export default function MetersPage() {
         <strong style={{ color: "var(--amber)" }}>
           {formatIndian(highCount)} high
         </strong>{" "}
-        (risk 60–79). <strong>{formatIndian(newTodayCount)} new flags</strong>{" "}
+        (risk 60–79).{" "}
+        <strong style={{ color: "var(--ai-purple)" }}>
+          {formatIndian(newTodayCount)} new flags
+        </strong>{" "}
         since last batch. Estimated{" "}
-        <strong>{fmtINR(estMonthlyLoss)}/month</strong> recovery exposure if all
-        confirmed.{" "}
+        <strong style={{ color: "var(--ai-purple)" }}>
+          {fmtINR(estMonthlyLoss)}/month
+        </strong>{" "}
+        recovery exposure if all confirmed.{" "}
         {isConsumerLevel
           ? "You are at the deepest level — the consumer list is below."
           : `Drill into any ${childLabel} below to narrow scope, or click "View list" to see the actual flagged consumers under this scope.`}
