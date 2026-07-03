@@ -6,6 +6,7 @@ import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useToast } from '@/shared/context/ToastContext'
 import { CASES_LIST } from './data/cases'
+import { ReassignInspectorPanel } from './ReassignInspectorPanel'
 import type { CaseRecord } from './types'
 
 /* ── theft type map — exact prototype meterTheftType ── */
@@ -133,6 +134,7 @@ export default function CaseDetailPage() {
   const [recoveredKwh, setRecoveredKwh] = useState('')
   const [assessmentAmt, setAssessmentAmt] = useState('')
   const [inspectorNotes, setInspectorNotes] = useState('')
+  const [showReassignPanel, setShowReassignPanel] = useState(false)
   const [tasks, setTasks] = useState([
     { t: 'Upload meter reading certificate',  d: '12 Apr', done: true,  who: 'Rajesh K' },
     { t: 'Get FIR copy from police station',  d: '14 Apr', done: true,  who: 'Amit S'   },
@@ -209,7 +211,7 @@ export default function CaseDetailPage() {
             <button
               type="button"
               onClick={() => showToast({ type: 'success', title: 'Generating dossier…', message: `Court-ready dossier for ${cs.consumer} is being compiled.`, duration: 4000 })}
-              className="flex cursor-pointer items-center gap-[5px] rounded-lg border-none bg-[var(--ai-gradient)] px-3 py-1.5 text-[11px] font-bold text-white shadow-[0_2px_8px_rgba(124,58,237,0.25)]"
+              className="flex cursor-pointer items-center gap-[5px] rounded-lg border-none bg-[image:var(--ai-gradient)] px-3 py-1.5 text-[11px] font-bold text-white shadow-[0_2px_8px_rgba(124,58,237,0.25)]"
             >
               ⚖️ Court-ready dossier
             </button>
@@ -250,8 +252,8 @@ export default function CaseDetailPage() {
             <span>Details</span>
             <button
               type="button"
-              onClick={() => showToast({ type: 'info', title: 'Reassign inspector', message: `Opening reassignment flow for case ${cs.id}.`, duration: 3000 })}
-              className="flex cursor-pointer items-center gap-1 rounded-md border-none bg-[var(--ai-gradient)] px-3 py-[5px] text-[11px] font-bold text-white"
+              onClick={() => setShowReassignPanel(true)}
+              className="flex cursor-pointer items-center gap-1 rounded-md border-none bg-[image:var(--ai-gradient)] px-3 py-[5px] text-[11px] font-bold text-white"
             >
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>
               Reassign inspector
@@ -285,7 +287,7 @@ export default function CaseDetailPage() {
       {/* AI inspection guide */}
       {rem && (
         <div className="card mb-3.5 border border-[rgba(124,58,237,0.2)]">
-          <div className="-mx-[18px] -mt-[18px] mb-3.5 h-[3px] w-[calc(100%+36px)] rounded-[3px] bg-[var(--ai-gradient)]" />
+          <div className="-mx-[18px] -mt-[18px] mb-3.5 h-[3px] w-[calc(100%+36px)] rounded-[3px] bg-[image:var(--ai-gradient)]" />
           <div className="card-title flex items-center gap-1.5 text-ai-purple">
             ✦ AI inspection guide — {rem.type}
           </div>
@@ -352,7 +354,7 @@ export default function CaseDetailPage() {
                 <div
                   key={lc.id}
                   onClick={() => navigate(`/cases/${lc.id}`)}
-                  className={`cursor-pointer rounded-md border-l-[3px] bg-bg-soft px-2.5 py-2 ${BORDER_COLOR_CLASS[lc.color] ?? 'border-l-amber'}`}
+                  className={`cursor-pointer rounded-md border-l-[3px] bg-bg px-2.5 py-2 ${BORDER_COLOR_CLASS[lc.color] ?? 'border-l-amber'}`}
                 >
                   <div className="flex items-center justify-between">
                     <div className={`text-[11px] font-bold ${textColorClass(lc.color)}`}>{lc.id}</div>
@@ -373,7 +375,7 @@ export default function CaseDetailPage() {
             <div className="card-title">✅ Tasks</div>
             <div className="flex flex-col gap-1.5">
               {tasks.map((task, i) => (
-                <div key={i} className="flex items-center gap-2 rounded bg-bg-soft p-1.5">
+                <div key={i} className="flex items-center gap-2 rounded bg-bg p-1.5">
                   <input type="checkbox" checked={task.done} onChange={() => {
                     setTasks((prev) => prev.map((t, j) => j === i ? { ...t, done: !t.done } : t))
                   }} className="size-3.5 shrink-0 cursor-pointer" />
@@ -395,7 +397,7 @@ export default function CaseDetailPage() {
             <div className="card-title">📎 Attachments ({ATTACHMENTS.length})</div>
             <div className="grid grid-cols-2 gap-1.5">
               {ATTACHMENTS.map((a) => (
-                <div key={a.n} className="flex cursor-pointer items-center gap-1.5 rounded bg-bg-soft p-1.5"
+                <div key={a.n} className="flex cursor-pointer items-center gap-1.5 rounded bg-bg p-1.5"
                   onClick={() => showToast({ type: 'info', title: 'Opening file', message: a.n, duration: 2000 })}>
                   <span className="text-base">{a.i}</span>
                   <div className="min-w-0 flex-1">
@@ -418,8 +420,8 @@ export default function CaseDetailPage() {
         <div className="card-title">💬 Comments & collaboration</div>
         <div className="mb-3 flex flex-col gap-2.5">
           {/* RK comment */}
-          <div className="flex gap-2.5 rounded-md bg-bg-soft p-2.5">
-            <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[var(--ai-gradient)] text-[11px] font-bold text-white">RK</div>
+          <div className="flex gap-2.5 rounded-md bg-bg p-2.5">
+            <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[image:var(--ai-gradient)] text-[11px] font-bold text-white">RK</div>
             <div className="flex-1">
               <div className="mb-[3px] flex items-center justify-between">
                 <div className="text-[11px] font-bold">Rajesh Kumar <span className="ml-1 font-normal text-text-dim">· Inspector</span></div>
@@ -429,7 +431,7 @@ export default function CaseDetailPage() {
             </div>
           </div>
           {/* RM comment */}
-          <div className="flex gap-2.5 rounded-md bg-bg-soft p-2.5">
+          <div className="flex gap-2.5 rounded-md bg-bg p-2.5">
             <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-amber text-[11px] font-bold text-white">RM</div>
             <div className="flex-1">
               <div className="mb-[3px] flex items-center justify-between">
@@ -453,7 +455,7 @@ export default function CaseDetailPage() {
         </div>
         {/* compose */}
         <div className="flex items-start gap-2">
-          <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[var(--ai-gradient)] text-[11px] font-bold text-white">YO</div>
+          <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[image:var(--ai-gradient)] text-[11px] font-bold text-white">YO</div>
           <div className="flex-1">
             <textarea
               className="form-input box-border min-h-[60px] w-full resize-y p-2.5 text-xs"
@@ -520,6 +522,14 @@ export default function CaseDetailPage() {
           </button>
         </div>
       </div>
+
+      {showReassignPanel && (
+        <ReassignInspectorPanel
+          caseRecord={cs}
+          theftType={theftKey}
+          onClose={() => setShowReassignPanel(false)}
+        />
+      )}
     </div>
   )
 }

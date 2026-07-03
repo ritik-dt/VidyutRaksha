@@ -111,6 +111,8 @@ body.dark {
   --animate-ui-spin: ui-spin 0.9s linear infinite;
   --animate-ui-pulse: ui-pulse 1.4s ease-in-out infinite;
   --animate-pulse-dot: pulse-dot 2s infinite;
+  --animate-fade-in: fade-in 0.22s ease;
+  --animate-slide-in-right: slide-in-right 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 /* ===== Base ===== */
@@ -179,6 +181,24 @@ body {
   100% {
     transform: translateX(120%);
     opacity: 0;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slide-in-right {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
   }
 }
 
