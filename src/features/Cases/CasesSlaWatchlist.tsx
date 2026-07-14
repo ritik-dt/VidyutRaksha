@@ -1,5 +1,5 @@
 import { useToast } from "@/shared/context/ToastContext";
-import { fmtINR } from "@/features/Dashboard/adapter";
+import { fmtINR } from "@/shared/utils/formatters";
 import { formatIndian } from "@/shared/utils/formatters";
 import type { CasesWatchlistItem } from "./types";
 

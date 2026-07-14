@@ -1,14 +1,14 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useScope } from '@/shared/context/ScopeContext'
 import { PageHeader } from '@/shared/components/ui/PageHeader'
 import { ScopeBreadcrumb } from '@/shared/components/ui/ScopeBreadcrumb'
 import { AiInsightBanner } from '@/shared/components/ui/AiInsightBanner'
 import { useToast } from '@/shared/context/ToastContext'
 import { formatIndian } from '@/shared/utils/formatters'
-import { fmtINR } from '@/features/Dashboard/adapter'
+import { fmtINR } from '@/shared/utils/formatters'
 import { DiagnosticDetailPanel } from './components/DiagnosticDetailPanel'
 import { DiagnosticReportCard } from './components/DiagnosticReportCard'
-import { DiagnosticScopePill } from './components/DiagnosticScopePill'
+import { ScopePill } from '@/shared/components/ui/ScopePill'
 import { useDiagnosticsScope } from './hooks/useDiagnosticsScope'
 
 export default function DiagnosticsPage() {
@@ -28,6 +28,8 @@ export default function DiagnosticsPage() {
     trendingUp,
   } = useDiagnosticsScope()
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null)
+  const critSectionRef = useRef<HTMLDivElement>(null)
+  const medSectionRef = useRef<HTMLDivElement>(null)
 
   const selectedReport = reports.find((report) => report.id === selectedReportId) ?? null
   const trendingText =
@@ -97,17 +99,20 @@ export default function DiagnosticsPage() {
         }
       />
 
-      <div className="mb-3">
-        <div className="mb-2 text-[10.5px] font-semibold uppercase tracking-[0.8px] text-text-dim">
-          Scope summary
-        </div>
-        <DiagnosticScopePill scopeName={scopeName} totalAffected={totalAffected} totalImpact={totalImpact} />
-      </div>
+      <ScopePill />
 
       <AiInsightBanner title={`Today's tamper & anomaly summary — ${currentRole.label} · ${scopeName}`}>
-        <strong>{formatIndian(totalAffected)} meters flagged</strong> across <strong>{reports.length} reports</strong> at{' '}
-        <strong>{scopeName}</strong>. Combined revenue exposure: <strong style={{ color: 'var(--red)' }}>{fmtINR(totalImpact)}</strong>{' '}
-        if all confirmed.
+        {totalAffected > 0 ? (
+          <>
+            <strong>{formatIndian(totalAffected)} meters flagged</strong> across <strong>{reports.length} reports</strong> at{' '}
+            <strong>{scopeName}</strong>. Combined revenue exposure:{' '}
+            <strong style={{ color: 'var(--red)' }}>{fmtINR(totalImpact)}</strong> if all confirmed.
+          </>
+        ) : (
+          <>
+            <strong style={{ color: 'var(--green)' }}>No flags at {scopeName}</strong> across the {reports.length} active reports — clean slate this run.
+          </>
+        )}
         {trendingUp.length > 0 ? (
           <>
             <br />
@@ -123,72 +128,109 @@ export default function DiagnosticsPage() {
         Click any report card to see the affected meter list and drill into individual cases{!isStateLevel ? ` within ${scopeName}` : ''}.
       </AiInsightBanner>
 
-      <div className="kpi-row mb-5 flex flex-wrap gap-3">
-        {[
-          {
-            label: 'Critical reports',
-            value: String(criticalCount),
-            sub: 'High-priority tamper',
-            accent: 'var(--red)',
-            valueColor: 'var(--red)',
-          },
-          {
-            label: 'High priority',
-            value: String(highPriority.length),
-            sub: 'Daily review',
-            accent: 'var(--amber)',
-            valueColor: 'var(--text)',
-          },
-          {
-            label: 'Medium priority',
-            value: String(mediumPriority.length),
-            sub: 'Weekly review',
-            accent: 'var(--teal, #00c2cb)',
-            valueColor: 'var(--text)',
-          },
-          {
-            label: `Total flagged · ${scopeName}`,
-            value: formatIndian(totalAffected),
-            sub: 'Across all reports',
-            accent: 'var(--ai-purple)',
-            valueColor: 'var(--text)',
-          },
-          {
-            label: 'Revenue exposure',
-            value: fmtINR(totalImpact),
-            sub: 'If all confirmed',
-            accent: 'var(--red)',
-            valueColor: 'var(--red)',
-            fontSize: '18px',
-          },
-        ].map((kpi) => (
-          <div
-            key={kpi.label}
-            className="kpi-card relative min-w-[140px] flex-1 overflow-hidden rounded-xl border border-border bg-card p-4 px-[18px]"
-          >
-            <div className="absolute left-0 top-0 h-full w-1 rounded-l-xl" style={{ background: kpi.accent }} />
-            <div className="mb-1 text-[11px] font-medium uppercase tracking-[0.5px] text-text-dim">{kpi.label}</div>
-            <div className="font-mono font-extrabold" style={{ color: kpi.valueColor, fontSize: kpi.fontSize ?? '24px' }}>
-              {kpi.value}
-            </div>
-            <div className="mt-0.5 text-[10px] text-text-mid">{kpi.sub}</div>
-          </div>
-        ))}
+      <div className="kpi-row">
+        <div
+          className="kpi-card clickable"
+          onClick={() => {
+            critSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+            showToast({
+              type: 'info',
+              title: 'Critical reports highlighted',
+              message: 'Showing the critical-severity reports. Click any card to drill in.',
+              duration: 3500,
+            })
+          }}
+        >
+          <div className="kpi-accent" style={{ background: 'var(--red)' }} />
+          <div className="kpi-label">Critical reports</div>
+          <div className="kpi-value" style={{ color: 'var(--red)' }}>{criticalCount}</div>
+          <div className="kpi-sub">High-priority tamper</div>
+        </div>
+
+        <div
+          className="kpi-card clickable"
+          onClick={() => critSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+        >
+          <div className="kpi-accent" style={{ background: 'var(--amber)' }} />
+          <div className="kpi-label">High priority</div>
+          <div className="kpi-value">{highPriority.length}</div>
+          <div className="kpi-sub">Daily review</div>
+        </div>
+
+        <div
+          className="kpi-card clickable"
+          onClick={() => medSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+        >
+          <div className="kpi-accent" style={{ background: 'var(--teal, #17a2b8)' }} />
+          <div className="kpi-label">Medium priority</div>
+          <div className="kpi-value">{mediumPriority.length}</div>
+          <div className="kpi-sub">Weekly review</div>
+        </div>
+
+        <div
+          className="kpi-card clickable"
+          onClick={() =>
+            showToast({
+              type: 'info',
+              title: `Total flagged at ${scopeName}`,
+              message: `${formatIndian(totalAffected)} unique meters across all 8 queries at ${scopeName}. Some meters appear in multiple reports (cross-flagged). Click any report card to see its specific list.`,
+              duration: 5000,
+            })
+          }
+        >
+          <div className="kpi-accent" style={{ background: 'var(--ai-purple)' }} />
+          <div className="kpi-label">Total flagged · {scopeName}</div>
+          <div className="kpi-value">{formatIndian(totalAffected)}</div>
+          <div className="kpi-sub">Across all reports</div>
+        </div>
+
+        <div
+          className="kpi-card clickable"
+          onClick={() =>
+            showToast({
+              type: 'warning',
+              title: 'Revenue exposure breakdown',
+              message: `${fmtINR(totalImpact)} if all flagged cases at ${scopeName} confirm as theft. Click report cards for per-case estimates.`,
+              duration: 6000,
+            })
+          }
+        >
+          <div className="kpi-accent" style={{ background: 'var(--red)' }} />
+          <div className="kpi-label">Revenue exposure</div>
+          <div className="kpi-value" style={{ color: 'var(--red)', fontSize: '18px' }}>{fmtINR(totalImpact)}</div>
+          <div className="kpi-sub">If all confirmed</div>
+        </div>
       </div>
 
-      <div className="mb-1.5 px-1 text-[10.5px] font-bold uppercase tracking-[0.8px]" style={{ color: 'var(--red)' }}>
+      <div
+        ref={critSectionRef}
+        className="mt-[18px] mb-2.5 border-b border-border pb-1.5 text-[11.5px] font-extrabold uppercase tracking-[1px]"
+        style={{ color: 'var(--red)' }}
+      >
+        <span style={{ color: 'var(--red)', fontSize: '14px' }}>■ </span>
         Critical Tamper Reports — daily review (high priority)
       </div>
-      <div className="mb-5 grid gap-3 lg:grid-cols-2">
+      <div
+        className="mb-4 grid gap-3.5"
+        style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(min(360px, 100%), 1fr))' }}
+      >
         {highPriority.map((report) => (
           <DiagnosticReportCard key={report.id} report={report} onOpen={() => setSelectedReportId(report.id)} />
         ))}
       </div>
 
-      <div className="mb-1.5 px-1 text-[10.5px] font-bold uppercase tracking-[0.8px]" style={{ color: 'var(--amber)' }}>
+      <div
+        ref={medSectionRef}
+        className="mt-[18px] mb-2.5 border-b border-border pb-1.5 text-[11.5px] font-extrabold uppercase tracking-[1px]"
+        style={{ color: 'var(--amber-dark, #9c5a14)' }}
+      >
+        <span style={{ color: 'var(--amber)', fontSize: '14px' }}>■ </span>
         Anomaly Reports — weekly review (medium priority)
       </div>
-      <div className="grid gap-3 lg:grid-cols-2">
+      <div
+        className="grid gap-3.5"
+        style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(min(360px, 100%), 1fr))' }}
+      >
         {mediumPriority.map((report) => (
           <DiagnosticReportCard key={report.id} report={report} onOpen={() => setSelectedReportId(report.id)} />
         ))}

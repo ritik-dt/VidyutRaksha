@@ -1,5 +1,5 @@
 import { formatIndian } from '@/shared/utils/formatters'
-import { fmtINR } from '@/features/Dashboard/adapter'
+import { fmtINR } from '@/shared/utils/formatters'
 import type { CasesHierarchyRow, CasesStats } from './types'
 
 interface Props {

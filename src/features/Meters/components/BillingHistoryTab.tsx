@@ -2,7 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Chart, type ChartOptions, type ChartDataset } from 'chart.js/auto'
 import type { SuspMeter } from '@/features/Meters/data/meters'
 import { getBillingHistoryData, getLoadFactorData } from '../data/meterChartData'
-import { ChartControls, ChartTableView, exportChartCSV, downloadChartPng, type ChartKind, type ViewMode } from './ChartViewControls'
+import { ChartInfoButton } from '@/shared/components/ui/ChartInfoButton'
+import { ChartControls, ChartTableView, exportChartCSV, downloadChartPng, type ChartKind, type ViewMode } from '@/shared/components/ui/ChartViewControls'
 
 interface BillingHistoryTabProps {
   meter: SuspMeter
@@ -178,7 +179,7 @@ export function BillingHistoryTab({ meter }: BillingHistoryTabProps) {
     <div>
       <div className="card mb-4">
         <div className="mb-1 flex items-start justify-between gap-2">
-          <div className="card-title text-[13px] font-bold">Monthly consumption + demand</div>
+          <div className="card-title flex items-center text-[13px] font-bold">Monthly consumption + demand<ChartInfoButton chartId="monthly-consumption" /></div>
           <ChartControls
             types={['bar', 'line', 'area']}
             activeType={blKind}
@@ -222,7 +223,7 @@ export function BillingHistoryTab({ meter }: BillingHistoryTabProps) {
       </div>
 
       <div className="card">
-        <div className="card-title mb-1 text-[13px] font-bold">Load factor trend</div>
+        <div className="card-title mb-1 flex items-center text-[13px] font-bold">Load factor trend<ChartInfoButton chartId="load-factor" /></div>
         <div className="mb-3 text-[10.5px] text-text-dim">Monthly load factor vs normal range (0.15–0.30)</div>
         <div className="relative h-[160px]">
           <canvas ref={lfCanvasRef} />

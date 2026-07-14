@@ -1,4 +1,4 @@
-import { fmtINR } from '@/features/Dashboard/adapter'
+import { fmtINR } from '@/shared/utils/formatters'
 import { useToast } from '@/shared/context/ToastContext'
 
 interface AiActionsPanelProps {

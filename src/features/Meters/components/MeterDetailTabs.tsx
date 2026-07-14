@@ -39,7 +39,7 @@ export function MeterInfoTab({ meter }: { meter: SuspMeter }) {
               style={{ background: 'var(--green)' }}>✓ FROM REAL DATA</span>
           )}
         </div>
-        <div className="grid grid-cols-2 gap-x-6 gap-y-0">
+        <div className="grid grid-cols-1 gap-x-6 gap-y-0 sm:grid-cols-2">
           {consumerFields.map(({ label, value }) => (
             <div key={label} className="flex items-center justify-between border-b border-border py-2.5 last:border-0">
               <span className="text-[11.5px] text-text-dim">{label}</span>
@@ -58,7 +58,7 @@ export function MeterInfoTab({ meter }: { meter: SuspMeter }) {
               style={{ background: 'var(--green)' }}>✓ FROM REAL MRI</span>
           )}
         </div>
-        <div className="grid grid-cols-2 gap-x-6 gap-y-0">
+        <div className="grid grid-cols-1 gap-x-6 gap-y-0 sm:grid-cols-2">
           {meterFields.map(({ label, value }) => (
             <div key={label} className="flex items-center justify-between border-b border-border py-2.5 last:border-0">
               <span className="text-[11.5px] text-text-dim">{label}</span>

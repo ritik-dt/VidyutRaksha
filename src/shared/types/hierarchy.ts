@@ -56,3 +56,20 @@ export interface HierNode {
 export type HierPath = string[]
 
 export type HierDataMap = Record<string, HierNode>
+
+/** A hierarchy level with derived risk/assessment fields (see shared/utils/level). */
+export type EnrichedLevel = HierNode & {
+  openCases?: number
+  newToday?: number
+  overdueInspections?: number
+  closedYesterday?: number
+  children?: EnrichedChildRef[]
+}
+
+/** A child ref with the same derived fields. */
+export type EnrichedChildRef = HierChildRef & {
+  openCases?: number
+  newToday?: number
+  overdueInspections?: number
+  closedYesterday?: number
+}

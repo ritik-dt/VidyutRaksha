@@ -4,11 +4,8 @@ import { useScope } from "@/shared/context/ScopeContext";
 import { ScopeBreadcrumb } from "@/shared/components/ui/ScopeBreadcrumb";
 import { AiInsightBanner } from "@/shared/components/ui/AiInsightBanner";
 import { PageHeader } from "@/shared/components/ui/PageHeader";
-import {
-  enrichLevel,
-  getChildLabel,
-  fmtINR,
-} from "@/features/Dashboard/adapter";
+import { enrichLevel, getChildLabel } from "@/shared/utils/level";
+import { fmtINR } from "@/shared/utils/formatters";
 import { SUSP_METERS, getTopTargets } from "@/features/Meters/data/meters";
 import { formatIndian } from "@/shared/utils/formatters";
 import { getPathForScreen } from "@/shared/utils/navigation";
@@ -64,6 +61,22 @@ export default function MetersPage() {
     const child = level?.children?.find((c) => c.id === childId);
     setListPanel({ open: true, childId, childName: child?.name });
   }
+
+  // Counts for the list panel — child-aware so opening a specific child's list
+  // shows that child's totals (mirrors the prototype's openSuspiciousList(scopeId),
+  // which recomputes flagged/critical/etc. for whatever scope it opens at).
+  const panelChild = listPanel.childId
+    ? level?.children?.find((c) => c.id === listPanel.childId)
+    : undefined;
+  const panelTotalFlagged = panelChild?.flagged ?? flaggedCount;
+  const panelCritical = panelChild?.critical ?? criticalCount;
+  const panelHigh = panelChild?.high ?? highCount;
+  const panelMedium = panelChild?.medium ?? mediumCount;
+  const panelTotalConsumers = panelChild?.meters ?? level?.meters ?? 1500000;
+  const panelEstMonthlyLoss =
+    panelChild?.assessed != null
+      ? Math.round(panelChild.assessed / 12)
+      : estMonthlyLoss;
 
   return (
     <div className="pb-2">
@@ -318,10 +331,7 @@ export default function MetersPage() {
 
       {/* ===== Charts row: theft signatures + detection trend ===== */}
       {!isConsumerLevel && (
-        <div
-          className="mt-3.5 grid gap-3.5"
-          style={{ gridTemplateColumns: "1fr 1.2fr" }}
-        >
+        <div className="mt-3.5 grid gap-3.5 lg:grid-cols-[1fr_1.2fr]">
           <TheftSignaturesChart scopeId={scopeId} scopeName={scopeName} />
           <DetectionTrendChart
             scopeName={scopeName}
@@ -353,12 +363,12 @@ export default function MetersPage() {
           scopeId={listPanel.childId ?? scopeId}
           scopeName={listPanel.childName ?? scopeName}
           scopeType={scopeType}
-          totalConsumers={level?.meters ?? 1500000}
-          totalFlagged={flaggedCount}
-          criticalCount={criticalCount}
-          highCount={highCount}
-          mediumCount={mediumCount}
-          estMonthlyLoss={estMonthlyLoss}
+          totalConsumers={panelTotalConsumers}
+          totalFlagged={panelTotalFlagged}
+          criticalCount={panelCritical}
+          highCount={panelHigh}
+          mediumCount={panelMedium}
+          estMonthlyLoss={panelEstMonthlyLoss}
           initialBand={listPanel.band}
           onClose={() => setListPanel({ open: false })}
         />

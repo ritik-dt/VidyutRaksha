@@ -243,9 +243,10 @@ export function AiCopilotPanel() {
   };
 
   return (
+    <>
     <div
       className={cn(
-        "flex shrink-0 flex-col overflow-hidden border-l border-border bg-card transition-[width] duration-300",
+        "hidden shrink-0 flex-col overflow-hidden border-l border-border bg-card transition-[width] duration-300 lg:flex",
         collapsed ? "w-14" : "w-75",
       )}
       id="aiPanel"
@@ -425,5 +426,26 @@ export function AiCopilotPanel() {
         </>
       ) : null}
     </div>
+
+    {/* Mobile: floating AI button — opens the Ask AI page */}
+    <button
+      type="button"
+      onClick={() => navigate(getPathForScreen("nlquery"))}
+      aria-label="Ask AI"
+      className="fixed right-5 bottom-5 z-40 flex size-13 items-center justify-center rounded-full text-white shadow-[0_6px_20px_rgba(124,58,237,0.45)] transition-transform hover:scale-105 lg:hidden"
+      style={{ background: "var(--ai-gradient)" }}
+    >
+      <svg
+        width="22"
+        height="22"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="#fff"
+        strokeWidth="2"
+      >
+        <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
+      </svg>
+    </button>
+    </>
   );
 }

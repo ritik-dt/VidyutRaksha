@@ -1,10 +1,8 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
-import { ChartShowcasePage } from '@/pages/ChartShowcase/ChartShowcasePage'
 import { AppShell } from '@/app/layouts/AppShell'
 import { ProtectedOutlet } from '@/app/layouts/ProtectedOutlet'
 import DashboardPage from '@/features/Dashboard/DashboardPage'
 import { PlaceholderPage } from '@/pages/PlaceholderPage'
-import { UiShowcasePage } from '@/pages/UiShowcasePage'
 import { ROUTE_DEFINITIONS } from './routeConfig'
 
 // Feature pages
@@ -37,6 +35,7 @@ import IntegrationsPage from '@/features/Integrations/IntegrationsPage'
 import NotificationsPage from '@/features/Notifications/NotificationsPage'
 import PhotosPage from '@/features/Photos/PhotosPage'
 import UsersPage from '@/features/Users/UsersPage'
+import ConsumerDetailPage from '@/features/Consumer/ConsumerDetailPage'
 
 import type { ScreenName } from '@/shared/types'
 
@@ -47,33 +46,32 @@ function pageForScreen(screen: ScreenName) {
     case 'meterDetail':  return <MeterDetailPage />
     case 'cases':        return <CasesPage />
     case 'caseDetail':   return <CaseDetailPage />
-    // case 'diagnostics':  return <DiagnosticsPage />
-    // case 'alerts':       return <AlertsPage />
-    // case 'analytics':    return <AnalyticsPage />
-    // case 'clusters':     return <ClustersPage />
-    // case 'nlquery':      return <NLQueryPage />
-    // case 'team':         return <TeamPage />
-    // case 'rules':        return <RulesPage />
-    // case 'settings':     return <SettingsPage />
-    // case 'reports':      return <ReportsPage />
-    // case 'roi':          return <ROIPage />
-    // case 'dtload':       return <DtLoadPage />
-    // case 'networkmap':   return <NetworkMapPage />
-    // case 'mobile':       return <MobilePage />
-    // case 'assessment':   return <AssessmentPage />
-    // case 'notices':      return <NoticesPage />
-    // case 'executive':    return <ExecutivePage />
-    // case 'forecast':     return <ForecastPage />
-    // case 'appeals':      return <AppealsPage />
-    // case 'audit':        return <AuditPage />
-    // case 'compare':      return <ComparePage />
-    // case 'dataQuality':  return <DataQualityPage />
-    // case 'integrations': return <IntegrationsPage />
-    // case 'notifications':return <NotificationsPage />
-    // case 'photos':       return <PhotosPage />
-    // case 'users':        return <UsersPage />
-    // case 'chartShowcase': return <ChartShowcasePage />
-    // case 'uiShowcase':   return <UiShowcasePage />
+    case 'diagnostics':  return <DiagnosticsPage />
+    case 'alerts':       return <AlertsPage />
+    case 'analytics':    return <AnalyticsPage />
+    case 'clusters':     return <ClustersPage />
+    case 'nlquery':      return <NLQueryPage />
+    case 'team':         return <TeamPage />
+    case 'rules':        return <RulesPage />
+    case 'settings':     return <SettingsPage />
+    case 'reports':      return <ReportsPage />
+    case 'roi':          return <ROIPage />
+    case 'dtload':       return <DtLoadPage />
+    case 'networkmap':   return <NetworkMapPage />
+    case 'mobile':       return <MobilePage />
+    case 'assessment':   return <AssessmentPage />
+    case 'notices':      return <NoticesPage />
+    case 'executive':    return <ExecutivePage />
+    case 'forecast':     return <ForecastPage />
+    case 'appeals':      return <AppealsPage />
+    case 'audit':        return <AuditPage />
+    case 'compare':      return <ComparePage />
+    case 'dataQuality':  return <DataQualityPage />
+    case 'integrations': return <IntegrationsPage />
+    case 'notifications':return <NotificationsPage />
+    case 'photos':       return <PhotosPage />
+    case 'users':        return <UsersPage />
+    case 'consumer':     return <ConsumerDetailPage />
     default:             return <PlaceholderPage screen={screen} />
   }
 }

@@ -10,6 +10,8 @@ interface NavSectionProps {
   collapsed: boolean
   isScreenVisible: (screen: ScreenName) => boolean
   onToggle: () => void
+  /** Forwarded to each NavButton — used to close the mobile drawer. */
+  onNavigate?: () => void
 }
 
 export function NavSection({
@@ -18,6 +20,7 @@ export function NavSection({
   collapsed,
   isScreenVisible,
   onToggle,
+  onNavigate,
 }: NavSectionProps) {
   const visibleItems = section.items.filter((item) =>
     isScreenVisible(item.screen),
@@ -75,6 +78,7 @@ export function NavSection({
             active={activeScreen === item.screen}
             visible
             dense={section.tools}
+            onNavigate={onNavigate}
           />
         ))}
       </div>

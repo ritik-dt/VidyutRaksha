@@ -2,8 +2,9 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Chart, type ChartOptions, type ChartDataset } from 'chart.js/auto'
 import type { SuspMeter } from '@/features/Meters/data/meters'
 import { getLoadProfileData } from '../data/meterChartData'
+import { ChartInfoButton } from '@/shared/components/ui/ChartInfoButton'
 import { RunningTimeTodCards } from './RunningTimeTodCards'
-import { ChartControls, ChartTableView, exportChartCSV, downloadChartPng, type ChartKind, type ViewMode } from './ChartViewControls'
+import { ChartControls, ChartTableView, exportChartCSV, downloadChartPng, type ChartKind, type ViewMode } from '@/shared/components/ui/ChartViewControls'
 
 interface LoadProfileTabProps {
   meter: SuspMeter
@@ -111,7 +112,7 @@ export function LoadProfileTab({ meter }: LoadProfileTabProps) {
     <div>
       <div className="card mb-4">
         <div className="mb-1 flex items-start justify-between gap-2">
-          <div className="card-title text-[13px] font-bold">30-minute load survey + demand</div>
+          <div className="card-title flex items-center text-[13px] font-bold">30-minute load survey + demand<ChartInfoButton chartId="load-survey" /></div>
           <ChartControls
             types={['line', 'area', 'step', 'bar']}
             activeType={kind}

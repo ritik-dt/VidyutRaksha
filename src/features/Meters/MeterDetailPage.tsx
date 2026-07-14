@@ -40,6 +40,64 @@ const TABS = [
   { id: 'info', label: 'Meter info' },
 ]
 
+interface DailyTooltipPoint {
+  date: string
+  kwh: number
+  kvah?: number
+  pf?: number | null
+  zero_pct?: number
+  volt_min?: number | null
+  volt_max?: number | null
+}
+
+/**
+ * Daily-kWh hover tooltip — mirrors the prototype's per-day detail
+ * (date · kWh, plus the kVAh / PF / zero% / voltage fields its drill panel shows).
+ */
+function DailyKwhTooltip({
+  active,
+  payload,
+}: {
+  active?: boolean
+  payload?: { payload: DailyTooltipPoint }[]
+}) {
+  if (!active || !payload || payload.length === 0) return null
+  const d = payload[0].payload
+  return (
+    <div className="rounded-lg border border-border bg-card px-2.5 py-2 text-[10.5px] shadow-[0_4px_12px_rgba(0,0,0,0.12)]">
+      <div className="mb-1 font-bold text-text">{d.date}</div>
+      <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 font-mono text-text-mid">
+        <span>
+          kWh: <strong className="text-text">{d.kwh.toFixed(2)}</strong>
+        </span>
+        {d.kvah != null && (
+          <span>
+            kVAh: <strong className="text-text">{d.kvah.toFixed(2)}</strong>
+          </span>
+        )}
+        {d.pf != null && (
+          <span>
+            PF: <strong className="text-text">{d.pf}</strong>
+          </span>
+        )}
+        {d.zero_pct != null && (
+          <span>
+            Zero: <strong className="text-text">{d.zero_pct}%</strong>
+          </span>
+        )}
+        {d.volt_min != null && d.volt_max != null && (
+          <span className="col-span-2">
+            V:{' '}
+            <strong className="text-text">
+              {d.volt_min}–{d.volt_max}
+            </strong>
+          </span>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export default function MeterDetailPage() {
   const { meterId } = useParams<{ meterId: string }>()
   const navigate = useNavigate()
@@ -209,8 +267,8 @@ export default function MeterDetailPage() {
                   <XAxis dataKey="date" tick={false} axisLine={{ stroke: 'var(--border)' }} tickLine={false} />
                   <YAxis hide domain={[0, 'auto']} />
                   <Tooltip
-                    formatter={(v: any) => `${v} kWh`}
-                    labelFormatter={(l: any) => l}
+                    content={<DailyKwhTooltip />}
+                    cursor={{ stroke: 'var(--border)', strokeWidth: 1 }}
                   />
                   <Line
                     type="monotone"
@@ -454,7 +512,7 @@ export default function MeterDetailPage() {
       <RemediationCard theftType={theftType} meterId={meter.id} />
 
       {/* Explainability panel */}
-      <ExplainabilityPanel meter={meter} />
+      <ExplainabilityPanel meter={meter} realData={realData} />
 
       {/* Tabs */}
       <div className="tabs mb-4 flex overflow-x-auto rounded-xl border border-border bg-bg p-1">
@@ -463,7 +521,7 @@ export default function MeterDetailPage() {
             key={tab.id}
             type="button"
             onClick={() => setActiveTab(tab.id)}
-            className="whitespace-nowrap rounded-lg px-4 py-2 text-[11.5px] font-semibold transition-all"
+            className="cursor-pointer whitespace-nowrap rounded-lg px-4 py-2 text-[11.5px] font-semibold transition-all"
             style={{
               background: activeTab === tab.id ? 'var(--card)' : 'transparent',
               color: activeTab === tab.id ? 'var(--text)' : 'var(--text-dim)',

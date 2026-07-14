@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { hierData } from '@/data/hierarchy'
-import { enrichLevel } from '@/features/Dashboard/adapter'
+import { enrichLevel } from '@/shared/utils/level'
 import { useRole } from '@/shared/context/RoleContext'
 import { useScope } from '@/shared/context/ScopeContext'
 import { getDiagnosticScopeStats } from '../data/diagnostics'

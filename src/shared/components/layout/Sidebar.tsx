@@ -1,5 +1,6 @@
 import { useLocation } from 'react-router-dom'
 import { NAV_SECTIONS } from '@/shared/config/navConfig'
+import { cn } from '@/shared/components/ui/cn'
 import { useRole } from '@/shared/context/RoleContext'
 import { useNavCollapse } from '@/shared/hooks/useNavCollapse'
 import { getActiveNavScreen } from '@/shared/utils/navigation'
@@ -61,33 +62,66 @@ function SidebarUser() {
   )
 }
 
-export function Sidebar() {
+interface SidebarProps {
+  /** Whether the off-canvas drawer is open on small screens. */
+  mobileOpen?: boolean
+  /** Close the drawer (small screens only). */
+  onClose?: () => void
+}
+
+export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
   const { pathname } = useLocation()
   const { isScreenAllowed } = useRole()
   const { isSectionCollapsed, toggleSection } = useNavCollapse()
   const activeScreen = getActiveNavScreen(pathname)
 
   return (
-    <div
-      className="flex w-60 shrink-0 flex-col shadow-[inset_-1px_0_0_rgba(255,255,255,0.04)]"
-      style={{ background: 'var(--grad-sidebar)' }}
-    >
-      <SidebarLogo />
+    <>
+      {/* Backdrop — small screens only, shown when the drawer is open */}
+      <div
+        className={cn(
+          'fixed inset-0 z-40 cursor-pointer bg-black/50 transition-opacity duration-300 lg:hidden',
+          mobileOpen ? 'opacity-100' : 'pointer-events-none opacity-0',
+        )}
+        onClick={onClose}
+        aria-hidden="true"
+      />
 
-      <nav className="sidebar-nav flex-1 overflow-y-auto py-2 pb-1">
-        {NAV_SECTIONS.map((section) => (
-          <NavSection
-            key={section.id}
-            section={section}
-            activeScreen={activeScreen}
-            collapsed={isSectionCollapsed(section.id)}
-            isScreenVisible={isScreenAllowed}
-            onToggle={() => toggleSection(section.id)}
-          />
-        ))}
-      </nav>
+      <aside
+        className={cn(
+          'fixed inset-y-0 left-0 z-50 flex w-60 shrink-0 flex-col shadow-[inset_-1px_0_0_rgba(255,255,255,0.04)] transition-transform duration-300 lg:static lg:z-auto lg:translate-x-0',
+          mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0',
+        )}
+        style={{ background: 'var(--grad-sidebar)' }}
+      >
+        {/* Close button — small screens only */}
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close menu"
+          className="absolute top-3.5 right-3 z-10 flex size-7 items-center justify-center rounded-md text-lg text-white/70 hover:bg-white/10 hover:text-white lg:hidden"
+        >
+          ×
+        </button>
 
-      <SidebarUser />
-    </div>
+        <SidebarLogo />
+
+        <nav className="sidebar-nav flex-1 overflow-y-auto py-2 pb-1">
+          {NAV_SECTIONS.map((section) => (
+            <NavSection
+              key={section.id}
+              section={section}
+              activeScreen={activeScreen}
+              collapsed={isSectionCollapsed(section.id)}
+              isScreenVisible={isScreenAllowed}
+              onToggle={() => toggleSection(section.id)}
+              onNavigate={onClose}
+            />
+          ))}
+        </nav>
+
+        <SidebarUser />
+      </aside>
+    </>
   )
 }

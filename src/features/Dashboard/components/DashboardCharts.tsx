@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode, type KeyboardEven
 import { Chart } from "chart.js/auto";
 import { useNavigate } from "react-router-dom";
 import { useScope } from "@/shared/context/ScopeContext";
+import { ChartInfoButton } from "@/shared/components/ui/ChartInfoButton";
 import { getPathForScreen } from "@/shared/utils/navigation";
 import {
   enrichLevel,
@@ -561,8 +562,9 @@ export default function DashboardCharts() {
         {/* Header */}
         <div className="chart-header mb-[10px] flex items-start justify-between">
           <div>
-            <div className="text-[12px] font-bold text-[var(--text)]">
+            <div className="flex items-center text-[12px] font-bold text-[var(--text)]">
               📈 Detection funnel · 12-month trend
+              <ChartInfoButton chartId="detection-trend" />
             </div>
             <div className="mt-[1px] text-[10.5px] text-[var(--text-dim)]">
               Flagged → Inspected → Confirmed · is the conversion improving?
@@ -615,8 +617,9 @@ export default function DashboardCharts() {
         {/* Header */}
         <div className="chart-header mb-[10px] flex items-start justify-between">
           <div>
-            <div className="text-[12px] font-bold text-[var(--text)]">
+            <div className="flex items-center text-[12px] font-bold text-[var(--text)]">
               🎯 Where is the loss concentrated?
+              <ChartInfoButton chartId="child-loss" />
             </div>
             <div className="mt-[1px] text-[10.5px] text-[var(--text-dim)]">
               By {childLabel.toLowerCase()} · ranked by AT&C — drill to focus

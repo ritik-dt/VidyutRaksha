@@ -9,6 +9,7 @@ import {
   getSimilarConsumersCluster,
 } from "../data/meterChartData";
 import { getRiskColor } from "@/shared/components/ui/StatusBadge";
+import { ChartInfoButton } from "@/shared/components/ui/ChartInfoButton";
 import { useToast } from "@/shared/context/ToastContext";
 import { getPathForScreen } from "@/shared/utils/navigation";
 import {
@@ -18,7 +19,7 @@ import {
   downloadChartPng,
   type ChartKind,
   type ViewMode,
-} from "./ChartViewControls";
+} from "@/shared/components/ui/ChartViewControls";
 
 interface RiskProfileTabProps {
   meter: SuspMeter;
@@ -235,8 +236,9 @@ export function RiskProfileTab({ meter }: RiskProfileTabProps) {
         {/* Risk score trend */}
         <div className="card mb-0">
           <div className="mb-1 flex items-start justify-between gap-2">
-            <div className="card-title text-[13px] font-bold">
+            <div className="card-title flex items-center text-[13px] font-bold">
               Risk score — 12 month trend
+              <ChartInfoButton chartId="risk-trend" />
             </div>
             <ChartControls
               types={["line", "area", "bar"]}
@@ -295,8 +297,9 @@ export function RiskProfileTab({ meter }: RiskProfileTabProps) {
         {/* Risk drivers */}
         <div className="card mb-0">
           <div className="mb-1 flex items-start justify-between gap-2">
-            <div className="card-title text-[13px] font-bold">
+            <div className="card-title flex items-center text-[13px] font-bold">
               Risk drivers — rule breakdown
+              <ChartInfoButton chartId="risk-drivers" />
             </div>
             <ChartControls
               types={["bar", "line", "area"]}
@@ -356,7 +359,7 @@ export function RiskProfileTab({ meter }: RiskProfileTabProps) {
       {/* Consumer timeline */}
       <div className="card">
         <div className="card-title mb-4 text-[13px] font-bold">
-          Consumer timeline — all events in chronological order
+          📅 Consumer timeline — all events in chronological order
         </div>
         <div className="relative">
           <div className="absolute left-[11px] top-0 bottom-0 w-px bg-border" />

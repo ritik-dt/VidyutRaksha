@@ -71,7 +71,7 @@ export function ScopeTreeNode({
       >
         {hasChildren ? (
           <span
-            className="scope-chevron"
+            className="scope-chevron cursor-pointer"
             onClick={(event: MouseEvent<HTMLSpanElement>) => {
               event.stopPropagation()
               onToggleExpand(nodeId)

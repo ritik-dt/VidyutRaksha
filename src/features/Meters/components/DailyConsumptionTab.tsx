@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef } from 'react'
 import { Chart, type ChartOptions, type TooltipItem } from 'chart.js/auto'
 import type { SuspMeter } from '@/features/Meters/data/meters'
 import { getDailyConsumptionData } from '../data/meterChartData'
+import { ChartInfoButton } from '@/shared/components/ui/ChartInfoButton'
 
 interface DailyConsumptionTabProps {
   meter: SuspMeter
@@ -96,6 +97,7 @@ export function DailyConsumptionTab(_props: DailyConsumptionTabProps) {
       <div className="card mb-0">
         <div className="card-title mb-1 flex items-center gap-2 text-[13px] font-bold">
           ✦ Daily consumption vs peer group
+          <ChartInfoButton chartId="daily-consumption" />
         </div>
         <div className="mb-3 text-[10.5px] text-text-dim">
           Day-by-day kWh — shows exactly when the consumption drop started. Blue = this meter, dashed green = peer-group average.

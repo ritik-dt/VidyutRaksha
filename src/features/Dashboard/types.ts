@@ -1,5 +1,6 @@
-import type { HierChildRef, HierNode } from '@/shared/types'
 import type { ScreenName } from '@/shared/types'
+
+export type { EnrichedChildRef, EnrichedLevel } from '@/shared/types/hierarchy'
 
 export interface DiscomRow {
   name: string
@@ -57,17 +58,4 @@ export interface HotspotItem {
   actionScreen: ScreenName
 }
 
-export type EnrichedLevel = HierNode & {
-  openCases?: number
-  newToday?: number
-  overdueInspections?: number
-  closedYesterday?: number
-  children?: EnrichedChildRef[]
-}
 
-export type EnrichedChildRef = HierChildRef & {
-  openCases?: number
-  newToday?: number
-  overdueInspections?: number
-  closedYesterday?: number
-}

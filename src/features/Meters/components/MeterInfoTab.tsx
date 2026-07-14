@@ -20,7 +20,7 @@ function RealBadge({ label }: { label: string }) {
 // .info-item exactly (odd-indexed items, i.e. the left column, get the zebra bg).
 function InfoGrid({ fields }: { fields: [string, string | number][] }) {
   return (
-    <div className="grid grid-cols-2 gap-1.5">
+    <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
       {fields.map(([key, val], i) => (
         <div
           key={key}

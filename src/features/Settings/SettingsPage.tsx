@@ -1,167 +1,116 @@
-import { useState, type ChangeEvent } from 'react'
-import { PageHeader } from '@/shared/components/ui/PageHeader'
 import { AiInsightBanner } from '@/shared/components/ui/AiInsightBanner'
-import { useRole } from '@/shared/context/RoleContext'
+import { PageHeader } from '@/shared/components/ui/PageHeader'
+import { ScopePill } from '@/shared/components/ui/ScopePill'
+import { useActivityLog } from '@/shared/context/ActivityLogContext'
 import { useToast } from '@/shared/context/ToastContext'
+import { AlertRulesTable } from './components/AlertRulesTable'
+import { ChannelDestinationsCard } from './components/ChannelDestinationsCard'
+import { NotifPrefsTable } from './components/NotifPrefsTable'
+import { QuietHoursCard } from './components/QuietHoursCard'
+import { useSettings } from './hooks/useSettings'
 
-type Freq = 'realtime' | 'digest' | 'off'
-type Channel = 'inApp' | 'email' | 'sms'
-
-interface NotifPref {
-  catId: string
-  inApp: Freq
-  email: Freq
-  sms: Freq
-}
-
-const CATEGORIES = [
-  { id: 'high-risk', label: 'High-risk meter detected', icon: '⚠️', desc: 'New meter crosses risk score 80' },
-  { id: 'sla-breach', label: 'Case SLA breach', icon: '⏰', desc: 'Case approaches or exceeds SLA' },
-  { id: 'overload', label: 'DT overload', icon: '⚡', desc: 'DT loading exceeds 85%' },
-  { id: 'approval', label: 'Approval pending', icon: '📋', desc: 'Assessment awaits your approval' },
-  { id: 'kpi-alert', label: 'KPI threshold breach', icon: '📊', desc: 'Loss/hit-rate crosses target' },
-]
-
-const FREQ_OPTS: { value: Freq; label: string }[] = [
-  { value: 'realtime', label: 'Real-time' },
-  { value: 'digest', label: 'Daily digest' },
-  { value: 'off', label: 'Off' },
-]
-
-const FREQ_COLOR: Record<Freq, string> = {
-  realtime: 'var(--green)',
-  digest: 'var(--amber)',
-  off: 'var(--text-dim)',
-}
-
-function makeDefaults(): NotifPref[] {
-  return CATEGORIES.map((c) => ({
-    catId: c.id,
-    inApp: 'realtime' as Freq,
-    email: c.id === 'high-risk' || c.id === 'sla-breach' ? 'realtime' : 'digest',
-    sms: c.id === 'sla-breach' ? 'realtime' : 'off',
-  }))
-}
-
+/**
+ * Settings — notification preferences for the active role.
+ *
+ * Faithful to the prototype's renderSettings(): the header, AI insight,
+ * preference checkboxes and channel destinations are all ROLE-reactive, and
+ * preferences persist per role (NotifPrefsContext) so switching role and back
+ * restores what that role had. Saving logs to the activity trail, which the
+ * Audit screen consumes.
+ */
 export default function SettingsPage() {
-  const { currentRole: role } = useRole()
+  const s = useSettings()
   const { showToast } = useToast()
-  const [prefs, setPrefs] = useState<NotifPref[]>(makeDefaults)
+  const { logActivity } = useActivityLog()
 
-  function setFreq(catId: string, channel: Channel, val: Freq) {
-    setPrefs((prev: NotifPref[]) => prev.map((p: NotifPref) => p.catId === catId ? { ...p, [channel]: val } : p))
+  function handleSave() {
+    showToast({
+      type: 'success',
+      title: 'Preferences saved',
+      message: `Notification settings updated for ${s.role.label}.`,
+      duration: 3000,
+    })
+    logActivity('Updated notification preferences', 'settings', s.role.label)
+  }
+
+  function handleReset() {
+    s.resetPrefs()
+    showToast({
+      type: 'success',
+      title: 'Defaults restored',
+      message: `Reset notification preferences for ${s.role.label}.`,
+      duration: 3000,
+    })
   }
 
   return (
-    <div className="pb-2">
+    <div className="overflow-x-hidden pb-2">
       <PageHeader
         title="⚙️ Settings"
-        subtitle={`Notification preferences for ${role?.label ?? 'your role'} · changes apply to your role only`}
+        subtitle={`Notification preferences for ${s.role.label} (${s.role.level}) · changes apply to your role only`}
         actions={
           <>
-            <button type="button" className="btn btn-outline btn-sm" onClick={() => setPrefs(makeDefaults())}>
-              ↻ Reset to defaults
+            <button type="button" className="btn btn-outline btn-sm" onClick={handleReset}>
+              ↻ Reset to {s.role.level} defaults
             </button>
-            <button type="button" className="btn btn-ai btn-sm"
-              onClick={() => showToast({ type: 'success', title: 'Preferences saved', message: 'Notification settings updated.', duration: 3000 })}>
+            <button type="button" className="btn btn-ai btn-sm" onClick={handleSave}>
               💾 Save preferences
             </button>
           </>
         }
       />
 
-      <AiInsightBanner title={`Smart defaults for ${role?.label ?? 'your role'}`}>
-        Based on your role, I have pre-configured notifications to match your typical workflow.
-        Real-time in-app + email for high-risk detections. Daily digest for KPI alerts.
-        SMS only for SLA breach to keep mobile notifications actionable.
-        You can override any setting below.
+      <ScopePill />
+
+      <AiInsightBanner
+        title={`✦ Smart defaults for ${s.role.label}`}
+        className="mb-[14px]"
+      >
+        <span dangerouslySetInnerHTML={{ __html: s.insightHtml }} />
       </AiInsightBanner>
 
-      {/* Notification matrix */}
-      <div className="card mb-4">
-        <div className="card-title mb-4 text-[13px] font-bold">Notification preferences</div>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr>
-                <th className="py-2 pr-4 text-left text-[11px] font-semibold uppercase tracking-[0.5px] text-text-dim">Alert type</th>
-                {(['inApp', 'email', 'sms'] as Channel[]).map((ch) => (
-                  <th key={ch} className="w-[140px] py-2 text-center text-[11px] font-semibold uppercase tracking-[0.5px] text-text-dim">
-                    {ch === 'inApp' ? '🔔 In-app' : ch === 'email' ? '✉️ Email' : '📱 SMS'}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {CATEGORIES.map((cat) => {
-                const pref = prefs.find((p: NotifPref) => p.catId === cat.id)!
-                return (
-                  <tr key={cat.id} className="border-t border-border">
-                    <td className="py-3 pr-4">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[16px]">{cat.icon}</span>
-                        <div>
-                          <div className="text-[12px] font-semibold text-text">{cat.label}</div>
-                          <div className="text-[10.5px] text-text-dim">{cat.desc}</div>
-                        </div>
-                      </div>
-                    </td>
-                    {(['inApp', 'email', 'sms'] as Channel[]).map((ch) => (
-                      <td key={ch} className="py-3 text-center">
-                        <select
-                          value={pref[ch]}
-                          onChange={(e: ChangeEvent<HTMLSelectElement>) => setFreq(cat.id, ch, e.target.value as Freq)}
-                          className="rounded-lg border border-border bg-bg px-2 py-1.5 text-[11px] outline-none focus:border-ai-purple"
-                          style={{ color: FREQ_COLOR[pref[ch] as Freq] }}
-                        >
-                          {FREQ_OPTS.map((o) => (
-                            <option key={o.value} value={o.value}>{o.label}</option>
-                          ))}
-                        </select>
-                      </td>
-                    ))}
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <NotifPrefsTable
+        categories={s.categories}
+        channels={s.channels}
+        freqOptions={s.freqOptions}
+        pref={s.pref}
+        onToggle={(cat, ch, val) => s.updatePref(cat, ch, val)}
+        onFreq={(cat, freq) => s.updatePref(cat, 'freq', freq)}
+      />
 
-      {/* Other settings */}
-      <div className="grid gap-4 md:grid-cols-2">
-        <div className="card">
-          <div className="card-title mb-3 text-[13px] font-bold">🌐 Language & region</div>
-          <div className="space-y-3">
-            {[
-              { label: 'Interface language', value: 'English' },
-              { label: 'Date format', value: 'DD MMM YYYY' },
-              { label: 'Number format', value: 'Indian (₹ / Lakh / Cr)' },
-              { label: 'Timezone', value: 'IST (UTC+5:30)' },
-            ].map(({ label, value }) => (
-              <div key={label} className="flex items-center justify-between border-b border-border pb-2 last:border-0">
-                <span className="text-[11.5px] text-text-dim">{label}</span>
-                <span className="rounded-lg border border-border bg-bg px-2.5 py-1 text-[11px] text-text">{value}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-        <div className="card">
-          <div className="card-title mb-3 text-[13px] font-bold">🔐 Security</div>
-          <div className="space-y-3">
-            {[
-              { label: 'Two-factor auth', value: 'Enabled (OTP)' },
-              { label: 'Session timeout', value: '8 hours' },
-              { label: 'Last login', value: '11 Jun 2026, 09:14 IST' },
-              { label: 'IP whitelist', value: 'Not configured' },
-            ].map(({ label, value }) => (
-              <div key={label} className="flex items-center justify-between border-b border-border pb-2 last:border-0">
-                <span className="text-[11.5px] text-text-dim">{label}</span>
-                <span className="rounded-lg border border-border bg-bg px-2.5 py-1 text-[11px] text-text">{value}</span>
-              </div>
-            ))}
-          </div>
-        </div>
+      <AlertRulesTable
+        rules={s.alertRules}
+        blurb={s.alertRulesBlurb}
+        roleLabel={s.role.label}
+        onAddRule={() =>
+          showToast({
+            type: 'info',
+            title: 'New rule wizard',
+            message: 'Define trigger condition, severity, channels, and recipients.',
+            duration: 3500,
+          })
+        }
+        onEditRule={(r) =>
+          showToast({
+            type: 'info',
+            title: 'Edit rule',
+            message: `Open rule editor for ${r.name}.`,
+            duration: 2500,
+          })
+        }
+      />
+
+      <div className="grid-2">
+        <QuietHoursCard
+          quietHours={s.quietHours}
+          onChange={s.setQuietHours}
+          blurb={s.quietHoursBlurb}
+          noteHtml={s.quietHoursNoteHtml}
+        />
+        <ChannelDestinationsCard
+          destinations={s.destinations}
+          onChange={s.setDestination}
+        />
       </div>
     </div>
   )

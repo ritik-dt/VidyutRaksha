@@ -1,233 +1,305 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { PageHeader } from '@/shared/components/ui/PageHeader'
-import { AiInsightBanner } from '@/shared/components/ui/AiInsightBanner'
 import { ScopeBreadcrumb } from '@/shared/components/ui/ScopeBreadcrumb'
-import { FilterBar } from '@/shared/components/ui/FilterBar'
+import { AiInsightBanner } from '@/shared/components/ui/AiInsightBanner'
 import { useToast } from '@/shared/context/ToastContext'
-
-interface DT {
-  id: string
-  name: string
-  feeder: string
-  capacity: number
-  currentLoad: number
-  peakLoad: number
-  projectedLoad90: number
-  consumers: number
-  loss: number
-  phaseImbalance: number
-  age: number
-  health: 'critical' | 'warning' | 'healthy'
-  outagesYr: number
-  note: string
-}
-
-const DTS: DT[] = [
-  { id: 'DT-0445', name: 'DT-0445 Bhelupur West', feeder: 'Bhelupur', capacity: 100, currentLoad: 102, peakLoad: 108, projectedLoad90: 118, consumers: 142, loss: 18.4, phaseImbalance: 14, age: 9, health: 'critical', outagesYr: 6, note: '102% loading — overloaded. Projected 118% in 6 weeks. 14% phase imbalance.' },
-  { id: 'DT-0312', name: 'DT-0312 Chowk Central', feeder: 'Chowk', capacity: 160, currentLoad: 148, peakLoad: 155, projectedLoad90: 172, consumers: 218, loss: 22.1, phaseImbalance: 8, age: 7, health: 'critical', outagesYr: 4, note: 'Loss 22% — possible bypass theft. 4 outages this year. Investigate consumers.' },
-  { id: 'DT-0521', name: 'DT-0521 Residency Park', feeder: 'Residency', capacity: 100, currentLoad: 88, peakLoad: 92, projectedLoad90: 96, consumers: 104, loss: 11.2, phaseImbalance: 5, age: 4, health: 'warning', outagesYr: 1, note: 'Approaching capacity. Recommend phase rebalancing within 30 days.' },
-  { id: 'DT-0789', name: 'DT-0789 Gomti Industrial', feeder: 'Gomti Nagar', capacity: 250, currentLoad: 218, peakLoad: 235, projectedLoad90: 252, consumers: 38, loss: 14.6, phaseImbalance: 11, age: 6, health: 'warning', outagesYr: 2, note: 'Industrial DT — high seasonal variation. PF penalty recoverable: ₹4.2L/yr.' },
-  { id: 'DT-0658', name: 'DT-0658 Mahanagar', feeder: 'Mahanagar', capacity: 160, currentLoad: 124, peakLoad: 138, projectedLoad90: 142, consumers: 186, loss: 9.8, phaseImbalance: 4, age: 3, health: 'healthy', outagesYr: 0, note: 'Healthy. Operating well within parameters.' },
-  { id: 'DT-0901', name: 'DT-0901 Bhelupur East', feeder: 'Bhelupur', capacity: 63, currentLoad: 54, peakLoad: 58, projectedLoad90: 61, consumers: 84, loss: 13.5, phaseImbalance: 7, age: 5, health: 'warning', outagesYr: 1, note: 'Smaller DT. Phase imbalance suggests one feeder leg overloaded.' },
-  { id: 'DT-0234', name: 'DT-0234 Chauk North', feeder: 'Chauk', capacity: 200, currentLoad: 128, peakLoad: 148, projectedLoad90: 138, consumers: 248, loss: 7.2, phaseImbalance: 3, age: 2, health: 'healthy', outagesYr: 0, note: 'Healthy. Recently installed (2 years). Headroom for growth.' },
-  { id: 'DT-0156', name: 'DT-0156 Aliganj', feeder: 'Aliganj', capacity: 100, currentLoad: 72, peakLoad: 80, projectedLoad90: 84, consumers: 96, loss: 10.1, phaseImbalance: 6, age: 8, health: 'healthy', outagesYr: 1, note: 'Aging but stable. Replacement scheduled for FY27.' },
-  { id: 'DT-0823', name: 'DT-0823 Sigra Market', feeder: 'Sigra', capacity: 160, currentLoad: 142, peakLoad: 152, projectedLoad90: 165, consumers: 202, loss: 16.8, phaseImbalance: 9, age: 8, health: 'warning', outagesYr: 3, note: 'Ageing + high loss. Candidate for replacement in RDSS Phase-II.' },
-  { id: 'DT-0667', name: 'DT-0667 Kabir Nagar', feeder: 'Kabir Nagar', capacity: 100, currentLoad: 45, peakLoad: 52, projectedLoad90: 54, consumers: 68, loss: 8.4, phaseImbalance: 2, age: 5, health: 'healthy', outagesYr: 0, note: 'Healthy. Low utilization — possible load transfer candidate.' },
-]
-
-const HEALTH_FILTERS = [
-  { value: 'all', label: 'All DTs' },
-  { value: 'critical', label: '🔴 Critical' },
-  { value: 'warning', label: '🟡 Warning' },
-  { value: 'healthy', label: '🟢 Healthy' },
-  { value: 'overloaded', label: '⚡ Overloaded (>85%)' },
-]
-
-const HEALTH_COLOR: Record<string, string> = {
-  critical: 'var(--red)',
-  warning: 'var(--amber)',
-  healthy: 'var(--green)',
-}
+import { useDtLoad } from './hooks/useDtLoad'
+import { DtLoadKpiStrip } from './components/DtLoadKpiStrip'
+import { DtHealthBar } from './components/DtHealthBar'
+import { CriticalDtCard } from './components/CriticalDtCard'
+import { WarningDtCard } from './components/WarningDtCard'
+import { DtPillList } from './components/DtPillList'
+import { ExcessDemandSection } from './components/ExcessDemandSection'
+import { DtDetailModal } from './components/DtDetailModal'
+import { ratio } from './logic/dtLogic'
+import { computeExcessDemand } from './logic/excessDemand'
+import type { DT } from './types'
 
 export default function DtLoadPage() {
   const { showToast } = useToast()
-  const [filter, setFilter] = useState('all')
-  const [selected, setSelected] = useState<DT | null>(null)
+  const {
+    scope,
+    scopeName,
+    isStateLevel,
+    allDts,
+    stats,
+    buckets,
+    isFilteredEmpty,
+    filter,
+  } = useDtLoad()
 
-  const filtered = DTS.filter((d) => {
-    if (filter === 'all') return true
-    if (filter === 'overloaded') return d.currentLoad / d.capacity >= 0.85
-    return d.health === filter
-  })
+  const [selectedDt, setSelectedDt] = useState<DT | null>(null)
+  const excessDemand = useMemo(() => computeExcessDemand(scope.hierPath), [scope.hierPath])
 
-  const critical = DTS.filter((d) => d.health === 'critical').length
-  const overloaded = DTS.filter((d) => d.currentLoad / d.capacity >= 0.85).length
-  const projOverload = DTS.filter((d) => d.projectedLoad90 / d.capacity > 1).length
-  const highLoss = DTS.filter((d) => d.loss > 15).length
+  const hasDts = allDts.length > 0
+  const isFiltered = filter !== null
+  const worst = allDts.length > 0 ? [...allDts].sort((a, b) => ratio(b) - ratio(a))[0] : null
+
+  // ── AI insight body ──
+  const insightBody = !hasDts ? (
+    <>
+      <strong>No distribution transformer data at {scopeName}.</strong> The Load management page covers KVVNL
+      Varanasi territory in this prototype. Navigate up to UPPCL or KVVNL to see all 10 demo DTs.
+    </>
+  ) : stats.projOverload > 0 && worst ? (
+    <>
+      <strong>
+        {stats.projOverload} DT{stats.projOverload > 1 ? 's are' : ' is'} predicted to overload
+      </strong>{' '}
+      in the next 90 days at <strong>{scopeName}</strong>. <strong>{worst.id}</strong> is the most critical at{' '}
+      <strong style={{ color: 'var(--red)' }}>{Math.round(ratio(worst) * 100)}% current loading</strong> with
+      projected {Math.round((worst.projectedLoad90 / worst.capacity) * 100)}% in 90 days.
+      {stats.criticalLoss > 0 && (
+        <>
+          {' '}
+          <strong>
+            {stats.criticalLoss} DT{stats.criticalLoss > 1 ? 's have' : ' has'} loss &gt; 15%
+          </strong>{' '}
+          — likely theft or technical issue.
+        </>
+      )}
+    </>
+  ) : stats.criticalLoss > 0 ? (
+    <>
+      Capacity is healthy at <strong>{scopeName}</strong> but{' '}
+      <strong style={{ color: 'var(--red)' }}>
+        {stats.criticalLoss} DT{stats.criticalLoss > 1 ? 's have' : ' has'} loss &gt; 15%
+      </strong>{' '}
+      — likely commercial loss (theft) or technical issue. Recommend energy audit on:{' '}
+      {allDts
+        .filter((d) => d.loss > 15)
+        .map((d) => d.id)
+        .join(', ')}
+      .
+    </>
+  ) : (
+    <>
+      All {allDts.length} DTs at <strong>{scopeName}</strong> operating within healthy parameters. No immediate
+      intervention needed.
+    </>
+  )
 
   return (
-    <div className="pb-2">
+    <div className="overflow-x-hidden pb-2">
       <PageHeader
         title="⚡ Load management"
-        subtitle="Distribution transformer health, loading, loss and 90-day projection"
+        subtitle={
+          <>
+            Distribution transformer capacity, loss %, and overload prediction · sanctioned-demand monitoring ·{' '}
+            {isStateLevel ? (
+              'showing state-wide totals'
+            ) : (
+              <>
+                filtered to <strong>{scopeName}</strong>
+              </>
+            )}
+          </>
+        }
         actions={
-          <button type="button" className="btn btn-ai btn-sm"
-            onClick={() => showToast({ type: 'ai', title: 'Load rebalancing plan', message: 'AI generating optimal load transfer plan for DT-0445 and DT-0312...', duration: 4000 })}>
-            ✦ AI rebalance plan
+          <button
+            type="button"
+            className="btn btn-ai btn-sm"
+            onClick={() =>
+              showToast({
+                type: 'ai',
+                title: 'AI load advisor',
+                message:
+                  'In production: would draft load-balancing work orders, recommend phase rebalancing, and predict future overloads.',
+                duration: 5000,
+              })
+            }
+          >
+            ✦ AI load advisor
           </button>
         }
       />
 
       <ScopeBreadcrumb
         rightActions={
-          <span className="text-[10.5px] font-semibold text-text-mid">{DTS.length} DTs</span>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <span
+              style={{
+                fontSize: 11,
+                fontWeight: 700,
+                color: hasDts ? 'var(--text)' : 'var(--text-dim)',
+                fontFamily: 'var(--mono)',
+              }}
+            >
+              {allDts.length} DT{allDts.length === 1 ? '' : 's'}
+            </span>
+            {scope.hierPath.length > 1 && (
+              <button
+                type="button"
+                className="btn btn-outline btn-sm"
+                style={{ fontSize: 10.5, padding: '4px 10px' }}
+                onClick={() => scope.navigateToPathIndex(0)}
+              >
+                ↕ Change scope
+              </button>
+            )}
+          </div>
         }
       />
 
-      <AiInsightBanner title="AI DT health summary">
-        <strong style={{ color: 'var(--red)' }}>{critical} DTs are critical</strong> —
-        DT-0445 is at <strong>102% capacity</strong> with 14% phase imbalance; immediate action needed.
-        DT-0312 shows <strong>22.1% losses</strong> — possible bypass theft; trigger diagnostics.
-        <strong> {projOverload} DTs projected to overload</strong> within 90 days — schedule capacity augmentation.
-        {highLoss > 0 && (
-          <> <strong style={{ color: 'var(--amber)' }}>{highLoss} DTs with loss &gt; 15%</strong> — priority inspection targets.</>
-        )}
-      </AiInsightBanner>
+      <AiInsightBanner title={`AI load analysis · ${scopeName}`}>{insightBody}</AiInsightBanner>
 
-      {/* KPIs */}
-      <div className="kpi-row mb-5 flex flex-wrap gap-3">
-        {[
-          { label: 'Critical DTs', value: String(critical), sub: 'Immediate action needed', accent: 'var(--red)', color: 'var(--red)' },
-          { label: 'Overloaded (>85%)', value: String(overloaded), sub: 'Current load', accent: 'var(--amber)', color: 'var(--amber)' },
-          { label: 'Proj. overload (90d)', value: String(projOverload), sub: 'Within 90 days', accent: '#F4A847', color: '#d97706' },
-          { label: 'High loss (>15%)', value: String(highLoss), sub: 'Theft / loss investigation', accent: 'var(--ai-purple)', color: 'var(--ai-purple)' },
-          { label: 'Total DTs', value: String(DTS.length), sub: 'In current scope', accent: 'var(--navy-light)', color: 'var(--text)' },
-        ].map((k) => (
-          <div key={k.label} className="kpi-card relative min-w-[120px] flex-1 overflow-hidden rounded-xl border border-border bg-card p-4 px-[18px]">
-            <div className="absolute left-0 top-0 h-full w-1 rounded-l-xl" style={{ background: k.accent }} />
-            <div className="mb-1 text-[11px] font-medium uppercase tracking-[0.5px] text-text-dim">{k.label}</div>
-            <div className="font-mono text-2xl font-extrabold" style={{ color: k.color }}>{k.value}</div>
-            <div className="mt-0.5 text-[10px] text-text-mid">{k.sub}</div>
+      {!hasDts && (
+        <div className="card" style={{ padding: 36, textAlign: 'center' }}>
+          <div style={{ fontSize: 42, marginBottom: 8, opacity: 0.5 }}>⚡</div>
+          <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', marginBottom: 6 }}>
+            No distribution transformer data at {scopeName}
           </div>
-        ))}
-      </div>
+          <div
+            style={{
+              fontSize: 12,
+              color: 'var(--text-mid)',
+              maxWidth: 520,
+              margin: '0 auto',
+              lineHeight: 1.5,
+              marginBottom: 16,
+            }}
+          >
+            The Load management page covers KVVNL Varanasi territory in this prototype. State-wide there are{' '}
+            <strong>10 demo DTs</strong> — navigate up to UPPCL or KVVNL to view them.
+          </div>
+          <button
+            type="button"
+            className="btn btn-outline btn-sm"
+            onClick={() => scope.navigateToPathIndex(0)}
+          >
+            ↕ Change scope
+          </button>
+        </div>
+      )}
 
-      {/* DT Grid */}
-      <FilterBar filters={HEALTH_FILTERS} active={filter} onChange={setFilter} className="mb-4" />
-
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {filtered.map((dt) => {
-          const loadPct = Math.round((dt.currentLoad / dt.capacity) * 100)
-          const projPct = Math.round((dt.projectedLoad90 / dt.capacity) * 100)
-          const lossColor = dt.loss > 15 ? 'var(--red)' : dt.loss > 10 ? 'var(--amber)' : 'var(--green)'
-          const healthColor = HEALTH_COLOR[dt.health]
-          const loadColor = loadPct >= 100 ? 'var(--red)' : loadPct >= 85 ? 'var(--amber)' : 'var(--green)'
-
-          return (
-            <button key={dt.id} type="button" onClick={() => setSelected(dt)}
-              className="card group text-left transition-all hover:-translate-y-0.5 hover:shadow-lg"
-              style={{ borderTop: `3px solid ${healthColor}` }}>
-              <div className="p-[14px_16px_10px]">
-                {/* Header */}
-                <div className="mb-2 flex items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <div className="font-mono text-[11px] font-bold" style={{ color: 'var(--id-text)' }}>{dt.id}</div>
-                    <div className="text-[12px] font-bold text-text truncate">{dt.name.replace(dt.id + ' ', '')}</div>
-                    <div className="text-[10.5px] text-text-dim">{dt.feeder} feeder · {dt.age}yr old</div>
-                  </div>
-                  <span className="shrink-0 rounded-lg px-2 py-1 text-[9.5px] font-extrabold uppercase"
-                    style={{ background: `${healthColor}18`, color: healthColor, border: `1px solid ${healthColor}40` }}>
-                    {dt.health}
-                  </span>
-                </div>
-
-                {/* Load bar */}
-                <div className="mb-2">
-                  <div className="mb-1 flex items-center justify-between text-[10.5px]">
-                    <span className="text-text-dim">Current load</span>
-                    <span className="font-mono font-bold" style={{ color: loadColor }}>{loadPct}% ({dt.currentLoad} kVA)</span>
-                  </div>
-                  <div className="h-2 overflow-hidden rounded-full bg-border">
-                    <div className="h-full rounded-full transition-all" style={{ width: `${Math.min(100, loadPct)}%`, background: loadColor }} />
-                  </div>
-                  <div className="mt-0.5 text-[9.5px] text-text-dim">
-                    Capacity: {dt.capacity} kVA · Peak: {dt.peakLoad} kVA · 90d proj: {projPct}%
-                  </div>
-                </div>
-
-                {/* Stats row */}
-                <div className="grid grid-cols-3 gap-2 mb-2">
-                  <div className="rounded-md bg-bg p-1.5 text-center">
-                    <div className="font-mono text-[12px] font-bold" style={{ color: lossColor }}>{dt.loss}%</div>
-                    <div className="text-[9px] text-text-dim">Loss</div>
-                  </div>
-                  <div className="rounded-md bg-bg p-1.5 text-center">
-                    <div className="font-mono text-[12px] font-bold text-text">{dt.consumers}</div>
-                    <div className="text-[9px] text-text-dim">Consumers</div>
-                  </div>
-                  <div className="rounded-md bg-bg p-1.5 text-center">
-                    <div className="font-mono text-[12px] font-bold" style={{ color: dt.outagesYr > 3 ? 'var(--red)' : 'var(--text)' }}>{dt.outagesYr}</div>
-                    <div className="text-[9px] text-text-dim">Outages/yr</div>
-                  </div>
-                </div>
-
-                <p className="text-[10.5px] leading-[1.4] text-text-dim">{dt.note}</p>
-              </div>
-            </button>
-          )
-        })}
-      </div>
-
-      {/* DT Detail Modal */}
-      {selected && (
+      {hasDts && (
         <>
-          <div className="fixed inset-0 z-40 bg-black/30" onClick={() => setSelected(null)} />
-          <div className="fixed left-1/2 top-1/2 z-50 w-[500px] max-w-[95vw] -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-card shadow-[0_24px_64px_rgba(0,0,0,0.2)]"
-            style={{ border: '1px solid var(--border)' }}>
-            <div className="flex items-center justify-between rounded-t-2xl p-4"
-              style={{ background: 'linear-gradient(135deg,var(--navy) 0%,var(--navy-light) 100%)', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-              <div>
-                <div className="font-bold text-white">{selected.name}</div>
-                <div className="text-[11px] text-[rgba(255,255,255,0.5)]">{selected.feeder} feeder · {selected.age} years old</div>
-              </div>
-              <button type="button" onClick={() => setSelected(null)}
-                className="flex size-7 items-center justify-center rounded-lg text-[rgba(255,255,255,0.5)] hover:bg-white/10 hover:text-white">✕</button>
+          <DtLoadKpiStrip stats={stats} excessDemandCount={excessDemand.length} />
+
+          <DtHealthBar
+            allDts={allDts}
+            sortedAll={buckets.sortedAll}
+            bucketCounts={{
+              overloaded: buckets.overloaded.length,
+              nearOverload: buckets.nearOverload.length,
+              optimal: buckets.optimal.length,
+              underUtilised: buckets.underUtilised.length,
+            }}
+            scopeName={scopeName}
+            isStateLevel={isStateLevel}
+            onSelectDt={setSelectedDt}
+          />
+
+          {isFiltered && isFilteredEmpty && (
+            <div className="card" style={{ padding: '40px 20px', textAlign: 'center', color: 'var(--text-dim)' }}>
+              <div style={{ fontSize: 36, marginBottom: 10, opacity: 0.4 }}>⚡</div>
+              <div style={{ fontWeight: 700, color: 'var(--text-mid)', fontSize: 14 }}>No DTs match this filter</div>
+              <div style={{ fontSize: 11, marginTop: 6 }}>Try clearing the filter to see all transformers.</div>
             </div>
-            <div className="p-4">
-              {/* Full stat grid */}
-              <div className="mb-4 grid grid-cols-3 gap-2">
-                {[
-                  { label: 'Current load', value: `${Math.round(selected.currentLoad / selected.capacity * 100)}%`, color: selected.currentLoad > selected.capacity ? 'var(--red)' : 'var(--text)' },
-                  { label: 'Loss', value: `${selected.loss}%`, color: selected.loss > 15 ? 'var(--red)' : selected.loss > 10 ? 'var(--amber)' : 'var(--green)' },
-                  { label: 'Phase imbalance', value: `${selected.phaseImbalance}%`, color: selected.phaseImbalance > 10 ? 'var(--red)' : 'var(--text)' },
-                  { label: 'Capacity', value: `${selected.capacity} kVA`, color: 'var(--text)' },
-                  { label: '90d projection', value: `${Math.round(selected.projectedLoad90 / selected.capacity * 100)}%`, color: selected.projectedLoad90 > selected.capacity ? 'var(--red)' : 'var(--amber)' },
-                  { label: 'Consumers', value: String(selected.consumers), color: 'var(--text)' },
-                ].map((s) => (
-                  <div key={s.label} className="rounded-xl border border-border bg-bg p-2.5 text-center">
-                    <div className="font-mono text-[16px] font-extrabold" style={{ color: s.color }}>{s.value}</div>
-                    <div className="text-[9.5px] text-text-dim">{s.label}</div>
-                  </div>
+          )}
+
+          {buckets.overloaded.length > 0 && (
+            <>
+              <div
+                id="overloaded-dts-section"
+                className="dt-section-header"
+                style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '18px 0 10px', flexWrap: 'wrap' }}
+              >
+                <div style={{ width: 10, height: 10, borderRadius: '50%', background: 'var(--red)' }} />
+                <div className="dt-section-label" style={{ fontSize: 13, fontWeight: 700, color: 'var(--red)', textTransform: 'uppercase', letterSpacing: '.6px' }}>
+                  Overloaded · {buckets.overloaded.length}
+                </div>
+                <div className="dt-section-desc" style={{ fontSize: 11, color: 'var(--text-dim)' }}>
+                  &gt;100% loading — act this week, capacity upgrade or load redistribution
+                </div>
+              </div>
+              {buckets.overloaded.map((d) => (
+                <CriticalDtCard key={d.id} dt={d} onSelectDt={setSelectedDt} />
+              ))}
+            </>
+          )}
+
+          {buckets.nearOverload.length > 0 && (
+            <>
+              <div
+                id="near-overload-dts-section"
+                className="dt-section-header"
+                style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '22px 0 10px', flexWrap: 'wrap' }}
+              >
+                <div style={{ width: 10, height: 10, borderRadius: '50%', background: 'var(--amber)' }} />
+                <div className="dt-section-label" style={{ fontSize: 13, fontWeight: 700, color: 'var(--amber)', textTransform: 'uppercase', letterSpacing: '.6px' }}>
+                  Near-overload · {buckets.nearOverload.length}
+                </div>
+                <div className="dt-section-desc" style={{ fontSize: 11, color: 'var(--text-dim)' }}>
+                  85–100% loading — plan within 30 days, monitor closely
+                </div>
+              </div>
+              <div className="dt-warning-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 12 }}>
+                {buckets.nearOverload.map((d) => (
+                  <WarningDtCard key={d.id} dt={d} onSelectDt={setSelectedDt} />
                 ))}
               </div>
-              <div className="mb-4 rounded-xl p-3 text-[11.5px] text-text-mid"
-                style={{ background: 'rgba(124,58,237,0.05)', border: '1px solid rgba(124,58,237,0.12)' }}>
-                <strong className="text-ai-purple">✦ AI recommendation: </strong>{selected.note}
+            </>
+          )}
+
+          {buckets.optimal.length > 0 && (
+            <>
+              <div
+                id="optimal-dts-section"
+                className="dt-section-header"
+                style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '22px 0 10px', flexWrap: 'wrap' }}
+              >
+                <div style={{ width: 10, height: 10, borderRadius: '50%', background: 'var(--green)' }} />
+                <div className="dt-section-label" style={{ fontSize: 13, fontWeight: 700, color: 'var(--green)', textTransform: 'uppercase', letterSpacing: '.6px' }}>
+                  Optimal · {buckets.optimal.length}
+                </div>
+                <div className="dt-section-desc" style={{ fontSize: 11, color: 'var(--text-dim)' }}>
+                  55–85% loading — efficient utilisation, monitor monthly
+                </div>
               </div>
-              <div className="flex gap-2">
-                <button type="button" className="btn btn-ai flex-1" style={{ justifyContent: 'center' }}
-                  onClick={() => { showToast({ type: 'success', title: 'Work order created', message: `Work order for ${selected.id} assigned to field team.`, duration: 3500 }); setSelected(null) }}>
-                  Create work order
-                </button>
-                <button type="button" className="btn btn-outline flex-1" style={{ justifyContent: 'center', fontSize: '11px' }}
-                  onClick={() => showToast({ type: 'info', title: 'Diagnostic triggered', message: `Running full diagnostic for ${selected.id}.`, duration: 3000 })}>
-                  Run diagnostic
-                </button>
+              <DtPillList dts={buckets.optimal} variant="optimal" onSelectDt={setSelectedDt} />
+            </>
+          )}
+
+          {buckets.underUtilised.length > 0 && (
+            <>
+              <div
+                id="under-utilised-dts-section"
+                className="dt-section-header"
+                style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '22px 0 10px', flexWrap: 'wrap' }}
+              >
+                <div style={{ width: 10, height: 10, borderRadius: '50%', background: 'var(--navy-light, #4B6BB8)' }} />
+                <div className="dt-section-label" style={{ fontSize: 13, fontWeight: 700, color: 'var(--id-text, #0284c7)', textTransform: 'uppercase', letterSpacing: '.6px' }}>
+                  Under-utilised · {buckets.underUtilised.length}
+                </div>
+                <div className="dt-section-desc" style={{ fontSize: 11, color: 'var(--text-dim)' }}>
+                  &lt;55% loading — DT may be oversized; consider redistribution to optimise capex
+                </div>
               </div>
-            </div>
-          </div>
+              <DtPillList dts={buckets.underUtilised} variant="under-utilised" onSelectDt={setSelectedDt} />
+            </>
+          )}
         </>
       )}
+
+      {/* Excess-demand section — renders at every scope, independent of DT availability.
+          The prototype shows this even at scopes without DT data (e.g. DVVNL), because the
+          UPERC surcharge list is scoped from consumer data, not DT master data. */}
+      {excessDemand.length > 0 && (
+        <ExcessDemandSection
+          excessDemand={excessDemand}
+          onSelectMeter={(m) =>
+            showToast({
+              type: 'info',
+              title: `Meter #${m}`,
+              message: 'Opening meter detail — coming from Suspicious meters page.',
+              duration: 3500,
+            })
+          }
+        />
+      )}
+
+      {selectedDt && <DtDetailModal dt={selectedDt} onClose={() => setSelectedDt(null)} />}
     </div>
   )
 }

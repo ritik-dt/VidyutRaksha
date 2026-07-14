@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { useScope } from '@/shared/context/ScopeContext'
-import { enrichLevel, getChildLabel } from '@/features/Dashboard/adapter'
+import { enrichLevel, getChildLabel } from '@/shared/utils/level'
 import {
   getCaseListRows,
   getCasesChartData,

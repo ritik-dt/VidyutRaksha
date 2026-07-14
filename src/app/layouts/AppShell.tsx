@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Outlet } from 'react-router-dom'
 import { AiCopilotPanel } from '@/shared/components/layout/AiCopilotPanel'
 import { ProvenanceBar } from '@/shared/components/layout/ProvenanceBar'
@@ -12,6 +12,7 @@ export function AppShell() {
   const { showToast } = useToast()
   const { scopeVersion } = useScope()
   const welcomeShown = useRef(false)
+  const [mobileNavOpen, setMobileNavOpen] = useState(false)
 
   useEffect(() => {
     if (welcomeShown.current) {
@@ -34,12 +35,18 @@ export function AppShell() {
 
   return (
     <div className="flex h-screen">
-      <Sidebar />
+      <Sidebar
+        mobileOpen={mobileNavOpen}
+        onClose={() => setMobileNavOpen(false)}
+      />
       <div className="flex flex-1 flex-col overflow-hidden">
-        <Topbar />
+        <Topbar onMenuClick={() => setMobileNavOpen(true)} />
         <ProvenanceBar />
         <div className="flex flex-1 overflow-hidden">
-          <div className="content-scroll flex-1 overflow-auto p-3 px-6" id="content">
+          <div
+            className="content-scroll flex-1 overflow-auto p-3 px-4 md:px-6"
+            id="content"
+          >
             <Outlet key={scopeVersion} />
           </div>
           <ToastContainer />

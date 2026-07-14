@@ -13,6 +13,8 @@ interface NavButtonProps {
   badge?: string
   badgeVariant?: NavBadgeVariant
   dense?: boolean
+  /** Called after navigating — used to close the mobile drawer. */
+  onNavigate?: () => void
 }
 
 function badgeClasses(variant: NavBadgeVariant | undefined): string {
@@ -48,6 +50,7 @@ export function NavButton({
   badge,
   badgeVariant,
   dense = false,
+  onNavigate,
 }: NavButtonProps) {
   const navigate = useNavigate()
 
@@ -68,7 +71,10 @@ export function NavButton({
             ? 'text-white'
             : 'border-l-ai-purple-mid bg-gradient-to-r from-[rgba(124,58,237,0.18)] to-[rgba(124,58,237,0.04)] text-white shadow-[inset_0_0_0_1px_rgba(124,58,237,0.08)] [&_.nav-icon]:saturate-[1.2] [&_.nav-icon]:brightness-110'),
       )}
-      onClick={() => navigate(getPathForScreen(screen))}
+      onClick={() => {
+        navigate(getPathForScreen(screen))
+        onNavigate?.()
+      }}
     >
       <span className="nav-icon w-[18px] shrink-0 text-center text-sm leading-none">
         {icon}

@@ -69,10 +69,10 @@ export function TamperEventsTab({ meter }: TamperEventsTabProps) {
                   <th className="px-3 py-2.5 text-left">Timestamp (RTC)</th>
                   <th className="px-3 py-2.5 text-left">Event</th>
                   <th className="px-3 py-2.5 text-left">Occurrence</th>
-                  <th className="px-3 py-2.5 text-right">kWh at event</th>
-                  <th className="px-3 py-2.5 text-right">V</th>
-                  <th className="px-3 py-2.5 text-right">I</th>
-                  <th className="px-3 py-2.5 text-right">PF</th>
+                  <th className="px-3 py-2.5 text-left">kWh at event</th>
+                  <th className="px-3 py-2.5 text-left">V</th>
+                  <th className="px-3 py-2.5 text-left">I</th>
+                  <th className="px-3 py-2.5 text-left">PF</th>
                 </tr>
               </thead>
               <tbody>
@@ -93,10 +93,17 @@ export function TamperEventsTab({ meter }: TamperEventsTabProps) {
                     >
                       {e.occ}
                     </td>
-                    <td className="px-3 py-2.5 text-right font-mono text-[10.5px] text-text-dim">—</td>
-                    <td className="px-3 py-2.5 text-right font-mono text-[10.5px] text-text-dim">—</td>
-                    <td className="px-3 py-2.5 text-right font-mono text-[10.5px] text-text-dim">—</td>
-                    <td className="px-3 py-2.5 text-right font-mono text-[10.5px] text-text-dim">—</td>
+                    <td className="whitespace-nowrap px-3 py-2.5 font-mono text-[10.5px] text-text-mid">
+                      {e.kwhAt != null ? e.kwhAt.toFixed(2) : '—'}
+                    </td>
+                    <td className="px-3 py-2.5 font-mono text-[10.5px] text-text-mid">{e.v != null ? e.v : '—'}</td>
+                    <td className="px-3 py-2.5 font-mono text-[10.5px] text-text-mid">{e.i != null ? e.i.toFixed(2) : '—'}</td>
+                    <td
+                      className="px-3 py-2.5 font-mono text-[10.5px] font-semibold"
+                      style={{ color: e.pf != null && e.pf < 0.85 ? 'var(--red)' : 'var(--text-mid)' }}
+                    >
+                      {e.pf != null ? e.pf.toFixed(2) : '—'}
+                    </td>
                   </tr>
                 ))}
               </tbody>

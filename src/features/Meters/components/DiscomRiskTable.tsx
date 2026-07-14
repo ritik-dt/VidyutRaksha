@@ -1,7 +1,7 @@
 import type { MouseEvent } from 'react'
 import { topTheftFor, oldestPendingFor } from '@/features/Meters/data/meters'
 import { formatIndian } from '@/shared/utils/formatters'
-import type { EnrichedChildRef } from '@/features/Dashboard/types'
+import type { EnrichedChildRef } from '@/shared/types/hierarchy'
 
 interface DiscomRiskTableProps {
   childLabel: string

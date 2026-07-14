@@ -2,15 +2,18 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useScope } from "@/shared/context/ScopeContext";
 import { formatIndian } from "@/shared/utils/formatters";
-import { fmtINR } from "@/features/Dashboard/adapter";
+import { fmtINR } from "@/shared/utils/formatters";
 import { hierData } from "@/data/hierarchy";
-import { getCasesScopeStats, getCaseListRows } from "./data/cases";
+import { getCasesScopeStats, getCaseListRows, CASES_LIST, getTheftType } from "./data/cases";
 import { useCasesScope } from "./useCasesScope";
 import { CasesKpiStrip } from "./CasesKpiStrip";
 import { CasesHierarchyTable } from "./CasesHierarchyTable";
 import { CasesSlaWatchlist } from "./CasesSlaWatchlist";
 import { CasesAnalyticsSection } from "./CasesAnalyticsSection";
 import { CasesListDrawer } from "./CasesListDrawer";
+import { CasesLeafTable } from "./CasesLeafTable";
+import { ReassignInspectorPanel } from "./ReassignInspectorPanel";
+import type { CaseRecord } from "./types";
 import { ScopeBreadcrumb } from "@/shared/components/ui/ScopeBreadcrumb";
 
 interface DrawerState {
@@ -33,6 +36,14 @@ export default function CasesPage() {
     isLeafScope,
   } = useCasesScope();
   const [drawerState, setDrawerState] = useState<DrawerState | null>(null);
+  const [reassign, setReassign] = useState<{
+    caseRecord: CaseRecord;
+    theftType: string;
+  } | null>(null);
+
+  function openReassign(caseRecord: CaseRecord) {
+    setReassign({ caseRecord, theftType: getTheftType(caseRecord.meter) });
+  }
 
   const safeStats = stats ?? {
     total: 0,
@@ -102,7 +113,13 @@ export default function CasesPage() {
             </span>
             <button
               type="button"
-              className="btn btn-outline btn-sm border-[rgba(124,58,237,0.3)] px-[9px] py-[3px] text-[10px] text-ai-purple"
+              className="btn btn-outline btn-sm"
+              style={{
+                fontSize: "10px",
+                padding: "3px 9px",
+                color: "var(--ai-purple)",
+                borderColor: "rgba(124,58,237,0.3)",
+              }}
               onClick={toggleScopePicker}
             >
               ↕ Change scope
@@ -160,32 +177,43 @@ export default function CasesPage() {
         onChangeFilter={(f) => openDrawer(scopeId, f === "all" ? "" : f)}
       />
 
-      {/* ── HIERARCHY TABLE ── */}
-      {hierarchyRows.length > 0 && (
-        <CasesHierarchyTable
-          childLabel={childLabel}
-          scopeName={scopeName}
-          scopeId={scopeId}
-          stats={safeStats}
-          rows={hierarchyRows}
-          onDrill={drillToChild}
-          onViewCases={openDrawer}
+      {/* ── LEAF SCOPE: case sample table · NON-LEAF: hierarchy + watchlist + analytics ── */}
+      {isLeafScope ? (
+        <CasesLeafTable
+          rows={CASES_LIST}
+          total={safeStats.total}
+          onViewAll={() => openDrawer(scopeId)}
         />
+      ) : (
+        <>
+          {/* ── HIERARCHY TABLE ── */}
+          {hierarchyRows.length > 0 && (
+            <CasesHierarchyTable
+              childLabel={childLabel}
+              scopeName={scopeName}
+              scopeId={scopeId}
+              stats={safeStats}
+              rows={hierarchyRows}
+              onDrill={drillToChild}
+              onViewCases={openDrawer}
+            />
+          )}
+
+          {/* ── SLA WATCHLIST ── */}
+          <CasesSlaWatchlist
+            scopeName={scopeName}
+            items={watchlist}
+            totalPastSla={safeStats.pastSla}
+          />
+
+          {/* ── CHARTS + AI ACTIONS ── */}
+          <CasesAnalyticsSection
+            scopeName={scopeName}
+            stats={safeStats}
+            trend={trend}
+          />
+        </>
       )}
-
-      {/* ── SLA WATCHLIST ── */}
-      <CasesSlaWatchlist
-        scopeName={scopeName}
-        items={watchlist}
-        totalPastSla={safeStats.pastSla}
-      />
-
-      {/* ── CHARTS + AI ACTIONS ── */}
-      <CasesAnalyticsSection
-        scopeName={scopeName}
-        stats={safeStats}
-        trend={trend}
-      />
 
       {/* ── DRAWER ── */}
       {drawerState && drawerStats && drawerScope && (
@@ -197,6 +225,16 @@ export default function CasesPage() {
           records={drawerRecords}
           initialStatusFilter={drawerState.statusFilter}
           onClose={() => setDrawerState(null)}
+          onReassign={openReassign}
+        />
+      )}
+
+      {/* ── REASSIGN INSPECTOR PANEL (shared — opened from watchlist, drawer, detail) ── */}
+      {reassign && (
+        <ReassignInspectorPanel
+          caseRecord={reassign.caseRecord}
+          theftType={reassign.theftType}
+          onClose={() => setReassign(null)}
         />
       )}
     </div>

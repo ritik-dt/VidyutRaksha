@@ -1,5 +1,6 @@
 import { hierData } from '@/data/hierarchy'
-import { enrichLevel, getChildLabel, fmtINR } from '@/features/Dashboard/adapter'
+import { enrichLevel, getChildLabel } from '@/shared/utils/level'
+import { fmtINR } from '@/shared/utils/formatters'
 import { formatIndian } from '@/shared/utils/formatters'
 import type {
   CaseListSortKey,
@@ -10,6 +11,26 @@ import type {
 } from '../types'
 
 export type { CaseListSortKey, CaseRecord, CasesHierarchyRow, CasesStats, CasesWatchlistItem }
+
+/**
+ * Meter → theft-type map (exact prototype). Exposed as getTheftType() so every
+ * Reassign-inspector entry point (detail page, watchlist, drawer) derives the
+ * same theft type for the shared ReassignInspectorPanel.
+ */
+const METER_THEFT_TYPE: Record<string, string> = {
+  '1849966': 'Earth Loading',
+  '2034871': 'Meter Bypass',
+  '1567234': 'CT Manipulation',
+  '1923445': 'Magnetic Tamper',
+  '2187690': 'Earth Loading',
+  '1678432': 'CT Manipulation',
+  '1445567': 'Meter Bypass',
+  '2098123': 'Neutral Disturbance',
+}
+
+export function getTheftType(meter: string): string {
+  return METER_THEFT_TYPE[meter] ?? 'Meter Bypass'
+}
 
 const CASE_ANCHOR_DATE = new Date('2026-04-01T00:00:00.000Z')
 
@@ -393,12 +414,19 @@ export function computeCasesStats(cases: CaseRecord[]): CasesStats {
   }
 }
 
-export function getCasesScopeStats(scopeId: string): CasesStats | null {
-  const level = hierData[scopeId]
-  if (!level) return null
+interface CaseStatsSource {
+  openCases?: number
+  flagged?: number
+  loss?: number
+}
 
-  const enriched = enrichLevel(level)
-  const totalCases = enriched.openCases || 0
+/**
+ * Core case-stats computation (exact prototype casesAtScope split). Works from
+ * either a registered hierData level (openCases) or an inline child ref (flagged),
+ * so every scope AND every child row can be computed with real data.
+ */
+function caseStatsFromSource(scopeId: string, source: CaseStatsSource): CasesStats {
+  const totalCases = source.openCases ?? Math.round((source.flagged ?? 0) * 0.18)
   const seed = hashSeed(scopeId)
   const open = Math.round(totalCases * (0.28 + (seed % 4) / 100))
   const inProgress = Math.round(totalCases * (0.24 + ((seed >> 3) % 4) / 100))
@@ -407,7 +435,7 @@ export function getCasesScopeStats(scopeId: string): CasesStats | null {
   const closed = Math.max(0, totalCases - open - inProgress - escalated - confirmed)
   const active = open + inProgress + escalated
   const pastSla = Math.round(active * (0.18 + ((seed >> 9) % 9) / 100))
-  const avgClose = +(2.4 + (enriched.loss || 20) * 0.08 + ((seed >> 11) % 5) / 10).toFixed(1)
+  const avgClose = +(2.4 + (source.loss ?? 20) * 0.08 + ((seed >> 11) % 5) / 10).toFixed(1)
   const recovery = Math.round(confirmed * 600000 * 0.62)
 
   return {
@@ -424,21 +452,33 @@ export function getCasesScopeStats(scopeId: string): CasesStats | null {
   }
 }
 
+export function getCasesScopeStats(scopeId: string): CasesStats | null {
+  const level = hierData[scopeId]
+  if (!level) return null
+  return caseStatsFromSource(scopeId, enrichLevel(level))
+}
+
 export function getCasesHierarchyRows(scopeId: string): CasesHierarchyRow[] {
   const scope = hierData[scopeId]
   if (!scope?.children?.length) return []
 
   return [...scope.children]
     .map((child) => {
-      const stats = getCasesScopeStats(child.id)
-      if (!stats) {
-        return null
-      }
+      // The prototype registers every child in hierData, so each child row must
+      // render with real data. Prefer a registered top-level node; otherwise
+      // derive stats from the inline child (which carries flagged/loss). Rows are
+      // never dropped — this is why the workload table populates at every level
+      // (e.g. sub-divisions under EUDD Varunapar), matching the prototype.
+      const registered = hierData[child.id]
+      const source: CaseStatsSource = registered
+        ? enrichLevel(registered)
+        : (child as CaseStatsSource)
+      const stats = caseStatsFromSource(child.id, source)
 
       return {
         id: child.id,
         name: child.name,
-        type: hierData[child.id]?.type ?? 'Child',
+        type: registered?.type ?? 'Child',
         total: stats.total,
         pastSla: stats.pastSla,
         open: stats.open,
@@ -449,7 +489,6 @@ export function getCasesHierarchyRows(scopeId: string): CasesHierarchyRow[] {
         topInspector: INSPECTOR_POOL[hashSeed(child.id) % INSPECTOR_POOL.length],
       } satisfies CasesHierarchyRow
     })
-    .filter((row): row is CasesHierarchyRow => Boolean(row))
     .sort((a, b) => b.pastSla - a.pastSla || b.total - a.total)
 }
 

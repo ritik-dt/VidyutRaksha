@@ -9,6 +9,61 @@ interface DetectionTrendChartProps {
   rising: boolean
 }
 
+// Marker colors keyed by series so the tooltip square always matches the line
+// (an Area's payload color is its translucent fill, not the stroke).
+const SERIES_COLORS: Record<string, string> = {
+  newFlags: 'var(--ai-purple)',
+  confirmed: 'var(--green)',
+}
+
+interface TrendTooltipEntry {
+  name?: string
+  value?: number
+  dataKey?: string | number
+}
+
+/**
+ * Custom tooltip matching the prototype's Chart.js default: dark rounded box,
+ * white month title, one colored-square row per series with comma-formatted
+ * values ("New flags: 1,234" / "Confirmed: 712").
+ */
+function TrendTooltip({
+  active,
+  payload,
+  label,
+}: {
+  active?: boolean
+  payload?: TrendTooltipEntry[]
+  label?: string
+}) {
+  if (!active || !payload || payload.length === 0) return null
+  return (
+    <div
+      className="rounded-md px-2.5 py-2 text-[11px] leading-tight shadow-[0_4px_12px_rgba(0,0,0,0.25)]"
+      style={{ background: 'rgba(0,0,0,0.8)', color: '#fff' }}
+    >
+      <div className="mb-1 font-semibold">{label}</div>
+      {payload.map((entry) => {
+        const key = String(entry.dataKey ?? entry.name ?? '')
+        return (
+          <div key={key} className="flex items-center gap-1.5 py-px">
+            <span
+              className="inline-block size-2.5 rounded-[2px]"
+              style={{ background: SERIES_COLORS[key] ?? 'var(--text-dim)' }}
+            />
+            <span>
+              {entry.name}:{' '}
+              {typeof entry.value === 'number'
+                ? entry.value.toLocaleString('en-IN')
+                : entry.value}
+            </span>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 /**
  * Matches prototype's "📈 Detection trend" card:
  * "New flags" is a filled purple area (Chart.js: fill:true, rgba(124,58,237,0.08)),
@@ -40,7 +95,10 @@ export function DetectionTrendChart({ scopeName, flagged, hitRate, rising }: Det
             <CartesianGrid vertical={false} stroke="rgba(0,0,0,0.05)" />
             <XAxis dataKey="month" tick={{ fontSize: 10, fill: 'var(--text-dim)' }} axisLine={false} tickLine={false} />
             <YAxis tick={{ fontSize: 10, fill: 'var(--text-dim)' }} axisLine={false} tickLine={false} domain={[0, 'auto']} />
-            <Tooltip />
+            <Tooltip
+              content={<TrendTooltip />}
+              cursor={{ stroke: 'var(--border)', strokeWidth: 1 }}
+            />
             <Area
               type="monotone"
               dataKey="newFlags"

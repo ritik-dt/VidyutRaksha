@@ -1,11 +1,19 @@
 /**
  * dashboardAdapter — hierarchy-aware view models derived from prototype renderDashboard.
  */
-import type { HierChildRef, HierNode, HierNodeType } from '@/shared/types'
+import { fmtINR } from '@/shared/utils/formatters'
+// Re-exported so existing Dashboard/Meters imports from this adapter keep working.
+export {
+  enrichLevel,
+  getChildLabel,
+  getHitRateColor,
+  getLossColor,
+  isConsumerLevel,
+} from '@/shared/utils/level'
+export { fmtINR } from '@/shared/utils/formatters'
 import type { RoleId } from '@/shared/types/role'
 import { formatIndian } from '@/shared/utils/formatters'
 import type {
-  EnrichedChildRef,
   EnrichedLevel,
   HotspotItem,
   MainKpiCard,
@@ -84,102 +92,10 @@ const ROLE_INSIGHTS: Partial<
   },
 }
 
-const CHILD_LABELS: Record<string, string> = {
-  State: 'DISCOM',
-  DISCOM: 'Zone',
-  Zone: 'Circle',
-  Circle: 'Division',
-  Division: 'Sub-division',
-  'Sub-division': 'Feeder',
-  Feeder: 'DTR',
-  DTR: 'Consumer',
-}
 
-export function getChildLabel(type: string | undefined): string {
-  return CHILD_LABELS[type ?? ''] ?? 'Children'
-}
 
-export function fmtINR(amt?: number | null): string {
-  if (amt == null || Number.isNaN(amt)) return '—'
-  if (amt >= 10_000_000)
-    return `₹${(amt / 10_000_000).toFixed(1).replace(/\.0$/, '')} Cr`
-  if (amt >= 100_000)
-    return `₹${(amt / 100_000).toFixed(1).replace(/\.0$/, '')} L`
-  if (amt >= 1_000) return `₹${(amt / 1_000).toFixed(0)}K`
-  return `₹${amt.toLocaleString('en-IN')}`
-}
 
-function enrichChild(child: HierChildRef): EnrichedChildRef {
-  const enriched: EnrichedChildRef = { ...child }
 
-  if (enriched.flagged != null) {
-    if (enriched.critical == null)
-      enriched.critical = Math.round(enriched.flagged * 0.12)
-    if (enriched.high == null)
-      enriched.high = Math.round(enriched.flagged * 0.33)
-    if (enriched.medium == null)
-      enriched.medium =
-        enriched.flagged - (enriched.critical ?? 0) - (enriched.high ?? 0)
-    if (enriched.openCases == null)
-      enriched.openCases = Math.round(enriched.flagged * 0.18)
-    if (enriched.newToday == null)
-      enriched.newToday = Math.round(enriched.flagged * 0.021)
-    if (enriched.overdueInspections == null)
-      enriched.overdueInspections = Math.round(enriched.flagged * 0.018)
-  }
-
-  if (enriched.confirmed != null) {
-    if (enriched.assessed == null)
-      enriched.assessed = enriched.confirmed * 600_000
-    if (enriched.realized == null)
-      enriched.realized = Math.round((enriched.assessed ?? 0) * 0.62)
-    if (enriched.closedYesterday == null)
-      enriched.closedYesterday = Math.max(
-        0,
-        Math.round(enriched.confirmed * 0.014),
-      )
-  }
-
-  return enriched
-}
-
-export function enrichLevel(level: HierNode): EnrichedLevel {
-  const enriched: EnrichedLevel = { ...level }
-
-  if (enriched.flagged != null) {
-    if (enriched.critical == null)
-      enriched.critical = Math.round(enriched.flagged * 0.12)
-    if (enriched.high == null)
-      enriched.high = Math.round(enriched.flagged * 0.33)
-    if (enriched.medium == null)
-      enriched.medium =
-        enriched.flagged - (enriched.critical ?? 0) - (enriched.high ?? 0)
-    if (enriched.openCases == null)
-      enriched.openCases = Math.round(enriched.flagged * 0.18)
-    if (enriched.newToday == null)
-      enriched.newToday = Math.round(enriched.flagged * 0.021)
-    if (enriched.overdueInspections == null)
-      enriched.overdueInspections = Math.round(enriched.flagged * 0.018)
-  }
-
-  if (enriched.confirmed != null) {
-    if (enriched.assessed == null)
-      enriched.assessed = enriched.confirmed * 600_000
-    if (enriched.realized == null)
-      enriched.realized = Math.round((enriched.assessed ?? 0) * 0.62)
-    if (enriched.closedYesterday == null)
-      enriched.closedYesterday = Math.max(
-        0,
-        Math.round(enriched.confirmed * 0.014),
-      )
-  }
-
-  if (Array.isArray(enriched.children)) {
-    enriched.children = enriched.children.map(enrichChild)
-  }
-
-  return enriched
-}
 
 export function getRoleAwareInsight(
   screen: ScreenName,
@@ -513,18 +429,5 @@ export function getHotspots(level: EnrichedLevel): HotspotItem[] {
   ]
 }
 
-export function getLossColor(loss: number): string {
-  if (loss > 22) return 'var(--red)'
-  if (loss > 18) return 'var(--amber)'
-  return 'var(--green)'
-}
 
-export function getHitRateColor(hitRate: number): string {
-  if (hitRate > 60) return 'var(--green)'
-  if (hitRate > 50) return 'var(--amber)'
-  return 'var(--red)'
-}
 
-export function isConsumerLevel(type: HierNodeType | string | undefined): boolean {
-  return type === 'DTR'
-}

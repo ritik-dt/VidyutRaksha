@@ -1,180 +1,167 @@
-import { useState } from 'react'
+import { useScope } from '@/shared/context/ScopeContext'
 import { PageHeader } from '@/shared/components/ui/PageHeader'
+import { ScopeBreadcrumb } from '@/shared/components/ui/ScopeBreadcrumb'
+import { FilterPill, type FilterPillEntry } from '@/shared/components/ui/FilterPill'
 import { AiInsightBanner } from '@/shared/components/ui/AiInsightBanner'
-import { StatusBadge } from '@/shared/components/ui/StatusBadge'
 import { useToast } from '@/shared/context/ToastContext'
-
-interface Cluster {
-  id: string
-  name: string
-  dtr: string
-  feeder: string
-  members: number
-  confirmed: number
-  pending: number
-  amount: string
-  amountNum: number
-  pattern: string
-  started: string
-  risk: number
-  status: string
-  lead: string
-}
-
-const CLUSTERS: Cluster[] = [
-  { id: 'CL-2026-042', name: 'Vijaya Complex Cluster', dtr: 'Vijaya Complex (Kothi)', feeder: 'Bhelupur', members: 5, confirmed: 2, pending: 3, amount: '₹10,28,400', amountNum: 1028400, pattern: 'Earth loading + tariff misuse', started: 'Nov 2025', risk: 94, status: 'Active investigation', lead: 'Rajesh Kumar' },
-  { id: 'CL-2026-038', name: 'Rathayatra Sector-4 Cluster', dtr: 'RYT-DTR-014', feeder: 'Rathayatra', members: 8, confirmed: 3, pending: 5, amount: '₹18,42,600', amountNum: 1842600, pattern: 'Synchronized zero consumption', started: 'Dec 2025', risk: 91, status: 'Active investigation', lead: 'Amit Singh' },
-  { id: 'CL-2026-031', name: 'Raghunath Industrial Cluster', dtr: 'RAG-DTR-007', feeder: 'Raghunath Nagar', members: 4, confirmed: 4, pending: 0, amount: '₹24,80,000', amountNum: 2480000, pattern: 'CT manipulation (industrial)', started: 'Sep 2025', risk: 96, status: 'All confirmed', lead: 'Sunita Verma' },
-  { id: 'CL-2026-028', name: 'Machchodari Domestic Ring', dtr: 'MCH-DTR-003', feeder: 'Machchodari', members: 12, confirmed: 1, pending: 11, amount: '₹8,14,200', amountNum: 814200, pattern: 'Night meter bypass (domestic)', started: 'Jan 2026', risk: 78, status: 'Early stage', lead: 'Deepak Yadav' },
-  { id: 'CL-2026-019', name: 'Chauk Commercial Strip', dtr: 'CK-DTR-011', feeder: 'Chauk', members: 6, confirmed: 5, pending: 1, amount: '₹32,60,000', amountNum: 3260000, pattern: 'Meter bypass + tariff fraud', started: 'Aug 2025', risk: 92, status: 'Near closure', lead: 'Rajesh Kumar' },
-  { id: 'CL-2026-015', name: 'Kerakatpur Agricultural Bloc', dtr: 'KPR-DTR-002', feeder: 'Kerakatpur', members: 9, confirmed: 0, pending: 9, amount: '₹6,30,000', amountNum: 630000, pattern: 'Seasonal bypass (agricultural)', started: 'Feb 2026', risk: 65, status: 'Monitoring', lead: 'Priya Singh' },
-]
-
-const STATUS_MAP: Record<string, string> = {
-  'Active investigation': 'In Progress',
-  'All confirmed': 'Confirmed Theft',
-  'Early stage': 'New',
-  'Near closure': 'In Progress',
-  'Monitoring': 'Assigned',
-}
+import { useClustersScope } from './hooks/useClustersScope'
+import { ClustersKpiStrip } from './components/ClustersKpiStrip'
+import { ClusterCharts } from './components/ClusterCharts'
+import { ClustersTable } from './components/ClustersTable'
+import { ClusterCaseDetail } from './components/ClusterCaseDetail'
+import { ALL_CLUSTERS, FEATURED_CASE_ID } from './data/clusters'
+import type { Cluster } from './types'
 
 export default function ClustersPage() {
+  const { toggleScopePicker } = useScope()
   const { showToast } = useToast()
-  const [selected, setSelected] = useState<Cluster | null>(null)
+  const { scopeName, isStateLevel, clusters, stats, filter, setFilter, clearFilter } = useClustersScope()
 
-  const totalRecovery = CLUSTERS.reduce((s, c) => s + c.amountNum, 0)
-  const totalMembers = CLUSTERS.reduce((s, c) => s + c.members, 0)
-  const totalConfirmed = CLUSTERS.reduce((s, c) => s + c.confirmed, 0)
+  const scopeSuffix = isStateLevel ? '' : ` · ${scopeName}`
+  const hasFeatured = clusters.some((c) => c.id === FEATURED_CASE_ID)
+
+  const filterEntries: FilterPillEntry[] = []
+  if (filter.status) filterEntries.push({ label: 'Status', value: filter.status })
+
+  function handleRowClick(c: Cluster) {
+    showToast({
+      type: 'ai',
+      title: `Opening cluster ${c.id}`,
+      message:
+        'Full view: all members with cases, cross-member evidence, batch actions, police coordination letter, raid planning.',
+      duration: 5000,
+    })
+  }
+
+  const aiSummary =
+    stats.totalGroups > 0 ? (
+      <>
+        I've identified{' '}
+        <strong className="text-ai-purple">
+          {stats.totalGroups} active coordinated theft case{stats.totalGroups > 1 ? 's' : ''}
+        </strong>{' '}
+        {isStateLevel ? 'across the KVVNL network' : <>at <strong className="text-ai-purple">{scopeName}</strong></>} covering{' '}
+        <strong className="text-ai-purple">
+          {stats.totalConsumers} connected consumer{stats.totalConsumers > 1 ? 's' : ''}
+        </strong>{' '}
+        with <strong className="text-ai-purple">{stats.totalExposureStr} estimated revenue exposure</strong>. A case is opened when consumers show:
+        (1) <strong className="text-ai-purple">same-window tamper pattern</strong> — drops within days of each other; (2){' '}
+        <strong className="text-ai-purple">same DTR or feeder</strong> — physical proximity implies a common operator; (3){' '}
+        <strong className="text-ai-purple">identical theft method</strong> — same earth-loading signature, same bypass technique, often a common
+        electrician.{' '}
+        {stats.largestGroupName && (
+          <>
+            <strong className="text-ai-purple">
+              Priority: {stats.largestGroupName} ({stats.largestGroup} consumers)
+            </strong>{' '}
+            — recommend immediate batch raid with police coordination.
+          </>
+        )}
+      </>
+    ) : (
+      <>
+        <strong className="text-green">No active coordinated theft cases at {scopeName}</strong> — clean
+        slate. Cases are detected weekly from MRI batch analysis. State-wide there are {ALL_CLUSTERS.length} active
+        cases; navigate up the scope to view them.
+      </>
+    )
 
   return (
     <div className="pb-2">
       <PageHeader
-        title="🕸️ Coordinated theft clusters"
-        subtitle="AI-detected groups where multiple consumers in the same DTR or feeder show synchronized theft patterns"
+        title="🎯 Coordinated theft cases"
+        subtitle={
+          <>
+            Multiple consumers showing synchronized tamper patterns — flagged for batch raids and police-coordinated
+            enforcement · {isStateLevel ? 'showing state-wide totals' : <>filtered to <strong>{scopeName}</strong></>}
+          </>
+        }
         actions={
-          <button type="button" className="btn btn-ai btn-sm"
-            onClick={() => showToast({ type: 'ai', title: 'AI cluster scan', message: 'Running cluster detection on last 30-day data...', duration: 3000 })}>
-            ✦ Re-scan for clusters
-          </button>
+          <>
+            <button
+              type="button"
+              className="btn btn-outline btn-sm"
+              onClick={() => showToast({ type: 'info', title: 'Map view', message: 'Geographic cluster map — coming soon.', duration: 3000 })}
+            >
+              🗺️ Map view
+            </button>
+            <button
+              type="button"
+              className="btn btn-outline btn-sm"
+              onClick={() => showToast({ type: 'info', title: 'Closed cases', message: 'Archived coordinated theft cases — coming soon.', duration: 3000 })}
+            >
+              📊 Closed cases
+            </button>
+            <button
+              type="button"
+              className="btn btn-ai btn-sm"
+              onClick={() => showToast({ type: 'ai', title: 'Scanning for new cases', message: 'Running coordinated-theft detection on the latest MRI batch...', duration: 3000 })}
+            >
+              ✦ Scan for new cases
+            </button>
+          </>
         }
       />
 
-      <AiInsightBanner title="AI cluster detection">
-        <strong>{CLUSTERS.length} active clusters</strong> detected across{' '}
-        <strong>{CLUSTERS.reduce((s, c) => s + c.members, 0)} consumers</strong> in{' '}
-        <strong>{new Set(CLUSTERS.map((c) => c.feeder)).size} feeders</strong>. Coordinated theft is{' '}
-        <strong style={{ color: 'var(--red)' }}>3.2× harder to detect</strong> individually — cluster-level patterns are the primary signal.
-        Total exposure:{' '}
-        <strong style={{ color: 'var(--red)' }}>
-          ₹{(totalRecovery / 100000).toFixed(1)}L
-        </strong>.
-        Raghunath Industrial Cluster (100% confirmation) should proceed to legal filing.
-      </AiInsightBanner>
-
-      {/* KPIs */}
-      <div className="kpi-row mb-5 flex flex-wrap gap-3">
-        {[
-          { label: 'Active clusters', value: String(CLUSTERS.length), sub: 'Across all feeders', accent: 'var(--ai-purple)', color: 'var(--text)' },
-          { label: 'Total consumers', value: String(totalMembers), sub: 'Across all clusters', accent: 'var(--red)', color: 'var(--red)' },
-          { label: 'Confirmed theft', value: String(totalConfirmed), sub: `${Math.round((totalConfirmed / totalMembers) * 100)}% confirmation rate`, accent: 'var(--green)', color: 'var(--green)' },
-          { label: 'Total exposure', value: `₹${(totalRecovery / 100000).toFixed(1)}L`, sub: 'Combined assessment', accent: 'var(--amber)', color: 'var(--amber)', fontSize: '20px' },
-        ].map((k) => (
-          <div key={k.label} className="kpi-card relative min-w-[130px] flex-1 overflow-hidden rounded-xl border border-border bg-card p-4 px-[18px]">
-            <div className="absolute left-0 top-0 h-full w-1 rounded-l-xl" style={{ background: k.accent }} />
-            <div className="mb-1 text-[11px] font-medium uppercase tracking-[0.5px] text-text-dim">{k.label}</div>
-            <div className="font-mono font-extrabold" style={{ color: k.color, fontSize: k.fontSize ?? '24px' }}>{k.value}</div>
-            <div className="mt-0.5 text-[10px] text-text-mid">{k.sub}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* Cluster grid */}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {CLUSTERS.map((cl) => {
-          const riskColor = cl.risk >= 80 ? 'var(--red)' : cl.risk >= 60 ? 'var(--amber)' : 'var(--green)'
-          const pctConf = cl.members > 0 ? Math.round((cl.confirmed / cl.members) * 100) : 0
-          return (
+      <ScopeBreadcrumb
+        rightActions={
+          <span className="flex items-center gap-2">
+            <span className="text-[10.5px] font-semibold text-text-mid">
+              {stats.totalGroups} case{stats.totalGroups === 1 ? '' : 's'} · {stats.totalConsumers} consumers
+            </span>
             <button
-              key={cl.id}
               type="button"
-              onClick={() => setSelected(cl)}
-              className="card group text-left transition-all hover:-translate-y-0.5 hover:shadow-lg"
-              style={{ borderTop: `3px solid ${riskColor}` }}
+              className="btn btn-outline btn-sm"
+              style={{ fontSize: '10px', padding: '3px 9px', color: 'var(--ai-purple)', borderColor: 'rgba(124,58,237,0.3)' }}
+              onClick={toggleScopePicker}
             >
-              <div className="p-[14px_16px_10px]">
-                <div className="mb-2 flex items-center justify-between">
-                  <span className="font-mono text-[10.5px] font-bold" style={{ color: 'var(--id-text)' }}>{cl.id}</span>
-                  <div className="flex size-[30px] items-center justify-center rounded-lg border-2 font-mono text-[10px] font-extrabold"
-                    style={{ background: `${riskColor}18`, borderColor: riskColor, color: riskColor }}>
-                    {cl.risk}
-                  </div>
-                </div>
-                <div className="text-[13px] font-bold text-text">{cl.name}</div>
-                <div className="mt-0.5 text-[11px] text-text-dim">{cl.dtr} · {cl.feeder} feeder</div>
-
-                {/* Progress bar */}
-                <div className="my-3">
-                  <div className="mb-1 flex justify-between text-[10px]">
-                    <span className="text-text-dim">{cl.confirmed} confirmed / {cl.members} total</span>
-                    <span className="font-bold" style={{ color: pctConf === 100 ? 'var(--green)' : 'var(--text-mid)' }}>{pctConf}%</span>
-                  </div>
-                  <div className="h-1.5 overflow-hidden rounded-full bg-border">
-                    <div className="h-full rounded-full" style={{ width: `${pctConf}%`, background: pctConf === 100 ? 'var(--green)' : riskColor }} />
-                  </div>
-                </div>
-
-                <div className="mb-2 text-[11px] font-medium text-text-mid">📋 {cl.pattern}</div>
-                <div className="flex items-center justify-between">
-                  <StatusBadge status={STATUS_MAP[cl.status] ?? cl.status} />
-                  <span className="text-[11px] font-bold" style={{ color: 'var(--red)' }}>{cl.amount}</span>
-                </div>
-                <div className="mt-2 text-[10px] text-text-dim">Lead: {cl.lead} · Since {cl.started}</div>
-              </div>
+              ↕ Change scope
             </button>
-          )
-        })}
-      </div>
+          </span>
+        }
+      />
 
-      {/* Cluster detail modal */}
-      {selected && (
-        <>
-          <div className="fixed inset-0 z-40 bg-black/30" onClick={() => setSelected(null)} />
-          <div className="fixed left-1/2 top-1/2 z-50 w-[500px] max-w-[95vw] -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-card shadow-[0_24px_64px_rgba(0,0,0,0.2)]"
-            style={{ border: '1px solid var(--border)' }}>
-            <div className="flex items-center justify-between rounded-t-2xl p-4"
-              style={{ background: 'linear-gradient(135deg,var(--navy) 0%,var(--navy-light) 100%)', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-              <div>
-                <div className="font-bold text-white">{selected.name}</div>
-                <div className="text-[11px] text-[rgba(255,255,255,0.5)]">{selected.id} · {selected.feeder} feeder</div>
-              </div>
-              <button type="button" onClick={() => setSelected(null)}
-                className="flex size-7 items-center justify-center rounded-lg text-[rgba(255,255,255,0.5)] hover:bg-white/10 hover:text-white">✕</button>
-            </div>
-            <div className="p-4">
-              <div className="grid grid-cols-2 gap-3 mb-4">
-                {[
-                  ['Members', String(selected.members)], ['Confirmed', String(selected.confirmed)],
-                  ['Pattern', selected.pattern], ['Lead', selected.lead],
-                  ['Total exposure', selected.amount], ['Started', selected.started],
-                ].map(([k, v]) => (
-                  <div key={k} className="rounded-lg border border-border bg-bg p-2.5">
-                    <div className="text-[10px] text-text-dim">{k}</div>
-                    <div className="text-[12px] font-semibold text-text">{v}</div>
-                  </div>
-                ))}
-              </div>
-              <div className="flex gap-2">
-                <button type="button" className="btn btn-ai flex-1" style={{ justifyContent: 'center' }}
-                  onClick={() => { showToast({ type: 'success', title: 'Batch case initiated', message: `Creating cases for all ${selected.members} members of ${selected.name}.`, duration: 3500 }); setSelected(null) }}>
-                  ✦ Create batch cases
-                </button>
-                <button type="button" className="btn btn-outline flex-1" style={{ justifyContent: 'center', fontSize: '11px' }}
-                  onClick={() => showToast({ type: 'info', title: 'Dossier ready', message: 'Court-ready dossier exported.', duration: 3000 })}>
-                  ⚖️ Court dossier
-                </button>
-              </div>
-            </div>
+      {filterEntries.length > 0 && (
+        <FilterPill
+          entries={filterEntries}
+          onClear={clearFilter}
+          backLabel="Coordinated theft cases"
+          onBack={clearFilter}
+        />
+      )}
+
+      <AiInsightBanner title={`Coordinated theft summary · ${scopeName}`}>{aiSummary}</AiInsightBanner>
+
+      <ClustersKpiStrip stats={stats} isStateLevel={isStateLevel} scopeName={scopeName} onFilter={setFilter} />
+
+      {stats.totalGroups === 0 ? (
+        <div className="card" style={{ padding: '36px', textAlign: 'center' }}>
+          <div style={{ fontSize: '42px', marginBottom: '8px', opacity: 0.5 }}>✨</div>
+          <div className="mb-1.5 text-[14px] font-bold">No coordinated theft cases at {scopeName}</div>
+          <div className="mx-auto max-w-[480px] text-[12px] leading-relaxed text-text-mid">
+            Coordinated theft cases are rare events detected weekly from MRI batch analysis. State-wide there are{' '}
+            {ALL_CLUSTERS.length} active cases — navigate up to UPPCL or KVVNL to view them.
           </div>
+          <button type="button" className="btn btn-outline btn-sm mt-3.5" style={{ fontSize: '11px' }} onClick={toggleScopePicker}>
+            ↕ Change scope
+          </button>
+        </div>
+      ) : (
+        <>
+          <ClusterCharts clusters={clusters} scopeSuffix={scopeSuffix} />
+          <ClustersTable clusters={clusters} scopeSuffix={scopeSuffix} onRowClick={handleRowClick} />
+          {hasFeatured && (
+            <ClusterCaseDetail
+              onBatchRaid={() =>
+                showToast({
+                  type: 'ai',
+                  title: 'Batch raid created',
+                  message: 'Batch raid initiated for all 5 members of CL-2026-042 with police coordination. Raid planning packet generated.',
+                  duration: 4000,
+                })
+              }
+            />
+          )}
         </>
       )}
     </div>

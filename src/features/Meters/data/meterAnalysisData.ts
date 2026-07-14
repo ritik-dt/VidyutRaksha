@@ -311,6 +311,10 @@ export interface RawTamperEvent {
   ts: string // "YYYY-MM-DD HH:MM:SS"
   type: 'Earth Loading' | 'Neutral Disturbance' | 'Power Failure'
   occ: 'Occurrence' | 'Restoration'
+  kwhAt: number | null
+  v: number | null
+  i: number | null
+  pf: number | null
 }
 
 export interface TamperEventsRaw {
@@ -337,6 +341,25 @@ function formatTs(d: Date): string {
 }
 
 export function buildTamperEventsRaw(meter: SuspMeter, realData?: RealMeterData): TamperEventsRaw {
+  // Flagship (#1849966) ships the full real MRI dump — use the actual 300-event
+  // lifetime log with real RTC timestamps and V/I/PF/kWh readings.
+  if (realData?.tampers && realData.tampers.length > 0) {
+    const sorted = realData.tampers
+      .slice()
+      .sort((a, b) => (b.ts || '').localeCompare(a.ts || ''))
+    const events: RawTamperEvent[] = sorted.map((t) => ({
+      ts: (t.ts || '').replace('T', ' '),
+      type: t.type,
+      occ: t.occ,
+      kwhAt: t.kwh_at != null ? parseFloat(t.kwh_at) : null,
+      v: t.v != null ? parseFloat(t.v) : null,
+      i: t.i != null ? parseFloat(t.i) : null,
+      pf: t.pf != null ? parseFloat(t.pf) : null,
+    }))
+    const earthCount = events.filter((e) => e.type === 'Earth Loading').length
+    return { events, total: events.length, earthCount, isReal: true }
+  }
+
   const cat = categorizeTamperEvents(realData)
   const years = Object.keys(cat.byYear).sort()
   if (years.length === 0) return { events: [], total: 0, earthCount: 0, isReal: cat.isReal }
@@ -377,7 +400,30 @@ export function buildTamperEventsRaw(meter: SuspMeter, realData?: RealMeterData)
   })
 
   events.sort((a, b) => b.d.getTime() - a.d.getTime())
-  const formatted: RawTamperEvent[] = events.map((e) => ({ ts: formatTs(e.d), type: e.type, occ: e.occ }))
+
+  // Deterministic per-event electrical readings (the real 300-event dump isn't
+  // in the project's mock data, so these are generated from the same seeded RNG
+  // to give a stable, prototype-shaped log rather than empty "—" columns).
+  const baseKwh = realData?.summary?.cumul_kwh
+    ? parseFloat(realData.summary.cumul_kwh.replace(/,/g, '')) || 45000
+    : 45000
+  const totalEvents = events.length
+  const formatted: RawTamperEvent[] = events.map((e, idx) => {
+    const isEarth = e.type === 'Earth Loading'
+    // Newest events (idx 0) carry the highest cumulative register; older events lower.
+    const kwhAt = +(
+      baseKwh -
+      (idx / Math.max(totalEvents, 1)) * baseKwh * 0.35 +
+      (rng() - 0.5) * 30
+    ).toFixed(2)
+    const v =
+      e.occ === 'Occurrence' && isEarth
+        ? 180 + Math.floor(rng() * 33)
+        : 224 + Math.floor(rng() * 19)
+    const i = +(e.occ === 'Restoration' ? 1.5 + rng() * 4 : rng() * 1.2).toFixed(2)
+    const pf = +((isEarth ? 0.45 : 0.6) + rng() * (isEarth ? 0.27 : 0.32)).toFixed(2)
+    return { ts: formatTs(e.d), type: e.type, occ: e.occ, kwhAt, v, i, pf }
+  })
   const earthCount = formatted.filter((e) => e.type === 'Earth Loading').length
   return { events: formatted, total: formatted.length, earthCount, isReal: cat.isReal }
 }

@@ -206,8 +206,8 @@ export function MeterAnalysisTab({ meter }: MeterAnalysisTabProps) {
           </div>
 
           {/* Parameter table */}
-          <div>
-            <table className="w-full text-[11.5px]">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[360px] text-[11.5px]">
               <thead>
                 <tr className="border-b-2 border-border">
                   <th className="px-2 py-1.5 text-left text-[9.5px] font-bold uppercase tracking-[.4px] text-text-dim">Phase</th>
@@ -322,7 +322,8 @@ export function MeterAnalysisTab({ meter }: MeterAnalysisTabProps) {
               </span>
               <span className="text-[9px] font-semibold text-text-dim">{fmt(ls.totalIntervals)} intervals analysed</span>
             </div>
-            <table className="w-full text-[11px]">
+            <div className="overflow-x-auto">
+            <table className="w-full min-w-[300px] text-[11px]">
               <thead>
                 <tr className="border-b-2 border-border">
                   <th className="px-1.5 py-1.5 text-left text-[9.5px] font-bold uppercase tracking-[.4px] text-text-dim">Phase</th>
@@ -357,6 +358,7 @@ export function MeterAnalysisTab({ meter }: MeterAnalysisTabProps) {
                 })}
               </tbody>
             </table>
+            </div>
             <div className="mt-2.5 rounded-md p-2 text-[9.5px] leading-[1.5] text-text-dim" style={{ background: 'rgba(0,0,0,0.03)' }}>
               <strong>Severity bands:</strong> Critical = V_AVAIL&amp;I=0 &gt; 25% or I_AVAIL&amp;V_LOW &gt; 15% · Warning = &gt; 10% / &gt; 5% · OK below.
             </div>

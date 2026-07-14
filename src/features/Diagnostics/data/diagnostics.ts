@@ -1,5 +1,5 @@
 import { hierData } from '@/data/hierarchy'
-import { enrichLevel } from '@/features/Dashboard/adapter'
+import { enrichLevel } from '@/shared/utils/level'
 import { formatIndian } from '@/shared/utils/formatters'
 import type {
   DiagnosticAffectedMeter,
@@ -196,11 +196,13 @@ export const DIAGNOSTIC_REPORTS: DiagnosticReportDefinition[] = [
 ]
 
 function makeSeed(input: string): number {
-  let seed = 0
+  // Exact port of the prototype hash: 32-bit signed accumulation (|0), abs at the
+  // end. Using `& 0x7fffffff` per-step diverges and produces different counts.
+  let h = 0
   for (let i = 0; i < input.length; i += 1) {
-    seed = (seed * 31 + input.charCodeAt(i)) & 0x7fffffff
+    h = (h * 31 + input.charCodeAt(i)) | 0
   }
-  return seed
+  return Math.abs(h)
 }
 
 function createRandom(seedRef: { value: number }) {

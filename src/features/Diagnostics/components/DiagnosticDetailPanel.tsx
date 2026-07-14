@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { getPathForScreen } from '@/shared/utils/navigation'
 import { useToast } from '@/shared/context/ToastContext'
 import { AiInsightBanner } from '@/shared/components/ui/AiInsightBanner'
-import { fmtINR } from '@/features/Dashboard/adapter'
+import { fmtINR } from '@/shared/utils/formatters'
 import { formatIndian } from '@/shared/utils/formatters'
 import { getDiagnosticAffectedMeters, getDiagnosticEvidenceLabel } from '../data/diagnostics'
 import type { DiagnosticReport } from '../types'
@@ -50,7 +50,7 @@ export function DiagnosticDetailPanel({
 
       <div
         className="assign-panel fixed right-0 top-0 z-50 flex h-full flex-col overflow-hidden bg-bg shadow-[-12px_0_40px_rgba(0,0,0,0.18)]"
-        style={{ width: 'min(900px, 100vw)', borderLeft: '1px solid var(--border)' }}
+        style={{ width: 'min(95vw, 720px)', borderLeft: '1px solid var(--border)' }}
       >
         <div
           className="flex flex-shrink-0 items-start justify-between border-b px-5 py-4"
@@ -84,15 +84,15 @@ export function DiagnosticDetailPanel({
           </button>
         </div>
 
-        <div className="flex min-h-0 flex-1 flex-col gap-0 overflow-hidden px-5 py-4">
-          <AiInsightBanner title="How this report works (physics)" live={false} className="mb-3 flex-shrink-0">
+        <div className="flex min-h-0 flex-1 flex-col gap-0 overflow-hidden px-5 py-3 max-sm:px-3 max-sm:py-2.5">
+          <AiInsightBanner title="How this report works (physics)" live={false} compact className="mb-2 flex-shrink-0">
             <span dangerouslySetInnerHTML={{ __html: report.physics }} />
           </AiInsightBanner>
 
-          <div className="mb-3 grid grid-cols-1 gap-3 md:grid-cols-3">
+          <div className="mb-2 flex shrink-0 gap-2 overflow-x-auto pb-1 md:grid md:grid-cols-3 md:gap-2.5 md:overflow-visible md:pb-0">
             <button
               type="button"
-              className="kpi-card relative overflow-hidden rounded-xl border border-border bg-card p-4 px-[18px] text-left"
+              className="kpi-card clickable relative shrink-0 overflow-hidden rounded-xl border border-border bg-card p-3 text-left min-w-[150px] md:min-w-0"
               onClick={() =>
                 showToast({
                   type: 'warning',
@@ -103,8 +103,8 @@ export function DiagnosticDetailPanel({
               }
             >
               <div className="absolute left-0 top-0 h-full w-1 rounded-l-xl" style={{ background: sevColor }} />
-              <div className="mb-1 text-[11px] font-medium uppercase tracking-[0.5px] text-text-dim">Affected consumers</div>
-              <div className="font-mono text-[24px] font-extrabold" style={{ color: sevColor }}>
+              <div className="mb-0.5 text-[10px] font-medium uppercase tracking-[0.5px] text-text-dim">Affected consumers</div>
+              <div className="font-mono text-[20px] font-extrabold" style={{ color: sevColor }}>
                 {formatIndian(report.count)}
               </div>
               <div className="mt-0.5 text-[10px] text-text-mid">{isStateLevel ? 'total in this report' : `at ${scopeName}`}</div>
@@ -112,7 +112,7 @@ export function DiagnosticDetailPanel({
 
             <button
               type="button"
-              className="kpi-card relative overflow-hidden rounded-xl border border-border bg-card p-4 px-[18px] text-left"
+              className="kpi-card clickable relative shrink-0 overflow-hidden rounded-xl border border-border bg-card p-3 text-left min-w-[150px] md:min-w-0"
               onClick={() =>
                 showToast({
                   type: 'info',
@@ -123,14 +123,14 @@ export function DiagnosticDetailPanel({
               }
             >
               <div className="absolute left-0 top-0 h-full w-1 rounded-l-xl" style={{ background: 'var(--ai-purple)' }} />
-              <div className="mb-1 text-[11px] font-medium uppercase tracking-[0.5px] text-text-dim">Typical profile</div>
+              <div className="mb-0.5 text-[10px] font-medium uppercase tracking-[0.5px] text-text-dim">Typical profile</div>
               <div className="text-[11px] font-semibold leading-[1.35] text-text">{report.typicalMeters}</div>
             </button>
 
             {report.revenueImpact > 0 ? (
               <button
                 type="button"
-                className="kpi-card relative overflow-hidden rounded-xl border border-border bg-card p-4 px-[18px] text-left"
+                className="kpi-card clickable relative shrink-0 overflow-hidden rounded-xl border border-border bg-card p-3 text-left min-w-[150px] md:min-w-0"
                 onClick={() =>
                   showToast({
                     type: 'warning',
@@ -141,34 +141,37 @@ export function DiagnosticDetailPanel({
                 }
               >
                 <div className="absolute left-0 top-0 h-full w-1 rounded-l-xl" style={{ background: 'var(--red)' }} />
-                <div className="mb-1 text-[11px] font-medium uppercase tracking-[0.5px] text-text-dim">Revenue exposure</div>
-                <div className="font-mono text-[18px] font-extrabold" style={{ color: 'var(--red)' }}>
+                <div className="mb-0.5 text-[10px] font-medium uppercase tracking-[0.5px] text-text-dim">Revenue exposure</div>
+                <div className="font-mono text-[16px] font-extrabold" style={{ color: 'var(--red)' }}>
                   {fmtINR(report.revenueImpact)}
                 </div>
                 <div className="mt-0.5 text-[10px] text-text-mid">if all confirmed</div>
               </button>
             ) : (
-              <div className="kpi-card relative overflow-hidden rounded-xl border border-border bg-card p-4 px-[18px]">
+              <div className="kpi-card relative shrink-0 overflow-hidden rounded-xl border border-border bg-card p-3 min-w-[150px] md:min-w-0">
                 <div className="absolute left-0 top-0 h-full w-1 rounded-l-xl" style={{ background: 'var(--text-dim)' }} />
-                <div className="mb-1 text-[11px] font-medium uppercase tracking-[0.5px] text-text-dim">Revenue exposure</div>
+                <div className="mb-0.5 text-[10px] font-medium uppercase tracking-[0.5px] text-text-dim">Revenue exposure</div>
                 <div className="text-[11px] font-semibold text-text-mid">Network-level report</div>
               </div>
             )}
           </div>
 
-          <div className="mb-2 text-[12px] font-bold text-text">
+          <div className="mb-1.5 shrink-0 text-[12px] font-bold text-text">
             Affected consumers{isStateLevel ? '' : ` · ${scopeName}`}
           </div>
 
-          <div className="table-wrap flex-1 min-h-0 overflow-hidden">
-            <table>
-              <thead>
+          <div
+            className="table-wrap min-h-0 flex-1"
+            style={{ overflowY: 'auto', overflowX: 'auto' }}
+          >
+            <table className="min-w-[560px]">
+              <thead className="sticky top-0 z-[1]">
                 <tr className="table-header">
                   <th>Meter #</th>
                   <th>Consumer</th>
-                  <th>Location</th>
+                  <th className="hidden lg:table-cell">Location</th>
                   <th>{evidenceLabel}</th>
-                  <th>Detected</th>
+                  <th className="hidden md:table-cell">Detected</th>
                   <th />
                 </tr>
               </thead>
@@ -203,12 +206,12 @@ export function DiagnosticDetailPanel({
                         {meter.activity} · {meter.tariff}
                       </div>
                     </td>
-                    <td className="text-[10.5px] text-text-mid">
+                    <td className="hidden text-[10.5px] text-text-mid lg:table-cell">
                       <div>{meter.location.split(' · ').slice(0, 2).join(' · ')}</div>
                       <div className="text-[9.5px] text-text-dim">{meter.location.split(' · ').slice(2).join(' · ')}</div>
                     </td>
                     <td className="font-mono text-[10px] font-semibold text-red-500">{meter.evidence}</td>
-                    <td className="text-[10.5px] text-text-dim">{meter.detected}</td>
+                    <td className="hidden text-[10.5px] text-text-dim md:table-cell">{meter.detected}</td>
                     <td className="text-right text-[11px] font-bold" style={{ color: 'var(--ai-purple)' }}>
                       {report.id === 'ht-imbalance' ? 'network' : '›'}
                     </td>

@@ -12,7 +12,7 @@ import {
   type SuspMeter,
 } from "@/features/Meters/data/meters";
 import { formatIndian } from "@/shared/utils/formatters";
-import { fmtINR } from "@/features/Dashboard/adapter";
+import { fmtINR } from "@/shared/utils/formatters";
 import { useToast } from "@/shared/context/ToastContext";
 
 const PAGE_SIZE = 25;
@@ -91,7 +91,7 @@ export function SuspiciousListPanel({
   criticalCount,
   highCount,
   mediumCount,
-  estMonthlyLoss: _estMonthlyLoss,
+  estMonthlyLoss,
   initialBand,
   onClose,
 }: SuspiciousListPanelProps) {
@@ -158,7 +158,8 @@ export function SuspiciousListPanel({
   function toggleRow(id: string) {
     setSelected((prev: Set<string>) => {
       const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
       return next;
     });
   }
@@ -251,23 +252,33 @@ export function SuspiciousListPanel({
   return (
     <>
       {/* Backdrop */}
-      <div className="fixed inset-0 z-40 bg-black/40" onClick={onClose} />
+      <div className="fixed inset-0 z-40 cursor-pointer bg-black/40" onClick={onClose} />
 
       {/* Panel */}
       <div
-        className="fixed right-0 top-0 z-50 flex h-screen w-[90vw] flex-col overflow-hidden bg-card"
+        className="fixed right-0 top-0 z-50 flex h-screen w-[95vw] flex-col overflow-hidden bg-card sm:w-[90vw]"
         style={{ maxWidth: 800, borderRadius: "14px 0 0 14px" }}
       >
         {/* ===== Hero header ===== */}
         <div
-          className="shrink-0 p-[18px_22px_16px] text-white"
+          className="relative shrink-0 p-[18px_22px_16px] text-white max-sm:p-[12px_16px]"
           style={{
             background:
               "linear-gradient(135deg,rgba(124,58,237,0.95) 0%,rgba(91,33,182,0.95) 100%)",
           }}
         >
-          <div className="flex items-start justify-between gap-3.5">
-            <div className="min-w-0 flex-1">
+          {/* Close — always pinned top-right so it stays reachable at every width */}
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="absolute right-3 top-3 flex size-7 items-center justify-center rounded-md text-white/70 hover:bg-white/15 hover:text-white"
+          >
+            ✕
+          </button>
+
+          <div className="flex flex-col gap-3 pr-8 sm:flex-row sm:items-start sm:justify-between sm:gap-3.5">
+            <div className="min-w-0 sm:flex-1">
               <div className="mb-1 flex items-center gap-2 text-[9.5px] font-bold uppercase tracking-[0.6px] text-white/75">
                 <span
                   className="inline-block size-1.5 animate-pulse rounded-full bg-white"
@@ -282,17 +293,20 @@ export function SuspiciousListPanel({
                 {bandLabel} ·{" "}
                 <span className="font-bold">
                   {formatIndian(filtered.length)} matching
+                  {filtered.length !== SUSP_METERS.length
+                    ? ` of ${formatIndian(SUSP_METERS.length)}`
+                    : ""}
                 </span>
               </div>
             </div>
 
-            {/* Hero stat cluster */}
-            <div className="flex shrink-0 items-center gap-3.5">
-              <div className="text-right">
+            {/* Hero stat cluster — hidden on mobile to keep the header compact */}
+            <div className="flex shrink-0 items-center gap-3.5 max-sm:hidden">
+              <div className="text-left sm:text-right">
                 <div className="text-[9.5px] font-bold uppercase tracking-[0.4px] text-white/70">
                   Total flagged
                 </div>
-                <div className="font-mono text-[22px] font-extrabold leading-tight">
+                <div className="font-mono text-[20px] font-extrabold leading-tight sm:text-[22px]">
                   {formatIndian(totalFlagged)}
                 </div>
                 <div className="text-[10px] text-white/70">
@@ -300,32 +314,25 @@ export function SuspiciousListPanel({
                 </div>
               </div>
               <div className="h-[46px] w-px bg-white/25" />
-              <div className="text-right">
+              <div className="text-left sm:text-right">
                 <div className="text-[9.5px] font-bold uppercase tracking-[0.4px] text-white/70">
                   Est. monthly exposure
                 </div>
                 <div
-                  className="font-mono text-[22px] font-extrabold leading-tight"
+                  className="font-mono text-[20px] font-extrabold leading-tight sm:text-[22px]"
                   style={{ color: "#FFD93D" }}
                 >
-                  {fmtINR(Math.round(criticalCount * 730000))}
+                  {fmtINR(estMonthlyLoss)}
                 </div>
                 <div className="text-[10px] text-white/70">
                   if all confirmed
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={onClose}
-                className="flex size-7 items-center justify-center rounded-md text-white/70 hover:bg-white/15 hover:text-white"
-              >
-                ✕
-              </button>
             </div>
           </div>
 
           {/* Risk band breakdown bar */}
-          <div className="mt-3.5 pb-3.5">
+          <div className="mt-3.5 max-sm:mt-2">
             <div className="flex h-1.5 overflow-hidden rounded-[4px] bg-white/15 shadow-[inset_0_1px_2px_rgba(0,0,0,0.15)]">
               {breakdownBars.map(([color, pct, title]) =>
                 pct > 0 ? (
@@ -341,11 +348,11 @@ export function SuspiciousListPanel({
               )}
             </div>
 
-            <div className="mt-[5px] flex flex-wrap justify-between gap-1.5 text-[10px] font-semibold text-white/85">
+            <div className="mt-[5px] flex flex-wrap justify-between gap-1.5 text-[10px] font-semibold text-white/85 max-sm:flex-nowrap max-sm:justify-start max-sm:overflow-x-auto">
               {breakdownLegend.map(([color, label]) => (
                 <span
                   key={color}
-                  className="inline-flex items-center gap-[5px]"
+                  className="inline-flex shrink-0 items-center gap-[5px] whitespace-nowrap"
                 >
                   <span
                     className="inline-block size-2 rounded-[2px]"
@@ -360,11 +367,11 @@ export function SuspiciousListPanel({
 
         {/* ===== Filter bar ===== */}
         <div
-          className="shrink-0 flex flex-col gap-2.5 border-b border-border-light p-[12px_18px]"
+          className="shrink-0 flex flex-col gap-2.5 border-b border-border-light p-[12px_18px] max-sm:gap-2 max-sm:p-[8px_12px]"
           style={{ background: "var(--bg-soft)" }}
         >
           {/* Band pills */}
-          <div className="flex flex-wrap items-center gap-1.5">
+          <div className="flex flex-wrap items-center gap-1.5 max-sm:flex-nowrap max-sm:overflow-x-auto">
             <span className="mr-1 text-[9.5px] font-bold uppercase tracking-[0.5px] text-text-dim">
               Risk band:
             </span>
@@ -388,7 +395,7 @@ export function SuspiciousListPanel({
                     setBand(p.value);
                     setPage(1);
                   }}
-                  className="rounded-[14px] border px-[11px] py-[5px] text-[11px] font-semibold transition-all"
+                  className="shrink-0 whitespace-nowrap rounded-[14px] border px-[11px] py-[5px] text-[11px] font-semibold transition-all"
                   style={{
                     borderColor: isActive
                       ? p.activeColor
@@ -407,7 +414,7 @@ export function SuspiciousListPanel({
 
           {/* Search + sort + category */}
           <div className="flex flex-wrap items-center gap-2">
-            <div className="relative min-w-[240px] flex-1">
+            <div className="relative min-w-0 flex-[2] sm:w-auto sm:min-w-[240px] sm:flex-1">
               <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-[13px] text-text-dim">
                 🔍
               </span>
@@ -427,7 +434,7 @@ export function SuspiciousListPanel({
               onChange={(e: ChangeEvent<HTMLSelectElement>) =>
                 setSortKey(e.target.value as SortKey)
               }
-              className="rounded-lg border border-border bg-card px-2.5 py-[7px] text-[11.5px] outline-none"
+              className="min-w-0 flex-1 rounded-lg border border-border bg-card px-2.5 py-[7px] text-[11.5px] outline-none sm:flex-none"
             >
               <option value="risk">Sort: Risk score (highest)</option>
               <option value="events">Sort: Tamper events</option>
@@ -440,7 +447,7 @@ export function SuspiciousListPanel({
                 setCategory(e.target.value);
                 setPage(1);
               }}
-              className="rounded-lg border border-border bg-card px-2.5 py-[7px] text-[11.5px] outline-none"
+              className="min-w-0 flex-1 rounded-lg border border-border bg-card px-2.5 py-[7px] text-[11.5px] outline-none sm:flex-none"
             >
               <option value="">All categories</option>
               <option value="Domestic">Domestic</option>
@@ -454,7 +461,7 @@ export function SuspiciousListPanel({
         {/* ===== Selection action bar ===== */}
         {selected.size > 0 && (
           <div
-            className="shrink-0 flex items-center justify-between gap-2.5 p-[9px_18px] text-white"
+            className="shrink-0 flex flex-col gap-2 p-[9px_18px] text-white sm:flex-row sm:items-center sm:justify-between sm:gap-2.5"
             style={{ background: "var(--ai-purple)" }}
           >
             <div className="text-[12px] font-semibold">
@@ -466,7 +473,7 @@ export function SuspiciousListPanel({
                 </strong>
               </span>
             </div>
-            <div className="flex gap-1.5">
+            <div className="flex flex-wrap gap-1.5">
               <button
                 type="button"
                 onClick={() => bulkAction("case")}
@@ -499,8 +506,43 @@ export function SuspiciousListPanel({
           </div>
         )}
 
-        {/* ===== Body — table ===== */}
-        <div className="flex-1 overflow-y-auto bg-card">
+        {/* ===== Sub-header (fixed) — count + select-visible ===== */}
+        {slice.length > 0 && (
+          <div
+            className="shrink-0 flex items-center justify-between border-b border-border-light p-[9px_18px] text-[10.5px] text-text-dim max-sm:p-[7px_12px]"
+            style={{ background: "var(--bg-soft)" }}
+          >
+            <div>
+              Showing{" "}
+              <strong className="text-text">
+                {sliceStart + 1}–
+                {Math.min(sliceStart + PAGE_SIZE, filtered.length)}
+              </strong>{" "}
+              of <strong className="text-text">{filtered.length}</strong>
+              {search || category ? " matching" : ""}
+              {filtered.length !== SUSP_METERS.length
+                ? ` (filtered from ${formatIndian(SUSP_METERS.length)})`
+                : ""}
+            </div>
+            <label className="flex cursor-pointer items-center gap-1.5 font-semibold text-text-mid">
+              <input
+                type="checkbox"
+                checked={
+                  slice.length > 0 &&
+                  slice.every((m: SuspMeter) => selected.has(m.id))
+                }
+                onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                  selectVisible(e.target.checked)
+                }
+                className="cursor-pointer"
+              />
+              Select visible page
+            </label>
+          </div>
+        )}
+
+        {/* ===== Body — ONLY the table scrolls ===== */}
+        <div className="flex-1 overflow-auto bg-card">
           {slice.length === 0 ? (
             <div className="p-[60px_24px] text-center">
               <div className="mb-3 text-[38px] opacity-40">🔍</div>
@@ -512,44 +554,10 @@ export function SuspiciousListPanel({
               </div>
             </div>
           ) : (
-            <>
-              {/* Sticky sub-header */}
-              <div
-                className="sticky top-0 z-[2] flex items-center justify-between border-b border-border-light p-[9px_18px] text-[10.5px] text-text-dim"
-                style={{ background: "var(--bg-soft)" }}
-              >
-                <div>
-                  Showing{" "}
-                  <strong className="text-text">
-                    {sliceStart + 1}–
-                    {Math.min(sliceStart + PAGE_SIZE, filtered.length)}
-                  </strong>{" "}
-                  of <strong className="text-text">{filtered.length}</strong>
-                  {search || category ? " matching" : ""}
-                  {filtered.length !== SUSP_METERS.length
-                    ? ` (filtered from ${formatIndian(SUSP_METERS.length)})`
-                    : ""}
-                </div>
-                <label className="flex cursor-pointer items-center gap-1.5 font-semibold text-text-mid">
-                  <input
-                    type="checkbox"
-                    checked={
-                      slice.length > 0 &&
-                      slice.every((m: SuspMeter) => selected.has(m.id))
-                    }
-                    onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                      selectVisible(e.target.checked)
-                    }
-                    className="cursor-pointer"
-                  />
-                  Select visible page
-                </label>
-              </div>
-
-              <table className="w-full border-collapse text-[11.5px]">
+            <table className="w-full min-w-[460px] border-collapse text-[11.5px] md:min-w-[620px] lg:min-w-[720px]">
                 <thead>
                   <tr
-                    className="sticky top-[32px] z-[1]"
+                    className="sticky top-0 z-[1]"
                     style={{ background: "var(--bg-soft)" }}
                   >
                     <th className="w-9 p-[9px_10px_9px_18px]"></th>
@@ -559,10 +567,10 @@ export function SuspiciousListPanel({
                     <th className="p-[9px_10px] text-left text-[10px] font-bold uppercase tracking-[0.5px] text-text-mid">
                       Consumer · Meter
                     </th>
-                    <th className="p-[9px_10px] text-left text-[10px] font-bold uppercase tracking-[0.5px] text-text-mid">
+                    <th className="hidden p-[9px_10px] text-left text-[10px] font-bold uppercase tracking-[0.5px] text-text-mid lg:table-cell">
                       Category · Area
                     </th>
-                    <th className="p-[9px_10px] text-left text-[10px] font-bold uppercase tracking-[0.5px] text-text-mid">
+                    <th className="hidden p-[9px_10px] text-left text-[10px] font-bold uppercase tracking-[0.5px] text-text-mid md:table-cell">
                       Top AI flag
                     </th>
                     <th
@@ -670,7 +678,7 @@ export function SuspiciousListPanel({
                             {m._account ? ` · A#${m._account}` : ""}
                           </div>
                         </td>
-                        <td className="p-[11px_10px]">
+                        <td className="hidden p-[11px_10px] lg:table-cell">
                           <div className="text-[11px] font-medium text-text">
                             {m.cat || "—"}
                           </div>
@@ -678,7 +686,7 @@ export function SuspiciousListPanel({
                             {truncArea}
                           </div>
                         </td>
-                        <td className="p-[11px_10px]">
+                        <td className="hidden p-[11px_10px] md:table-cell">
                           <div className="text-[11px] font-medium leading-[1.3] text-text">
                             {m.flags?.[0] ?? "—"}
                           </div>
@@ -721,15 +729,17 @@ export function SuspiciousListPanel({
                     );
                   })}
                 </tbody>
-              </table>
+            </table>
+          )}
+        </div>
 
-              {/* Pagination */}
-              {totalPages > 1 && (
-                <div
-                  className="flex items-center justify-between border-t border-border-light p-[14px_18px]"
-                  style={{ background: "var(--bg-soft)" }}
-                >
-                  <div className="text-[10.5px] text-text-dim">
+        {/* ===== Pagination (fixed) ===== */}
+        {slice.length > 0 && totalPages > 1 && (
+          <div
+            className="shrink-0 flex items-center justify-between border-t border-border-light p-[14px_18px] max-sm:justify-center max-sm:p-[10px_12px]"
+            style={{ background: "var(--bg-soft)" }}
+          >
+                  <div className="text-[10.5px] text-text-dim max-sm:hidden">
                     Page {currentPage} of {totalPages}
                   </div>
                   <div className="flex items-center gap-1">
@@ -737,7 +747,7 @@ export function SuspiciousListPanel({
                       <button
                         type="button"
                         onClick={() => setPage(1)}
-                        className="rounded-md border border-border bg-card px-2.5 py-[5px] text-[11px] font-semibold text-text-mid"
+                        className="rounded-md border border-border bg-card px-2.5 py-[5px] text-[11px] font-semibold text-text-mid max-sm:hidden"
                       >
                         « First
                       </button>
@@ -792,7 +802,7 @@ export function SuspiciousListPanel({
                       <button
                         type="button"
                         onClick={() => setPage(totalPages)}
-                        className="rounded-md border border-border bg-card px-2.5 py-[5px] text-[11px] font-semibold text-text-mid"
+                        className="rounded-md border border-border bg-card px-2.5 py-[5px] text-[11px] font-semibold text-text-mid max-sm:hidden"
                       >
                         Last »
                       </button>
@@ -800,24 +810,21 @@ export function SuspiciousListPanel({
                   </div>
                 </div>
               )}
-            </>
-          )}
-        </div>
 
         {/* ===== Footer action bar ===== */}
         <div
-          className="shrink-0 flex items-center justify-between gap-2.5 border-t border-border-light p-[11px_18px]"
+          className="shrink-0 flex flex-col gap-2 border-t border-border-light p-[11px_18px] max-sm:p-[8px_12px] sm:flex-row sm:items-center sm:justify-between sm:gap-2.5"
           style={{
             background:
               "linear-gradient(180deg,var(--bg-soft) 0%,#EEF1F7 100%)",
           }}
         >
-          <div className="text-[10.5px] font-semibold text-text-mid">
+          <div className="text-[10.5px] font-semibold text-text-mid max-sm:hidden">
             ✦ <strong>AI suggestion:</strong> Auto-create cases for top{" "}
             {Math.min(20, criticalCount)} critical consumers — estimated 4-hour
             inspector workload.
           </div>
-          <div className="flex gap-1.5">
+          <div className="flex flex-wrap gap-1.5 max-sm:flex-nowrap max-sm:overflow-x-auto max-sm:[&>button]:shrink-0">
             <button
               type="button"
               className="rounded-[7px] border border-border bg-card px-[13px] py-[7px] text-[11.5px] font-semibold text-text hover:border-ai-purple hover:text-ai-purple"

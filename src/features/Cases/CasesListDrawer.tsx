@@ -5,9 +5,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useToast } from '@/shared/context/ToastContext'
-import { fmtINR } from '@/features/Dashboard/adapter'
+import { fmtINR } from '@/shared/utils/formatters'
 import { formatIndian } from '@/shared/utils/formatters'
 import type { CaseRecord, CasesStats } from './types'
+import { CaseStatusBadge as StatusBadge } from './CaseStatusBadge'
 
 const PAGE_SIZE = 25
 
@@ -17,26 +18,10 @@ interface Props {
   stats: CasesStats
   records: CaseRecord[]
   initialStatusFilter?: string
+  onReassign: (caseRecord: CaseRecord) => void
   onClose: () => void
 }
 
-/* ── status badge — exact prototype sBadge() map ── */
-const STATUS_MAP: Record<string, string> = {
-  'Assigned':        'border-[#0EA5E94d] bg-[rgba(14,165,233,0.1)] text-[#0EA5E9]',
-  'In Progress':     'border-[#E6921E4d] bg-[rgba(230,146,30,0.1)] text-[#E6921E]',
-  'Escalated':       'border-[#DC35454d] bg-[rgba(220,53,69,0.1)] text-[#DC3545]',
-  'Confirmed Theft': 'border-[#28A7454d] bg-[rgba(40,167,69,0.1)] text-[#28A745]',
-  'False Positive':  'border-[#6B72804d] bg-[rgba(107,114,128,0.1)] text-[#6B7280]',
-  'Closed':          'border-[#6B72804d] bg-[rgba(107,114,128,0.1)] text-[#6B7280]',
-}
-function StatusBadge({ status }: { status: string }) {
-  const cls = STATUS_MAP[status] ?? 'border-[rgba(0,0,0,0.05)] bg-[rgba(0,0,0,0.05)] text-text-dim'
-  return (
-    <span className={`inline-block rounded-[10px] border px-2 py-0.5 text-[9.5px] font-bold tracking-[0.2px] ${cls}`}>
-      {status}
-    </span>
-  )
-}
 
 /* ── is past SLA? — exact prototype logic ── */
 const TODAY = new Date('2026-04-01')
@@ -67,7 +52,7 @@ function Pill({ label, active, variant, onClick }: { label: string; active: bool
     <button
       type="button"
       onClick={onClick}
-      className={`cursor-pointer rounded-[14px] border px-[11px] py-[5px] text-[11px] font-semibold transition-all duration-150 ${cls}`}
+      className={`shrink-0 cursor-pointer rounded-[14px] border px-[11px] py-[5px] text-[11px] font-semibold whitespace-nowrap transition-all duration-150 ${cls}`}
     >
       {label}
     </button>
@@ -88,19 +73,19 @@ function ViewBtn({ onClick }: { onClick: (e: React.MouseEvent) => void }) {
 }
 
 /* ── PageBtn for pagination ── */
-function PageBtn({ label, active, onClick }: { label: string; active?: boolean; onClick: () => void }) {
+function PageBtn({ label, active, onClick, hideOnMobile }: { label: string; active?: boolean; onClick: () => void; hideOnMobile?: boolean }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`min-w-[30px] rounded-md border px-[11px] py-[5px] text-[11px] ${active ? 'border-[#0EA5E9] bg-[#0EA5E9] font-bold text-white' : 'border-border bg-white font-semibold text-text'}`}
+      className={`min-w-[30px] cursor-pointer rounded-md border px-[11px] py-[5px] text-[11px] ${hideOnMobile ? 'max-sm:hidden ' : ''}${active ? 'border-[#0EA5E9] bg-[#0EA5E9] font-bold text-white' : 'border-border bg-white font-semibold text-text'}`}
     >
       {label}
     </button>
   )
 }
 
-export function CasesListDrawer({ scopeName, scopeType, stats, records, initialStatusFilter, onClose }: Props) {
+export function CasesListDrawer({ scopeName, scopeType, stats, records, initialStatusFilter, onClose, onReassign }: Props) {
   const { showToast } = useToast()
   const navigate = useNavigate()
   const [statusFilter, setStatusFilter] = useState(initialStatusFilter ?? '')
@@ -176,6 +161,11 @@ export function CasesListDrawer({ scopeName, scopeType, stats, records, initialS
 
   function bulkAction(action: string) {
     if (selected.size === 0) return
+    if (action === 'reassign') {
+      const first = records.find((r) => selected.has(r.id))
+      if (first) onReassign(first)
+      return
+    }
     const msgs: Record<string, string> = {
       reassign: `${selected.size} cases reassigned to available inspectors.`,
       escalate: `${selected.size} cases escalated to next-level supervisor.`,
@@ -191,7 +181,7 @@ export function CasesListDrawer({ scopeName, scopeType, stats, records, initialS
     const endPg   = Math.min(totalPages, startPg + 4)
     const btns: React.ReactNode[] = []
     if (curPage > 1) {
-      btns.push(<PageBtn key="first" label="« First" onClick={() => setPage(1)} />)
+      btns.push(<PageBtn key="first" label="« First" hideOnMobile onClick={() => setPage(1)} />)
       btns.push(<PageBtn key="prev"  label="‹ Prev"  onClick={() => setPage(curPage - 1)} />)
     }
     for (let p = startPg; p <= endPg; p++) {
@@ -199,7 +189,7 @@ export function CasesListDrawer({ scopeName, scopeType, stats, records, initialS
     }
     if (curPage < totalPages) {
       btns.push(<PageBtn key="next" label="Next ›"  onClick={() => setPage(curPage + 1)} />)
-      btns.push(<PageBtn key="last" label="Last »"  onClick={() => setPage(totalPages)} />)
+      btns.push(<PageBtn key="last" label="Last »"  hideOnMobile onClick={() => setPage(totalPages)} />)
     }
     return btns
   }
@@ -232,9 +222,9 @@ export function CasesListDrawer({ scopeName, scopeType, stats, records, initialS
       <div className="fixed inset-0 z-40 bg-black/35 backdrop-blur-[2px]" onClick={onClose} />
 
       {/* panel — exact prototype: maxWidth:800px, width:90vw, height:100vh */}
-      <div className="fixed top-0 right-0 z-50 flex h-screen w-[90vw] max-w-[800px] flex-col overflow-hidden rounded-l-[14px] bg-card shadow-[-16px_0_48px_rgba(15,23,42,0.22)]">
+      <div className="fixed top-0 right-0 z-50 flex h-screen w-[95vw] max-w-[800px] flex-col overflow-hidden rounded-l-[14px] bg-card shadow-[-16px_0_48px_rgba(15,23,42,0.22)] sm:w-[90vw]">
         {/* ═══ HEADER ═══ */}
-        <div className="shrink-0 bg-[linear-gradient(135deg,rgba(14,165,233,0.95)_0%,rgba(2,132,199,0.95)_100%)] px-[22px] pt-[18px] text-white">
+        <div className="shrink-0 bg-[linear-gradient(135deg,rgba(14,165,233,0.95)_0%,rgba(2,132,199,0.95)_100%)] px-[22px] pt-[18px] text-white max-sm:px-4 max-sm:pt-3">
           {/* top row */}
           <div className="flex items-start justify-between gap-3.5">
             <div className="min-w-0 flex-1">
@@ -242,23 +232,25 @@ export function CasesListDrawer({ scopeName, scopeType, stats, records, initialS
                 <span className="inline-block size-1.5 rounded-full bg-white shadow-[0_0_8px_#fff]" />
                 Live case workload · {scopeType} scope
               </div>
-              <div className="mb-[5px] text-xl leading-[1.2] font-extrabold">{scopeName}</div>
-              <div className="text-[11.5px] font-medium text-[rgba(255,255,255,0.85)]">
+              <div className="mb-[5px] text-xl leading-[1.2] font-extrabold max-sm:text-base max-sm:mb-0.5">{scopeName}</div>
+              <div className="text-[11.5px] font-medium text-[rgba(255,255,255,0.85)] max-sm:hidden">
                 {filterLabel} · <strong>{filtered.length} matching{filtered.length !== records.length ? ` of ${formatIndian(records.length)}` : ''}</strong>
               </div>
             </div>
             {/* totals */}
             <div className="flex shrink-0 items-center gap-3.5">
-              <div className="text-right">
-                <div className="text-[9.5px] font-bold tracking-[0.4px] text-[rgba(255,255,255,0.7)] uppercase">Total cases</div>
-                <div className="font-mono text-[22px] leading-[1.1] font-extrabold">{formatIndian(stats.total)}</div>
-                <div className="text-[10px] text-[rgba(255,255,255,0.7)]">{formatIndian(stats.active)} active · {stats.avgClose}d avg close</div>
-              </div>
-              <div className="h-[46px] w-px bg-[rgba(255,255,255,0.25)]" />
-              <div className="text-right">
-                <div className="text-[9.5px] font-bold tracking-[0.4px] text-[rgba(255,255,255,0.7)] uppercase">Recovery YTD</div>
-                <div className="font-mono text-[22px] leading-[1.1] font-extrabold text-[#FFD93D]">{fmtINR(stats.recovery)}</div>
-                <div className="text-[10px] text-[rgba(255,255,255,0.7)]">62% realization</div>
+              <div className="flex items-center gap-3.5 max-sm:hidden">
+                <div className="text-right">
+                  <div className="text-[9.5px] font-bold tracking-[0.4px] text-[rgba(255,255,255,0.7)] uppercase">Total cases</div>
+                  <div className="font-mono text-[22px] leading-[1.1] font-extrabold">{formatIndian(stats.total)}</div>
+                  <div className="text-[10px] text-[rgba(255,255,255,0.7)]">{formatIndian(stats.active)} active · {stats.avgClose}d avg close</div>
+                </div>
+                <div className="h-[46px] w-px bg-[rgba(255,255,255,0.25)]" />
+                <div className="text-right">
+                  <div className="text-[9.5px] font-bold tracking-[0.4px] text-[rgba(255,255,255,0.7)] uppercase">Recovery YTD</div>
+                  <div className="font-mono text-[22px] leading-[1.1] font-extrabold text-[#FFD93D]">{fmtINR(stats.recovery)}</div>
+                  <div className="text-[10px] text-[rgba(255,255,255,0.7)]">62% realization</div>
+                </div>
               </div>
               {/* close */}
               <button
@@ -269,15 +261,15 @@ export function CasesListDrawer({ scopeName, scopeType, stats, records, initialS
           </div>
 
           {/* ── STATUS BREAKDOWN BAR ── */}
-          <div className="mt-3.5 pb-3.5">
+          <div className="mt-3.5 pb-3.5 max-sm:mt-2 max-sm:pb-2">
             <div className="flex h-1.5 overflow-hidden rounded-[4px] bg-[rgba(255,255,255,0.15)] shadow-[inset_0_1px_2px_rgba(0,0,0,0.15)]">
               {breakdownBars.map(([color, pct, title]) => (
                 +pct > 0 && <div key={color} style={{ background: color, width: `${pct}%` }} title={title} />
               ))}
             </div>
-            <div className="mt-[5px] flex flex-wrap justify-between gap-1.5 text-[10px] font-semibold text-[rgba(255,255,255,0.85)]">
+            <div className="mt-[5px] flex flex-wrap justify-between gap-1.5 text-[10px] font-semibold text-[rgba(255,255,255,0.85)] max-sm:flex-nowrap max-sm:justify-start max-sm:overflow-x-auto">
               {breakdownLegend.map(([color, label]) => (
-                <span key={color} className="inline-flex items-center gap-[5px]">
+                <span key={color} className="inline-flex shrink-0 items-center gap-[5px] whitespace-nowrap">
                   <span className="inline-block size-2 rounded-[2px]" style={{ background: color }} />
                   {label}
                 </span>
@@ -287,9 +279,9 @@ export function CasesListDrawer({ scopeName, scopeType, stats, records, initialS
         </div>
 
         {/* ═══ FILTER BAR ═══ */}
-        <div className="flex shrink-0 flex-col gap-2.5 border-b border-border-light bg-bg-soft px-[18px] py-3">
+        <div className="flex shrink-0 flex-col gap-2.5 border-b border-border-light bg-bg-soft px-[18px] py-3 max-sm:gap-2 max-sm:px-3 max-sm:py-2">
           {/* status pills */}
-          <div className="flex flex-wrap items-center gap-1.5">
+          <div className="flex flex-wrap items-center gap-1.5 max-sm:flex-nowrap max-sm:overflow-x-auto">
             <span className="mr-1 text-[9.5px] font-bold tracking-[0.5px] text-text-dim uppercase">Status:</span>
             <Pill label={`All ${formatIndian(stats.total)}`} active={!statusFilter} variant="all" onClick={() => setStatusFilter('')} />
             <Pill label={`⚠ Past SLA ${formatIndian(stats.pastSla)}`} active={statusFilter === 'Past SLA'} variant="pastsla" onClick={() => setStatusFilter('Past SLA')} />
@@ -300,7 +292,7 @@ export function CasesListDrawer({ scopeName, scopeType, stats, records, initialS
           </div>
           {/* search + sort */}
           <div className="flex flex-wrap items-center gap-2">
-            <div className="relative min-w-[240px] flex-1">
+            <div className="relative min-w-0 flex-[2] sm:w-auto sm:min-w-[240px] sm:flex-1">
               <span className="pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2 text-[13px] text-text-dim">🔍</span>
               <input
                 value={search}
@@ -312,7 +304,7 @@ export function CasesListDrawer({ scopeName, scopeType, stats, records, initialS
             <select
               value={sortKey}
               onChange={(e) => setSortKey(e.target.value)}
-              className="cursor-pointer rounded-lg border border-border bg-card px-2.5 py-1.5 text-[11.5px] outline-none"
+              className="min-w-0 flex-1 cursor-pointer rounded-lg border border-border bg-card px-2.5 py-1.5 text-[11.5px] outline-none sm:flex-none"
             >
               <option value="due">Sort: Due date (overdue first)</option>
               <option value="risk">Sort: Risk score (highest)</option>
@@ -341,26 +333,26 @@ export function CasesListDrawer({ scopeName, scopeType, stats, records, initialS
           </div>
         )}
 
-        {/* ═══ BODY ═══ */}
-        <div ref={bodyRef} className="flex-1 overflow-y-auto bg-card p-0">
-          {/* sticky row count */}
-          <div className="sticky top-0 z-2 flex items-center justify-between border-b border-border-light bg-bg-soft px-[18px] py-2.5 text-[10.5px] text-text-dim">
-            <div>
-              Showing <strong className="text-text">{start + 1}–{Math.min(start + PAGE_SIZE, filtered.length)}</strong>{' '}
-              of <strong className="text-text">{filtered.length}</strong>
-              {search ? ' matching' : ''}{filtered.length !== records.length ? ' (filtered)' : ''}
-            </div>
-            <label className="inline-flex cursor-pointer items-center gap-[5px] text-[10.5px] font-semibold text-text-mid">
-              <input
-                type="checkbox"
-                checked={slice.length > 0 && slice.every((c) => selected.has(c.id))}
-                onChange={(e) => selectVisible(e.target.checked)}
-                className="size-3.5 cursor-pointer"
-              />
-              Select visible page
-            </label>
+        {/* ═══ SUB-HEADER (fixed) ═══ */}
+        <div className="flex shrink-0 items-center justify-between border-b border-border-light bg-bg-soft px-[18px] py-2.5 text-[10.5px] text-text-dim max-sm:px-3">
+          <div>
+            Showing <strong className="text-text">{start + 1}–{Math.min(start + PAGE_SIZE, filtered.length)}</strong>{' '}
+            of <strong className="text-text">{filtered.length}</strong>
+            {search ? ' matching' : ''}{filtered.length !== records.length ? ' (filtered)' : ''}
           </div>
+          <label className="inline-flex cursor-pointer items-center gap-[5px] text-[10.5px] font-semibold text-text-mid">
+            <input
+              type="checkbox"
+              checked={slice.length > 0 && slice.every((c) => selected.has(c.id))}
+              onChange={(e) => selectVisible(e.target.checked)}
+              className="size-3.5 cursor-pointer"
+            />
+            <span className="max-sm:hidden">Select visible page</span>
+          </label>
+        </div>
 
+        {/* ═══ BODY — ONLY the table scrolls ═══ */}
+        <div ref={bodyRef} className="flex-1 overflow-auto bg-card p-0">
           {/* table */}
           {slice.length === 0 ? (
             <div className="px-6 py-[60px] text-center">
@@ -369,14 +361,14 @@ export function CasesListDrawer({ scopeName, scopeType, stats, records, initialS
               <div className="text-[11px] text-text-dim">Try clearing the search or selecting a different status.</div>
             </div>
           ) : (
-            <table className="w-full border-collapse text-[11.5px]">
+            <table className="w-full min-w-[560px] border-collapse text-[11.5px] md:min-w-[680px]">
               <thead>
-                <tr className="sticky top-8 z-1 bg-bg-soft">
+                <tr className="sticky top-0 z-1 bg-bg-soft">
                   <th className="w-9 px-2.5 py-2.5 pl-[18px] text-left" />
                   {['Risk','Case · Consumer','Area','Inspector','Due','Status','Action'].map((h, i) => (
                     <th
                       key={h}
-                      className={`px-2.5 py-2.5 text-[10px] font-bold tracking-[0.5px] text-text-mid uppercase ${i === 6 ? 'pr-[18px] text-right' : 'text-left'}`}
+                      className={`px-2.5 py-2.5 text-[10px] font-bold tracking-[0.5px] text-text-mid uppercase ${i === 6 ? 'pr-[18px] text-right' : 'text-left'} ${i === 2 ? 'hidden lg:table-cell' : ''} ${i === 3 ? 'hidden md:table-cell' : ''}`}
                     >
                       {h}
                     </th>
@@ -422,13 +414,13 @@ export function CasesListDrawer({ scopeName, scopeType, stats, records, initialS
                         <div className="mt-0.5 font-mono text-[9.5px] text-text-dim">M#{c.meter}</div>
                       </td>
                       {/* area */}
-                      <td className="px-2.5 py-[11px]">
+                      <td className="hidden px-2.5 py-[11px] lg:table-cell">
                         <div className="text-[10.5px] text-text-mid">
                           {(c.area || '—').substring(0, 30)}{(c.area || '').length > 30 ? '…' : ''}
                         </div>
                       </td>
                       {/* inspector */}
-                      <td className="px-2.5 py-[11px] text-[10.5px] text-text-mid">{c.assignee || '—'}</td>
+                      <td className="hidden px-2.5 py-[11px] text-[10.5px] text-text-mid md:table-cell">{c.assignee || '—'}</td>
                       {/* due */}
                       <td className={`px-2.5 py-[11px] font-mono text-[10.5px] ${past ? 'font-bold text-red' : 'font-normal text-text-dim'}`}>{c.due || '—'}</td>
                       {/* status */}
@@ -444,22 +436,23 @@ export function CasesListDrawer({ scopeName, scopeType, stats, records, initialS
             </table>
           )}
 
-          {/* pagination */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between border-t border-border-light bg-bg-soft px-[18px] py-3.5">
-              <div className="text-[10.5px] text-text-dim">Page {curPage} of {totalPages}</div>
-              <div className="flex items-center gap-1">{paginationButtons()}</div>
-            </div>
-          )}
         </div>
 
+        {/* ═══ PAGINATION (fixed) ═══ */}
+        {totalPages > 1 && (
+          <div className="flex shrink-0 items-center justify-between border-t border-border-light bg-bg-soft px-[18px] py-3.5 max-sm:justify-center max-sm:px-3 max-sm:py-2.5">
+            <div className="text-[10.5px] text-text-dim max-sm:hidden">Page {curPage} of {totalPages}</div>
+            <div className="flex flex-wrap items-center justify-center gap-1">{paginationButtons()}</div>
+          </div>
+        )}
+
         {/* ═══ FOOTER ═══ */}
-        <div className="flex shrink-0 items-center justify-between gap-2.5 border-t border-border-light bg-[linear-gradient(180deg,var(--bg-soft)_0%,#EEF1F7_100%)] px-[18px] py-2.5">
-          <div className="text-[10.5px] font-semibold text-text-mid">
+        <div className="flex shrink-0 items-center justify-between gap-2.5 border-t border-border-light bg-[linear-gradient(180deg,var(--bg-soft)_0%,#EEF1F7_100%)] px-[18px] py-2.5 max-sm:gap-2 max-sm:px-3 max-sm:py-2">
+          <div className="text-[10.5px] font-semibold text-text-mid max-sm:hidden">
             <span className="text-ai-purple">✦</span>{' '}
             <strong>AI suggestion:</strong> Auto-escalate the {formatIndian(stats.pastSla)} past-SLA cases under {scopeName} to next-level supervisor.
           </div>
-          <div className="flex gap-1.5">
+          <div className="flex gap-1.5 max-sm:overflow-x-auto max-sm:[&>button]:shrink-0">
             <button
               type="button"
               onClick={() => showToast({ type: 'info', title: 'CSV export started', message: `Exporting ${formatIndian(stats.total)} cases from ${scopeName}.`, duration: 4000 })}

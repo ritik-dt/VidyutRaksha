@@ -5,22 +5,11 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useToast } from '@/shared/context/ToastContext'
-import { CASES_LIST } from './data/cases'
+import { CASES_LIST, getTheftType } from './data/cases'
 import { ReassignInspectorPanel } from './ReassignInspectorPanel'
 import type { CaseRecord } from './types'
 
 /* ── theft type map — exact prototype meterTheftType ── */
-const METER_THEFT_TYPE: Record<string, string> = {
-  '1849966': 'Earth Loading',
-  '2034871': 'Meter Bypass',
-  '1567234': 'CT Manipulation',
-  '1923445': 'Magnetic Tamper',
-  '2187690': 'Earth Loading',
-  '1678432': 'CT Manipulation',
-  '1445567': 'Meter Bypass',
-  '2098123': 'Neutral Disturbance',
-}
-
 /* ── remediation KB — exact prototype remediationKB ── */
 const REMEDIATION_KB: Record<string, {
   type: string; safety: string[]; checklist: string[]
@@ -157,7 +146,7 @@ export default function CaseDetailPage() {
   ]
 
   /* AI inspection guide */
-  const theftKey = METER_THEFT_TYPE[cs.meter] ?? 'Meter Bypass'
+  const theftKey = getTheftType(cs.meter)
   const rem = REMEDIATION_KB[theftKey]
 
   /* timeline events */
@@ -395,7 +384,7 @@ export default function CaseDetailPage() {
           {/* Attachments */}
           <div className="card">
             <div className="card-title">📎 Attachments ({ATTACHMENTS.length})</div>
-            <div className="grid grid-cols-2 gap-1.5">
+            <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
               {ATTACHMENTS.map((a) => (
                 <div key={a.n} className="flex cursor-pointer items-center gap-1.5 rounded bg-bg p-1.5"
                   onClick={() => showToast({ type: 'info', title: 'Opening file', message: a.n, duration: 2000 })}>

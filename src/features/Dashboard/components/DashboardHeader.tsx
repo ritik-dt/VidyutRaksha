@@ -2,9 +2,10 @@ import { Sparkles } from 'lucide-react'
 import { HIER_ICONS } from '@/data/hierarchy'
 import { useScope } from '@/shared/context/ScopeContext'
 import { useToast } from '@/shared/context/ToastContext'
-import { enrichLevel } from '../adapter'
+import { formatIndian } from '@/shared/utils/formatters'
+import { enrichLevel, fmtINR } from '../adapter'
 import DashboardBreadcrumb from './DashboardBreadcrumb'
-import DashboardScopePill from './DashboardScopePill'
+import { ScopePill } from '@/shared/components/ui/ScopePill'
 
 export default function DashboardHeader() {
   const { showToast } = useToast()
@@ -24,11 +25,23 @@ export default function DashboardHeader() {
   const isConsumerLevel = level.type === 'DTR'
 
   const showAiInsights = () => {
+    const meters = level.meters ?? 0
+    const flagged = level.flagged ?? 0
+    const flaggedPct = meters ? ((flagged / meters) * 100).toFixed(1) : '0'
+    const realizationRate =
+      (level.assessed ?? 0) > 0
+        ? (((level.realized ?? 0) / (level.assessed ?? 1)) * 100).toFixed(0)
+        : '0'
+
     showToast({
       type: 'ai',
-      title: '✦ AI Insights generating',
+      title: `✦ AI insights — ${level.name}`,
       message:
-        'Varanasi zone at 17.7%, ranked #5 nationally. Bhelupur improved -2.2pp. 847 high-risk flags today, ~₹4.2L daily exposure.',
+        `${level.name} (${level.type} level) at ${level.loss}% AT&C loss · ` +
+        `inspection hit rate ${level.hitRate}%. ` +
+        `${formatIndian(level.critical)} critical flags among ${formatIndian(flagged)} flagged meters ` +
+        `(${flaggedPct}% of ${formatIndian(meters)}). ` +
+        `Assessment realization ${realizationRate}% (${fmtINR(level.realized)} of ${fmtINR(level.assessed)}).`,
       duration: 6000,
     })
   }
@@ -37,21 +50,8 @@ export default function DashboardHeader() {
     <>
       <DashboardBreadcrumb />
 
-      <div className="page-header mb-2.5 flex items-center justify-between">
+      <div className="page-header mb-2.5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          {/* <div className="mt-1.5 flex flex-wrap items-center gap-2 text-[10.5px] text-text-mid">
-            <div className="flex items-center gap-1.5">
-              <span className="inline-block size-[7px] animate-pulse-dot rounded-full bg-green shadow-[0_0_6px_rgba(40,167,69,0.6)]" />
-              <strong className="font-bold text-green">LIVE</strong>
-            </div>
-            <span className="text-text-dim">·</span>
-            <span>
-              Last batch{' '}
-              <strong className="text-text">06 May 2026, 06:00 IST</strong>
-            </span>
-            <span className="text-text-dim">·</span>
-            <span className="text-text-dim">Next batch: 14:00 IST</span>
-          </div> */}
           <div className="page-title text-[20px] font-bold">
             {icon} {level.name}
           </div>
@@ -74,7 +74,7 @@ export default function DashboardHeader() {
           </div>
         </div>
 
-        <div className="flex gap-1.5">
+        <div className="flex flex-wrap gap-1.5">
           {hierPath.length > 1 && (
             <button
               type="button"
@@ -103,7 +103,7 @@ export default function DashboardHeader() {
         </div>
       </div>
 
-      <DashboardScopePill />
+      <ScopePill />
     </>
   )
 }
