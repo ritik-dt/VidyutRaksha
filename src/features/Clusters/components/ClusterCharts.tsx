@@ -138,7 +138,13 @@ interface ClusterChartsProps {
 export function ClusterCharts({ clusters, scopeSuffix }: ClusterChartsProps) {
   return (
     <div className="grid-2 mb-3.5 gap-3.5">
-      <div className="card">
+      {/*
+        `min-w-0` on the grid child releases CSS Grid's default `min-width: auto`,
+        which otherwise pins the track to the canvas's current pixel width and
+        blocks the chart from shrinking when the AI panel expands. Every working
+        chart-grid in the codebase (Analytics/*) uses this same wrapper.
+      */}
+      <div className="card min-w-0">
         <div className="card-title">
           Theft methods used in active cases{scopeSuffix}
           <ChartInfoButton chartId="cluster-sizes" />
@@ -147,7 +153,7 @@ export function ClusterCharts({ clusters, scopeSuffix }: ClusterChartsProps) {
           <MethodChart clusters={clusters} />
         </div>
       </div>
-      <div className="card">
+      <div className="card min-w-0">
         <div className="card-title">
           New cases detected over time{scopeSuffix}
           <ChartInfoButton chartId="cluster-sizes" />

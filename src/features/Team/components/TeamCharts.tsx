@@ -17,38 +17,47 @@ import {
 export function TeamCharts() {
   return (
     <div className="grid-2" style={{ marginBottom: 14 }}>
-      <ChartCard
-        title={
-          <>
-            Hit rate by inspector
-            <ChartInfoButton chartId="hit-rate" />
-          </>
-        }
-        cfg={{
-          label: 'Hit rate %',
-          labels: INSP_HIT_LABELS,
-          values: INSP_HIT_VALUES,
-          colors: INSP_HIT_VALUES.map(hitRateColor),
-          showLegend: true,
-        }}
-        filename="team-hit-rate"
-      />
-      <ChartCard
-        title={
-          <>
-            Workload distribution
-            <ChartInfoButton chartId="workload" />
-          </>
-        }
-        cfg={{
-          label: 'Cases assigned',
-          labels: INSP_LOAD_LABELS,
-          values: INSP_LOAD_VALUES,
-          colors: INSP_LOAD_VALUES.map(assignedColor),
-          showLegend: true,
-        }}
-        filename="team-workload"
-      />
+      {/*
+        `min-w-0` releases CSS Grid's default `min-width: auto`, which otherwise
+        pins the track to the canvas's current pixel width and blocks the chart
+        from shrinking when the AI panel expands. Matches Analytics.
+      */}
+      <div className="min-w-0">
+        <ChartCard
+          title={
+            <>
+              Hit rate by inspector
+              <ChartInfoButton chartId="hit-rate" />
+            </>
+          }
+          cfg={{
+            label: 'Hit rate %',
+            labels: INSP_HIT_LABELS,
+            values: INSP_HIT_VALUES,
+            colors: INSP_HIT_VALUES.map(hitRateColor),
+            showLegend: true,
+          }}
+          filename="team-hit-rate"
+        />
+      </div>
+      <div className="min-w-0">
+        <ChartCard
+          title={
+            <>
+              Workload distribution
+              <ChartInfoButton chartId="workload" />
+            </>
+          }
+          cfg={{
+            label: 'Cases assigned',
+            labels: INSP_LOAD_LABELS,
+            values: INSP_LOAD_VALUES,
+            colors: INSP_LOAD_VALUES.map(assignedColor),
+            showLegend: true,
+          }}
+          filename="team-workload"
+        />
+      </div>
     </div>
   )
 }

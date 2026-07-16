@@ -15,7 +15,7 @@ export function ClustersTable({ clusters, scopeSuffix, onRowClick }: ClustersTab
     <div className="card">
       <div className="card-title">Active cases{scopeSuffix}</div>
       <div className="table-wrap">
-        <table className="min-w-[920px]">
+        <table>
           <thead>
             <tr className="table-header">
               <th>Case ID</th>

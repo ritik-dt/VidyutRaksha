@@ -7,12 +7,17 @@ import { ToastContainer } from '@/shared/components/layout/ToastContainer'
 import { Topbar } from '@/shared/components/layout/Topbar'
 import { useScope } from '@/shared/context/ScopeContext'
 import { useToast } from '@/shared/context/ToastContext'
+import { useScrollToTop } from '@/shared/hooks/useScrollToTop'
 
 export function AppShell() {
   const { showToast } = useToast()
   const { scopeVersion } = useScope()
   const welcomeShown = useRef(false)
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
+
+  // Reset the #content scroll container to the top on every forward navigation
+  // (Back/Forward preserves position, matching native browser behaviour).
+  useScrollToTop()
 
   useEffect(() => {
     if (welcomeShown.current) {
