@@ -1,4 +1,5 @@
 import { cn } from './cn'
+import { getRiskColor } from './riskColor'
 
 export type MeterStatus = 'New' | 'Assigned' | 'Inspected' | 'Confirmed Theft' | 'False Positive' | 'Escalated' | 'In Progress' | 'Closed'
 
@@ -32,10 +33,6 @@ export function StatusBadge({ status, className }: StatusBadgeProps) {
       {status}
     </span>
   )
-}
-
-export function getRiskColor(risk: number): string {
-  return risk >= 80 ? 'var(--red)' : risk >= 60 ? 'var(--amber)' : 'var(--green)'
 }
 
 export function RiskBadge({ risk, conf }: { risk: number; conf?: number }) {

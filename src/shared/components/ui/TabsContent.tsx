@@ -1,6 +1,6 @@
 import type { HTMLAttributes, ReactNode } from 'react'
 import { cn } from './cn'
-import { sanitizeTabValue, useTabsContext } from './Tabs'
+import { sanitizeTabValue, useTabsContext } from './tabsContext'
 
 export interface TabsContentProps extends HTMLAttributes<HTMLDivElement> {
   value: string

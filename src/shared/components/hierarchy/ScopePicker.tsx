@@ -21,8 +21,12 @@ export function ScopePicker({ anchorRef }: ScopePickerProps) {
   const [searchTerm, setSearchTerm] = useState('')
 
   useEffect(() => {
+    // ScopePicker returns null when closed and is expected to be conditionally
+    // mounted by its parent (`{scopePickerOpen && <ScopePicker … />}`). Under
+    // that contract, local state (searchTerm) resets on the next mount and no
+    // in-effect reset is needed. If a caller ever renders us unconditionally,
+    // that caller is responsible for re-keying us when scopePickerOpen flips.
     if (!scopePickerOpen) {
-      setSearchTerm('')
       return
     }
 

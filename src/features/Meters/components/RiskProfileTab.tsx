@@ -8,7 +8,7 @@ import {
   getConsumerTimeline,
   getSimilarConsumersCluster,
 } from "../data/meterChartData";
-import { getRiskColor } from "@/shared/components/ui/StatusBadge";
+import { getRiskColor } from "@/shared/components/ui/riskColor";
 import { ChartInfoButton } from "@/shared/components/ui/ChartInfoButton";
 import { useToast } from "@/shared/context/ToastContext";
 import { getPathForScreen } from "@/shared/utils/navigation";

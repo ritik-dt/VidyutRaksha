@@ -547,7 +547,7 @@ export default function DashboardCharts() {
       lossChartRef.current?.destroy();
       lossChartRef.current = null;
     };
-  }, [showCharts, lossKind, lossChartData, lossBarColors, lossView]);
+  }, [showCharts, lossKind, lossChartData, lossBarColors, lossView, maxLoss]);
 
   // ── Guard: don't render at consumer (DTR) level ────────────────────────────
   if (!showCharts) return null;

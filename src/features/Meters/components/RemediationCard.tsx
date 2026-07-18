@@ -2,10 +2,9 @@ import { REMEDIATION_KB } from '@/features/Meters/data/meters'
 
 interface RemediationCardProps {
   theftType: string
-  meterId: string
 }
 
-export function RemediationCard({ theftType, meterId: _meterId }: RemediationCardProps) {
+export function RemediationCard({ theftType }: RemediationCardProps) {
   const rem = REMEDIATION_KB[theftType]
   if (!rem) return null
 

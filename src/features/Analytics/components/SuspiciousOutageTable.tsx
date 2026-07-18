@@ -1,4 +1,4 @@
-import { getRiskColor } from '@/shared/components/ui/StatusBadge'
+import { getRiskColor } from '@/shared/components/ui/riskColor'
 import { SUSPICIOUS_OUTAGES, type OutageBadgeVariant } from '../data/outage'
 
 /**

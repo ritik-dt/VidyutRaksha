@@ -1,62 +1,18 @@
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useMemo,
-  useState,
-  type ReactNode,
-} from 'react'
-import { useToast } from './ToastContext'
+import { createContext, useContext } from 'react'
 
-type Language = 'EN' | 'HI'
+export type Language = 'EN' | 'HI'
 
-interface LanguageContextValue {
+export interface LanguageContextValue {
   language: Language
   isHindi: boolean
   toggleLanguage: () => void
 }
 
-const LanguageContext = createContext<LanguageContextValue | null>(null)
-
-interface LanguageProviderProps {
-  children: ReactNode
-}
-
-export function LanguageProvider({ children }: LanguageProviderProps) {
-  const { showToast } = useToast()
-  const [language, setLanguage] = useState<Language>('EN')
-
-  const toggleLanguage = useCallback(() => {
-    setLanguage((current: Language) => {
-      const next = current === 'EN' ? 'HI' : 'EN'
-      if (next === 'HI') {
-        showToast({
-          type: 'ai',
-          title: '✦ भाषा बदल गई: हिंदी',
-          message:
-            'Demo: AI briefings, inspector checklists, consumer notices, and assessment letters will be generated in Hindi. (Full product localization will be delivered with v1.1.)',
-          duration: 6000,
-        })
-      }
-      return next
-    })
-  }, [showToast])
-
-  const value = useMemo(
-    () => ({
-      language,
-      isHindi: language === 'HI',
-      toggleLanguage,
-    }),
-    [language, toggleLanguage],
-  )
-
-  return (
-    <LanguageContext.Provider value={value}>
-      {children}
-    </LanguageContext.Provider>
-  )
-}
+/**
+ * Language context — split from `LanguageProvider.tsx` so this module exports
+ * only non-components. See ThemeContext for the Fast Refresh rationale.
+ */
+export const LanguageContext = createContext<LanguageContextValue | null>(null)
 
 export function useLanguage(): LanguageContextValue {
   const context = useContext(LanguageContext)

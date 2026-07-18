@@ -1,8 +1,8 @@
 import type { HTMLAttributes, KeyboardEvent } from 'react'
 import { cn } from './cn'
-import { useTabsContext, sanitizeTabValue } from './Tabs'
+import { useTabsContext } from './tabsContext'
 
-export interface TabsListProps extends HTMLAttributes<HTMLDivElement> {}
+export type TabsListProps = HTMLAttributes<HTMLDivElement>
 
 export function TabsList({
   className,
@@ -61,5 +61,3 @@ export function TabsList({
     />
   )
 }
-
-export { sanitizeTabValue }

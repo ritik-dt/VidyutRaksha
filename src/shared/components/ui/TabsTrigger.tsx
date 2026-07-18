@@ -1,6 +1,6 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react'
 import { cn } from './cn'
-import { sanitizeTabValue, useTabsContext } from './Tabs'
+import { sanitizeTabValue, useTabsContext } from './tabsContext'
 
 export interface TabsTriggerProps
   extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children'> {

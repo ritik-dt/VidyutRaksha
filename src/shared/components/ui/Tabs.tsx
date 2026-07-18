@@ -1,22 +1,16 @@
 import {
-  createContext,
-  useContext,
   useId,
   useMemo,
   useState,
   type ReactNode,
 } from 'react'
+import {
+  TabsContext,
+  type TabsContextValue,
+  type TabsOrientation,
+} from './tabsContext'
 
-export type TabsOrientation = 'horizontal' | 'vertical'
-
-interface TabsContextValue {
-  activeValue: string | undefined
-  setActiveValue: (value: string) => void
-  orientation: TabsOrientation
-  idPrefix: string
-}
-
-const TabsContext = createContext<TabsContextValue | null>(null)
+export type { TabsOrientation } from './tabsContext'
 
 export interface TabsProps {
   children: ReactNode
@@ -26,6 +20,13 @@ export interface TabsProps {
   orientation?: TabsOrientation
 }
 
+/**
+ * Root of the Tabs component family. Provides the shared context used by
+ * TabsList, TabsTrigger, and TabsContent. The context object, hook
+ * (`useTabsContext`), and the `sanitizeTabValue` helper live in
+ * `./tabsContext.ts` so this file only exports components (required for
+ * React Fast Refresh to preserve state).
+ */
 export function Tabs({
   children,
   value,
@@ -57,16 +58,3 @@ export function Tabs({
     <TabsContext.Provider value={contextValue}>{children}</TabsContext.Provider>
   )
 }
-
-export function useTabsContext() {
-  const context = useContext(TabsContext)
-  if (!context) {
-    throw new Error('Tabs components must be used within <Tabs>')
-  }
-  return context
-}
-
-export function sanitizeTabValue(value: string): string {
-  return value.replace(/[^a-zA-Z0-9_-]+/g, '-')
-}
-

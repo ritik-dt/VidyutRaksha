@@ -100,7 +100,7 @@ export function DiscomRiskTable({
                       style={{ fontSize: '10px', padding: '3px 9px' }}
                       onClick={(e: MouseEvent) => {
                         e.stopPropagation()
-                        child.id && onViewList(child.id)
+                        if (child.id) onViewList(child.id)
                       }}
                     >
                       View list ›

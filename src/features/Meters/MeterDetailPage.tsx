@@ -509,7 +509,7 @@ export default function MeterDetailPage() {
       </div>
 
       {/* Remediation card */}
-      <RemediationCard theftType={theftType} meterId={meter.id} />
+      <RemediationCard theftType={theftType} />
 
       {/* Explainability panel */}
       <ExplainabilityPanel meter={meter} realData={realData} />

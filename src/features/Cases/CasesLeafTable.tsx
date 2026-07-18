@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { formatIndian } from '@/shared/utils/formatters'
-import { getRiskColor } from '@/shared/components/ui/StatusBadge'
+import { getRiskColor } from '@/shared/components/ui/riskColor'
 import { CaseStatusBadge } from './CaseStatusBadge'
 import type { CaseRecord } from './types'
 

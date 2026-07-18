@@ -1,4 +1,4 @@
-import { getRiskColor } from '@/shared/components/ui/StatusBadge'
+import { getRiskColor } from '@/shared/components/ui/riskColor'
 import { ChartInfoButton } from '@/shared/components/ui/ChartInfoButton'
 import { clusterStatusStyle } from '../data/clusters'
 import type { Cluster } from '../types'

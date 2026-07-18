@@ -102,8 +102,23 @@ export function CasesListDrawer({ scopeName, scopeType, stats, records, initialS
     return () => window.removeEventListener('keydown', fn)
   }, [onClose])
 
-  /* reset page when filter/search changes */
-  useEffect(() => { setPage(1); bodyRef.current?.scrollTo(0, 0) }, [statusFilter, search, sortKey])
+  /* Reset page (and scroll to top) when filter/search/sort changes.
+   * Uses the React-team-blessed "adjusting state on prop change" pattern:
+   * https://react.dev/reference/react/useState#storing-information-from-previous-renders
+   * — resetting during render is preferable to setState-in-effect, which
+   * triggers an extra commit + cascading re-render. */
+  const filterKey = `${statusFilter}|${search}|${sortKey}`
+  const [prevFilterKey, setPrevFilterKey] = useState(filterKey)
+  if (filterKey !== prevFilterKey) {
+    setPrevFilterKey(filterKey)
+    setPage(1)
+  }
+
+  /* Scroll the drawer body to the top whenever the visible page changes.
+   * DOM side-effect, so this legitimately belongs in an effect. */
+  useEffect(() => {
+    bodyRef.current?.scrollTo(0, 0)
+  }, [page])
 
   /* ── filter + sort — exact prototype renderCaseListPage logic ── */
   const filtered = useMemo(() => {
@@ -148,7 +163,7 @@ export function CasesListDrawer({ scopeName, scopeType, stats, records, initialS
   /* ── selection helpers ── */
   function toggleRow(id: string, e: React.MouseEvent) {
     e.stopPropagation()
-    setSelected((prev) => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n })
+    setSelected((prev) => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n })
   }
   function selectVisible(checked: boolean) {
     setSelected((prev) => {

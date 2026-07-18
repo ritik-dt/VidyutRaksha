@@ -1,13 +1,4 @@
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useMemo,
-  useRef,
-  useState,
-  type ReactNode,
-} from 'react'
-import { useRole } from '@/shared/context/RoleContext'
+import { createContext, useContext } from 'react'
 import type { RoleId } from '@/shared/types/role'
 
 /**
@@ -35,50 +26,18 @@ export interface ActivityEntry {
  * module that performs a meaningful action logs to it. Settings is the first
  * producer; more will follow.
  */
-interface ActivityLogContextValue {
+export interface ActivityLogContextValue {
   entries: ActivityEntry[]
   /** Record an action performed by the current role. */
   logActivity: (action: string, screen: string, target?: string) => void
   clear: () => void
 }
 
-const ActivityLogContext = createContext<ActivityLogContextValue | null>(null)
-
-/** Cap, matching the prototype. */
-const MAX_ENTRIES = 200
-
-interface ActivityLogProviderProps {
-  children: ReactNode
-}
-
-export function ActivityLogProvider({ children }: ActivityLogProviderProps) {
-  const { currentRole } = useRole()
-  const [entries, setEntries] = useState<ActivityEntry[]>([])
-  const idRef = useRef(0)
-
-  const logActivity = useCallback(
-    (action: string, screen: string, target?: string) => {
-      const entry: ActivityEntry = {
-        id: `act-${++idRef.current}`,
-        ts: Date.now(),
-        roleId: currentRole.id,
-        roleLabel: currentRole.label,
-        action,
-        screen,
-        target: target || '—',
-        scope: currentRole.defaultScope?.name || currentRole.scope,
-      }
-      setEntries((current) => [entry, ...current].slice(0, MAX_ENTRIES))
-    },
-    [currentRole],
-  )
-
-  const clear = useCallback(() => setEntries([]), [])
-
-  const value = useMemo(() => ({ entries, logActivity, clear }), [entries, logActivity, clear])
-
-  return <ActivityLogContext.Provider value={value}>{children}</ActivityLogContext.Provider>
-}
+/**
+ * Split from `ActivityLogProvider.tsx` so this module exports only
+ * non-components. See ThemeContext for the Fast Refresh rationale.
+ */
+export const ActivityLogContext = createContext<ActivityLogContextValue | null>(null)
 
 export function useActivityLog(): ActivityLogContextValue {
   const ctx = useContext(ActivityLogContext)

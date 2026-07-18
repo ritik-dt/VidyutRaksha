@@ -1,46 +1,18 @@
-import {
-  createContext,
-  useContext,
-  useMemo,
-  type ReactNode,
-} from 'react'
-import { useLocation } from 'react-router-dom'
+import { createContext, useContext } from 'react'
 import type { ScreenName } from '@/shared/types'
-import {
-  getActiveNavScreen,
-  resolveScreenFromPathname,
-} from '@/shared/utils/navigation'
 
-interface NavigationContextValue {
+export interface NavigationContextValue {
   pathname: string
   currentScreen: ScreenName
   activeNavScreen: ScreenName
 }
 
-const NavigationContext = createContext<NavigationContextValue | null>(null)
-
-interface NavigationProviderProps {
-  children: ReactNode
-}
-
-export function NavigationProvider({ children }: NavigationProviderProps) {
-  const { pathname } = useLocation()
-
-  const value = useMemo<NavigationContextValue>(() => {
-    const { screen } = resolveScreenFromPathname(pathname)
-    return {
-      pathname,
-      currentScreen: screen,
-      activeNavScreen: getActiveNavScreen(pathname),
-    }
-  }, [pathname])
-
-  return (
-    <NavigationContext.Provider value={value}>
-      {children}
-    </NavigationContext.Provider>
-  )
-}
+/**
+ * Navigation context — split from `NavigationProvider.tsx` so this module
+ * exports only non-components. See ThemeContext for the Fast Refresh
+ * rationale.
+ */
+export const NavigationContext = createContext<NavigationContextValue | null>(null)
 
 export function useNavigation(): NavigationContextValue {
   const context = useContext(NavigationContext)
