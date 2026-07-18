@@ -1,3 +1,4 @@
+import { ErrorBoundary } from '@/shared/components/ErrorBoundary'
 import { PageHeader } from '@/shared/components/ui/PageHeader'
 import { ScopeBreadcrumb } from '@/shared/components/ui/ScopeBreadcrumb'
 import { AiInsightBanner } from '@/shared/components/ui/AiInsightBanner'
@@ -124,23 +125,25 @@ export default function NetworkMapPage() {
       />
 
       <div className="mt-2 grid grid-cols-1 gap-3 md:grid-cols-[minmax(0,1.85fr)_minmax(0,1fr)]">
-        <div className="map-wrapper" style={{ margin: 0 }}>
-          <MapContainer
-            feeders={enrichedFeeders}
-            dts={allDts}
-            layers={layers}
-            onSelect={setNavCtx}
-            realMeters={realMeters}
-            navCtx={navCtx}
-          />
-          <MapDetailPanel
-            navCtx={navCtx}
-            onSelect={setNavCtx}
-            onClose={closeDetail}
-            allDts={allDts}
-            allFeeders={enrichedFeeders}
-          />
-        </div>
+        <ErrorBoundary>
+          <div className="map-wrapper" style={{ margin: 0 }}>
+            <MapContainer
+              feeders={enrichedFeeders}
+              dts={allDts}
+              layers={layers}
+              onSelect={setNavCtx}
+              realMeters={realMeters}
+              navCtx={navCtx}
+            />
+            <MapDetailPanel
+              navCtx={navCtx}
+              onSelect={setNavCtx}
+              onClose={closeDetail}
+              allDts={allDts}
+              allFeeders={enrichedFeeders}
+            />
+          </div>
+        </ErrorBoundary>
 
         <TopHotspotsPanel hotspots={topHotspots} />
       </div>

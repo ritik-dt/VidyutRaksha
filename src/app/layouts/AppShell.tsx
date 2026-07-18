@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Outlet } from 'react-router-dom'
+import { RouteErrorBoundary } from '@/shared/components/ErrorBoundary'
 import { AiCopilotPanel } from '@/shared/components/layout/AiCopilotPanel'
 import { ProvenanceBar } from '@/shared/components/layout/ProvenanceBar'
 import { Sidebar } from '@/shared/components/layout/Sidebar'
@@ -52,7 +53,9 @@ export function AppShell() {
             className="content-scroll flex-1 overflow-auto p-3 px-4 md:px-6"
             id="content"
           >
-            <Outlet key={scopeVersion} />
+            <RouteErrorBoundary>
+              <Outlet key={scopeVersion} />
+            </RouteErrorBoundary>
           </div>
           <ToastContainer />
           <AiCopilotPanel />

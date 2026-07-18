@@ -1,3 +1,4 @@
+import { ErrorBoundary } from '@/shared/components/ErrorBoundary'
 import { useToast } from '@/shared/context/ToastContext'
 import { AutoInsightsPanel } from './components/AutoInsightsPanel'
 import { ConsumerAnalyticsPanel } from './components/ConsumerAnalyticsPanel'
@@ -56,22 +57,24 @@ export default function ExecutivePage() {
 
         <ExecutiveKpiStrip kpis={exec.kpis} onOpenPanel={detail.open} />
 
-        <div className="exec-dashboard-grid">
-          <EnergyFlowPanel data={exec.energyFlow} onOpenPanel={detail.open} />
-          <DemandGenerationPanel data={exec.demandGeneration} onOpenPanel={detail.open} />
-          <ReliabilityPanel data={exec.reliability} onOpenPanel={detail.open} />
-          <ConsumerAnalyticsPanel
-            data={exec.consumerAnalytics}
-            onOpenPanel={detail.open}
-            onToast={toast}
-          />
-          <MeteringHealthPanel data={exec.meteringHealth} onOpenPanel={detail.open} />
-          <PrepaidNonRechargePanel data={exec.prepaidNonRecharge} onOpenPanel={detail.open} />
-          <RevenueSnapshotPanel data={exec.revenueSnapshot} onOpenPanel={detail.open} />
-          <P2WarningsPanel warnings={exec.p2Warnings} onOpenPanel={detail.open} />
-          <TrendsPanel trends={exec.trends} onOpenPanel={detail.open} />
-          <AutoInsightsPanel insights={exec.autoInsights} onOpenPanel={detail.open} />
-        </div>
+        <ErrorBoundary>
+          <div className="exec-dashboard-grid">
+            <EnergyFlowPanel data={exec.energyFlow} onOpenPanel={detail.open} />
+            <DemandGenerationPanel data={exec.demandGeneration} onOpenPanel={detail.open} />
+            <ReliabilityPanel data={exec.reliability} onOpenPanel={detail.open} />
+            <ConsumerAnalyticsPanel
+              data={exec.consumerAnalytics}
+              onOpenPanel={detail.open}
+              onToast={toast}
+            />
+            <MeteringHealthPanel data={exec.meteringHealth} onOpenPanel={detail.open} />
+            <PrepaidNonRechargePanel data={exec.prepaidNonRecharge} onOpenPanel={detail.open} />
+            <RevenueSnapshotPanel data={exec.revenueSnapshot} onOpenPanel={detail.open} />
+            <P2WarningsPanel warnings={exec.p2Warnings} onOpenPanel={detail.open} />
+            <TrendsPanel trends={exec.trends} onOpenPanel={detail.open} />
+            <AutoInsightsPanel insights={exec.autoInsights} onOpenPanel={detail.open} />
+          </div>
+        </ErrorBoundary>
       </div>
 
       <DetailSidePanel
