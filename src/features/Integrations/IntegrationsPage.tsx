@@ -100,7 +100,7 @@ export default function IntegrationsPage() {
           description="Clear the filter to see all connected systems."
         />
       ) : (
-        <div className="grid-2 int-grid">
+        <div className="grid-2 !gap-[12px]">
           {int.systems.map((s) => (
             <SystemCard
               key={s.name}

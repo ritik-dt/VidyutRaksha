@@ -3,6 +3,21 @@ import { useToast } from '@/shared/context/ToastContext'
 import { formatIndian } from '@/shared/utils/formatters'
 import { generateConsumers } from '../logic/consumerGen'
 import type { DT, Feeder, MapConsumer, NavContext } from '../types'
+import {
+  MapActionBtn,
+  MapBackBtn,
+  MapBcCurrent,
+  MapBcItem,
+  MapBcSep,
+  MapBreadcrumb,
+  MapConsumerItem,
+  MapConsumerRisk,
+  MapDetailAi,
+  MapDetailBody,
+  MapDetailHeader,
+  MapDetailRow,
+  MapDetailSection,
+} from './MapDetailPrimitives'
 
 interface DTDetailProps {
   dt: DT
@@ -22,55 +37,112 @@ function seedRng(seed: number): () => number {
   }
 }
 
-/** Compact per-consumer row used in the DT panel triage list (matches prototype's dtConsumerRow). */
-function DtConsumerRow({ c, onClick }: { c: MapConsumer; onClick: () => void }) {
-  const col = c.risk >= 80 ? 'var(--red)' : c.risk >= 60 ? 'var(--amber)' : 'var(--green)'
+/**
+ * Compact per-consumer row used in the DT panel triage list (matches
+ * prototype's dtConsumerRow). Uses MapConsumerItem + MapConsumerRisk
+ * primitives.
+ */
+function DtConsumerRow({
+  c,
+  onClick,
+}: {
+  c: MapConsumer
+  onClick: () => void
+}) {
+  const col =
+    c.risk >= 80
+      ? 'var(--red)'
+      : c.risk >= 60
+        ? 'var(--amber)'
+        : 'var(--green)'
   const display = c.name ?? c.id
   return (
-    <div className="map-consumer-item" onClick={onClick}>
-      <div
-        className="map-consumer-risk"
-        style={{ background: `${col}18`, border: `2px solid ${col}`, color: col }}
-      >
-        {c.risk}
-      </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontWeight: 600, fontSize: 11.5, display: 'flex', alignItems: 'center' }}>
+    <MapConsumerItem onClick={onClick}>
+      <MapConsumerRisk color={col}>{c.risk}</MapConsumerRisk>
+      <div className="flex-1 min-w-0">
+        <div className="font-semibold text-[11.5px] flex items-center flex-wrap break-words">
           {display.length > 28 ? display.substring(0, 28) + '…' : display}
           {c.isReal && (
-            <span style={{ display: 'inline-block', padding: '1px 5px', background: 'rgba(40,167,69,.12)', color: 'var(--green)', border: '1px solid rgba(40,167,69,.3)', borderRadius: 6, fontSize: 8.5, fontWeight: 800, letterSpacing: '.3px', marginLeft: 4, verticalAlign: 'middle' }}>
+            <span
+              className="inline-block py-[1px] px-[5px] rounded-[6px] text-[8.5px] font-extrabold tracking-[0.3px] ml-[4px] align-middle"
+              style={{
+                background: 'rgba(40,167,69,.12)',
+                color: 'var(--green)',
+                border: '1px solid rgba(40,167,69,.3)',
+              }}
+            >
               ✓ REAL
             </span>
           )}
         </div>
-        <div style={{ fontSize: 10, color: 'var(--text-dim)', marginTop: 1 }}>
-          {c.cat} · {c.events} events{c.theftType ? ' · ' + c.theftType : ''}{c.drop ? ' · ' + c.drop + '%' : ''}
+        <div className="text-[10px] text-[var(--text-dim)] mt-[1px] break-words">
+          {c.cat} · {c.events} events
+          {c.theftType ? ' · ' + c.theftType : ''}
+          {c.drop ? ' · ' + c.drop + '%' : ''}
         </div>
       </div>
-      <span style={{ color: 'var(--text-dim)' }}>›</span>
-    </div>
+      <span className="text-[var(--text-dim)] shrink-0">›</span>
+    </MapConsumerItem>
+  )
+}
+
+/** Filter pill (was .dt-filter-btn). */
+function FilterPill({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean
+  onClick: () => void
+  children: React.ReactNode
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={
+        'py-[5px] px-[10px] rounded-[14px] border text-[10.5px] font-semibold cursor-pointer whitespace-nowrap transition-all duration-150 ' +
+        (active
+          ? 'bg-[var(--ai-purple)] text-white border-[var(--ai-purple)] shadow-[0_1px_3px_rgba(124,58,237,0.3)]'
+          : 'bg-[var(--card)] text-[var(--text-mid)] border-[var(--border)] hover:border-[var(--ai-purple)] hover:text-[var(--ai-purple)] hover:bg-[rgba(124,58,237,0.04)]')
+      }
+    >
+      {children}
+    </button>
   )
 }
 
 /** DT detail — direct port of prototype's showDTDetail(). */
-export function DTDetail({ dt, parentFeeder, onSelect, onBack, onClose }: DTDetailProps) {
+export function DTDetail({
+  dt,
+  parentFeeder,
+  onSelect,
+  onBack,
+  onClose,
+}: DTDetailProps) {
   const { showToast } = useToast()
   const [filter, setFilter] = useState<FilterKey>('critical')
-
-  // "View all N →" opens an in-panel full flagged-consumer list (paginated + searchable).
-  // The prototype uses a full-screen modal here — we keep it inside the map-detail panel
-  // for a smoother UX. State reset whenever DT changes.
   const [viewMode, setViewMode] = useState<'default' | 'viewAll'>('default')
   const [searchTerm, setSearchTerm] = useState('')
   const [sortKey, setSortKey] = useState<'risk' | 'events' | 'drop'>('risk')
   const [page, setPage] = useState(1)
 
   const cons = useMemo(() => generateConsumers([dt]), [dt])
-  const susp = useMemo(() => cons.filter((c) => c.isTheft).sort((a, b) => b.risk - a.risk), [cons])
-  const critical = useMemo(() => cons.filter((c) => c.isCritical).sort((a, b) => b.risk - a.risk), [cons])
-  const high = useMemo(() => cons.filter((c) => c.isTheft && !c.isCritical), [cons])
+  const susp = useMemo(
+    () => cons.filter((c) => c.isTheft).sort((a, b) => b.risk - a.risk),
+    [cons],
+  )
+  const critical = useMemo(
+    () => cons.filter((c) => c.isCritical).sort((a, b) => b.risk - a.risk),
+    [cons],
+  )
+  const high = useMemo(
+    () => cons.filter((c) => c.isTheft && !c.isCritical),
+    [cons],
+  )
   const normal = useMemo(() => cons.filter((c) => !c.isTheft), [cons])
-  const flagRate = cons.length > 0 ? ((susp.length / cons.length) * 100).toFixed(1) : '0.0'
+  const flagRate =
+    cons.length > 0 ? ((susp.length / cons.length) * 100).toFixed(1) : '0.0'
 
   const topType: Record<string, number> = {}
   susp.forEach((c) => {
@@ -114,27 +186,54 @@ export function DTDetail({ dt, parentFeeder, onSelect, onBack, onClose }: DTDeta
   const phMin = Math.min(phR, phY, phB)
   const phAvg = (phR + phY + phB) / 3
   const phImbalance = Math.round(((phMax - phMin) / phAvg) * 100)
-  const phMaxLetter = phR === phMax ? 'R' : phY === phMax ? 'Y' : 'B'
-  const phImbColor = phImbalance >= 20 ? 'var(--red)' : phImbalance >= 12 ? 'var(--amber)' : 'var(--green)'
+  const phMaxLetter =
+    phR === phMax ? 'R' : phY === phMax ? 'Y' : 'B'
+  const phImbColor =
+    phImbalance >= 20
+      ? 'var(--red)'
+      : phImbalance >= 12
+        ? 'var(--amber)'
+        : 'var(--green)'
 
-  const color = dt.loss > 20 ? 'var(--red)' : dt.loss > 15 ? 'var(--amber)' : 'var(--green)'
-  const loadColor = dt.load > 85 ? 'var(--red)' : dt.load > 70 ? 'var(--amber)' : 'var(--green)'
+  const color =
+    dt.loss > 20
+      ? 'var(--red)'
+      : dt.loss > 15
+        ? 'var(--amber)'
+        : 'var(--green)'
+  const loadColor =
+    dt.load > 85
+      ? 'var(--red)'
+      : dt.load > 70
+        ? 'var(--amber)'
+        : 'var(--green)'
 
   // Filter list — mirrors prototype's filterDTConsumers()
   const { filtered, filterLabel } = useMemo(() => {
-    if (filter === 'critical') return { filtered: critical, filterLabel: '(showing critical, ranked by risk)' }
-    if (filter === 'flagged') return { filtered: susp, filterLabel: '(showing all flagged, ranked by risk)' }
+    if (filter === 'critical')
+      return {
+        filtered: critical,
+        filterLabel: '(showing critical, ranked by risk)',
+      }
+    if (filter === 'flagged')
+      return {
+        filtered: susp,
+        filterLabel: '(showing all flagged, ranked by risk)',
+      }
     if (filter === 'industrial')
-      return { filtered: susp.filter((c) => c.cat === 'Industrial'), filterLabel: '(showing flagged Industrial)' }
-    return { filtered: susp.filter((c) => c.cat === 'Commercial'), filterLabel: '(showing flagged Commercial)' }
+      return {
+        filtered: susp.filter((c) => c.cat === 'Industrial'),
+        filterLabel: '(showing flagged Industrial)',
+      }
+    return {
+      filtered: susp.filter((c) => c.cat === 'Commercial'),
+      filterLabel: '(showing flagged Commercial)',
+    }
   }, [filter, critical, susp])
   const displayed = filtered.slice(0, 10)
   const remaining = filtered.length - displayed.length
 
-  // ── View-all mode: full paginated + searchable + sortable flagged-consumer list ──
-  // Reuses the same map-detail sidepanel container so it slides in like the DT detail
-  // did, per user request. Prototype behaviour is a full-screen modal; we chose in-panel
-  // for a smoother UX.
+  // ── View-all mode: full paginated + searchable + sortable flagged list ──
   const PAGE_SIZE = 50
   const searchedSorted = useMemo(() => {
     let list = susp.slice()
@@ -160,53 +259,49 @@ export function DTDetail({ dt, parentFeeder, onSelect, onBack, onClose }: DTDeta
   const pageEnd = Math.min(pageStart + PAGE_SIZE, searchedSorted.length)
   const pageSlice = searchedSorted.slice(pageStart, pageEnd)
 
+  /* ─── VIEW-ALL MODE ─── */
   if (viewMode === 'viewAll') {
     return (
       <>
-        <div className="map-detail-header">
-          <div className="map-detail-title">
-            <span style={{ color }}>●</span> {dt.id} — full flagged list
-          </div>
-          <button type="button" className="map-detail-close" onClick={onClose}>✕</button>
-        </div>
+        <MapDetailHeader
+          title={
+            <>
+              <span style={{ color }}>●</span> {dt.id} — full flagged list
+            </>
+          }
+          onClose={onClose}
+        />
 
-        <div className="map-detail-body">
-          <div className="map-breadcrumb">
-            <span className="map-bc-item" onClick={onClose}>🗺️ Map</span>
-            <span className="map-bc-sep">›</span>
-            <span className="map-bc-item" onClick={onBack}>⚡ {dt.feeder}</span>
-            <span className="map-bc-sep">›</span>
-            <span className="map-bc-item" onClick={() => setViewMode('default')}>{dt.id}</span>
-            <span className="map-bc-sep">›</span>
-            <span className="map-bc-current">All flagged</span>
-          </div>
+        <MapDetailBody>
+          <MapBreadcrumb>
+            <MapBcItem onClick={onClose}>🗺️ Map</MapBcItem>
+            <MapBcSep />
+            <MapBcItem onClick={onBack}>⚡ {dt.feeder}</MapBcItem>
+            <MapBcSep />
+            <MapBcItem onClick={() => setViewMode('default')}>
+              {dt.id}
+            </MapBcItem>
+            <MapBcSep />
+            <MapBcCurrent>All flagged</MapBcCurrent>
+          </MapBreadcrumb>
 
-          {/* Back to DT detail */}
-          <button type="button" className="map-back-btn" onClick={() => setViewMode('default')}>
+          <MapBackBtn onClick={() => setViewMode('default')}>
             ← Back to {dt.id}
-          </button>
+          </MapBackBtn>
 
           {/* Header summary */}
-          <div
-            style={{
-              padding: '8px 10px',
-              background: 'var(--bg)',
-              borderRadius: 8,
-              marginBottom: 10,
-              fontSize: 11,
-              color: 'var(--text-mid)',
-              lineHeight: 1.5,
-            }}
-          >
-            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)', marginBottom: 2 }}>
+          <div className="py-[8px] px-[10px] bg-[var(--bg)] rounded-[8px] mb-[10px] text-[11px] text-[var(--text-mid)] leading-[1.5]">
+            <div className="text-[12px] font-bold text-[var(--text)] mb-[2px]">
               {dt.area} · {dt.feeder} feeder
             </div>
-            <span style={{ color: 'var(--amber)', fontWeight: 600 }}>{susp.length}</span> of{' '}
-            {formatIndian(cons.length)} consumers flagged ({flagRate}% rate)
+            <span className="text-[var(--amber)] font-semibold">
+              {susp.length}
+            </span>{' '}
+            of {formatIndian(cons.length)} consumers flagged ({flagRate}% rate)
           </div>
 
           {/* Search + sort strip */}
-          <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 10 }}>
+          <div className="flex gap-[6px] items-center mb-[10px] flex-wrap">
             <input
               type="text"
               placeholder="Search by meter # or activity…"
@@ -215,17 +310,7 @@ export function DTDetail({ dt, parentFeeder, onSelect, onBack, onClose }: DTDeta
                 setSearchTerm(e.target.value)
                 setPage(1)
               }}
-              style={{
-                flex: 1,
-                minWidth: 0,
-                padding: '6px 10px',
-                border: '1px solid var(--border)',
-                borderRadius: 6,
-                fontSize: 11.5,
-                fontFamily: 'var(--font)',
-                background: 'var(--card)',
-                color: 'var(--text)',
-              }}
+              className="flex-1 min-w-0 py-[6px] px-[10px] border border-[var(--border)] rounded-[6px] text-[11.5px] font-sans bg-[var(--card)] text-[var(--text)] outline-none focus:border-[var(--ai-purple)]"
             />
             <select
               value={sortKey}
@@ -233,15 +318,7 @@ export function DTDetail({ dt, parentFeeder, onSelect, onBack, onClose }: DTDeta
                 setSortKey(e.target.value as 'risk' | 'events' | 'drop')
                 setPage(1)
               }}
-              style={{
-                padding: '6px 8px',
-                border: '1px solid var(--border)',
-                borderRadius: 6,
-                fontSize: 11,
-                background: 'var(--card)',
-                color: 'var(--text)',
-                cursor: 'pointer',
-              }}
+              className="py-[6px] px-[8px] border border-[var(--border)] rounded-[6px] text-[11px] bg-[var(--card)] text-[var(--text)] cursor-pointer"
             >
               <option value="risk">By risk (highest)</option>
               <option value="events">By tamper events</option>
@@ -250,16 +327,7 @@ export function DTDetail({ dt, parentFeeder, onSelect, onBack, onClose }: DTDeta
           </div>
 
           {/* Result banner */}
-          <div
-            style={{
-              padding: '6px 10px',
-              fontSize: 10.5,
-              color: 'var(--text-dim)',
-              background: 'var(--bg)',
-              borderRadius: 6,
-              marginBottom: 6,
-            }}
-          >
+          <div className="py-[6px] px-[10px] text-[10.5px] text-[var(--text-dim)] bg-[var(--bg)] rounded-[6px] mb-[6px]">
             {searchedSorted.length === 0
               ? 'No consumers match this search.'
               : `Showing ${pageStart + 1}–${pageEnd} of ${searchedSorted.length}${searchTerm ? ' matching' : ' flagged'}`}
@@ -270,55 +338,41 @@ export function DTDetail({ dt, parentFeeder, onSelect, onBack, onClose }: DTDeta
             <DtConsumerRow
               key={c.id}
               c={c}
-              onClick={() => onSelect({ feeder: parentFeeder, dt, consumer: c })}
+              onClick={() =>
+                onSelect({ feeder: parentFeeder, dt, consumer: c })
+              }
             />
           ))}
 
           {/* Pagination controls */}
           {totalPages > 1 && (
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                gap: 6,
-                padding: '10px 0',
-                borderTop: '1px solid var(--border-light)',
-                marginTop: 8,
-              }}
-            >
+            <div className="flex justify-center items-center gap-[6px] py-[10px] border-t border-[var(--border-light)] mt-[8px]">
               <button
                 type="button"
                 disabled={currentPage <= 1}
                 onClick={() => setPage(currentPage - 1)}
-                style={{
-                  padding: '5px 12px',
-                  border: '1px solid var(--border)',
-                  background: 'var(--card)',
-                  borderRadius: 6,
-                  fontSize: 11,
-                  cursor: currentPage <= 1 ? 'default' : 'pointer',
-                  opacity: currentPage <= 1 ? 0.4 : 1,
-                }}
+                className={
+                  'py-[5px] px-[12px] border border-[var(--border)] bg-[var(--card)] rounded-[6px] text-[11px] ' +
+                  (currentPage <= 1
+                    ? 'cursor-default opacity-40'
+                    : 'cursor-pointer')
+                }
               >
                 ‹ Prev
               </button>
-              <span style={{ padding: '5px 10px', fontSize: 11, color: 'var(--text-dim)' }}>
+              <span className="py-[5px] px-[10px] text-[11px] text-[var(--text-dim)]">
                 Page {currentPage} of {totalPages}
               </span>
               <button
                 type="button"
                 disabled={currentPage >= totalPages}
                 onClick={() => setPage(currentPage + 1)}
-                style={{
-                  padding: '5px 12px',
-                  border: '1px solid var(--border)',
-                  background: 'var(--card)',
-                  borderRadius: 6,
-                  fontSize: 11,
-                  cursor: currentPage >= totalPages ? 'default' : 'pointer',
-                  opacity: currentPage >= totalPages ? 0.4 : 1,
-                }}
+                className={
+                  'py-[5px] px-[12px] border border-[var(--border)] bg-[var(--card)] rounded-[6px] text-[11px] ' +
+                  (currentPage >= totalPages
+                    ? 'cursor-default opacity-40'
+                    : 'cursor-pointer')
+                }
               >
                 Next ›
               </button>
@@ -326,11 +380,10 @@ export function DTDetail({ dt, parentFeeder, onSelect, onBack, onClose }: DTDeta
           )}
 
           {/* Bottom actions */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, marginTop: 10 }}>
-            <button
-              type="button"
-              className="map-action-btn btn-ai"
-              style={{ margin: 0 }}
+          <div className="grid grid-cols-2 gap-[6px] mt-[10px]">
+            <MapActionBtn
+              variant="ai"
+              className="!mt-0"
               onClick={() =>
                 showToast({
                   type: 'success',
@@ -341,11 +394,10 @@ export function DTDetail({ dt, parentFeeder, onSelect, onBack, onClose }: DTDeta
               }
             >
               ✦ Auto-create top 20 cases
-            </button>
-            <button
-              type="button"
-              className="map-action-btn btn-outline"
-              style={{ margin: 0 }}
+            </MapActionBtn>
+            <MapActionBtn
+              variant="outline"
+              className="!mt-0"
               onClick={() =>
                 showToast({
                   type: 'info',
@@ -356,172 +408,332 @@ export function DTDetail({ dt, parentFeeder, onSelect, onBack, onClose }: DTDeta
               }
             >
               📥 Export all {susp.length}
-            </button>
+            </MapActionBtn>
           </div>
-        </div>
+        </MapDetailBody>
       </>
     )
   }
 
+  /* ─── DEFAULT MODE ─── */
   return (
     <>
-      <div className="map-detail-header">
-        <div className="map-detail-title">
-          <span style={{ color }}>●</span> {dt.id} — {dt.area}
-        </div>
-        <button type="button" className="map-detail-close" onClick={onClose}>✕</button>
-      </div>
+      <MapDetailHeader
+        title={
+          <>
+            <span style={{ color }}>●</span> {dt.id} — {dt.area}
+          </>
+        }
+        onClose={onClose}
+      />
 
-      <div className="map-detail-body">
-        <div className="map-breadcrumb">
-          <span className="map-bc-item" onClick={onClose}>🗺️ Map</span>
-          <span className="map-bc-sep">›</span>
-          <span className="map-bc-item" onClick={onBack}>⚡ {dt.feeder}</span>
-          <span className="map-bc-sep">›</span>
-          <span className="map-bc-current">{dt.id}</span>
-        </div>
+      <MapDetailBody>
+        <MapBreadcrumb>
+          <MapBcItem onClick={onClose}>🗺️ Map</MapBcItem>
+          <MapBcSep />
+          <MapBcItem onClick={onBack}>⚡ {dt.feeder}</MapBcItem>
+          <MapBcSep />
+          <MapBcCurrent>{dt.id}</MapBcCurrent>
+        </MapBreadcrumb>
 
-        {/* Back button — always shown, matching prototype behaviour */}
-        <button type="button" className="map-back-btn" onClick={onBack}>
-          ← Back to {dt.feeder}
-        </button>
+        <MapBackBtn onClick={onBack}>← Back to {dt.feeder}</MapBackBtn>
 
         {/* Headline strip — 3 KPIs (Critical / Flagged / Est. ₹) */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6, marginBottom: 12 }}>
-          <div style={{ padding: '10px 8px', background: 'rgba(220,53,69,0.06)', border: '1px solid rgba(220,53,69,0.2)', borderRadius: 8, textAlign: 'center' }}>
-            <div style={{ fontSize: 9.5, color: 'var(--red)', fontWeight: 700, letterSpacing: '.4px', textTransform: 'uppercase' }}>Critical</div>
-            <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--red)', fontFamily: 'var(--mono)', lineHeight: 1.1, marginTop: 2 }}>{critical.length}</div>
-            <div style={{ fontSize: 9, color: 'var(--text-dim)', marginTop: 1 }}>risk ≥ 80</div>
+        <div className="grid grid-cols-3 gap-[6px] mb-[12px]">
+          <div
+            className="py-[10px] px-[8px] rounded-[8px] text-center border text-[var(--red)]"
+            style={{
+              background: 'rgba(220,53,69,0.06)',
+              borderColor: 'rgba(220,53,69,0.2)',
+            }}
+          >
+            <div className="text-[9.5px] font-bold tracking-[0.4px] uppercase">
+              Critical
+            </div>
+            <div className="text-[22px] font-extrabold font-mono leading-[1.1] mt-[2px]">
+              {critical.length}
+            </div>
+            <div className="text-[9px] text-[var(--text-dim)] mt-[1px]">
+              risk ≥ 80
+            </div>
           </div>
-          <div style={{ padding: '10px 8px', background: 'rgba(230,146,30,0.06)', border: '1px solid rgba(230,146,30,0.2)', borderRadius: 8, textAlign: 'center' }}>
-            <div style={{ fontSize: 9.5, color: 'var(--amber)', fontWeight: 700, letterSpacing: '.4px', textTransform: 'uppercase' }}>Flagged</div>
-            <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--amber)', fontFamily: 'var(--mono)', lineHeight: 1.1, marginTop: 2 }}>{susp.length}</div>
-            <div style={{ fontSize: 9, color: 'var(--text-dim)', marginTop: 1 }}>{flagRate}% flag rate</div>
+          <div
+            className="py-[10px] px-[8px] rounded-[8px] text-center border text-[var(--amber)]"
+            style={{
+              background: 'rgba(230,146,30,0.06)',
+              borderColor: 'rgba(230,146,30,0.2)',
+            }}
+          >
+            <div className="text-[9.5px] font-bold tracking-[0.4px] uppercase">
+              Flagged
+            </div>
+            <div className="text-[22px] font-extrabold font-mono leading-[1.1] mt-[2px]">
+              {susp.length}
+            </div>
+            <div className="text-[9px] text-[var(--text-dim)] mt-[1px]">
+              {flagRate}% flag rate
+            </div>
           </div>
-          <div style={{ padding: '10px 8px', background: 'rgba(124,58,237,0.06)', border: '1px solid rgba(124,58,237,0.2)', borderRadius: 8, textAlign: 'center' }}>
-            <div style={{ fontSize: 9.5, color: 'var(--ai-purple)', fontWeight: 700, letterSpacing: '.4px', textTransform: 'uppercase' }}>Est. ₹</div>
-            <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--ai-purple)', fontFamily: 'var(--mono)', lineHeight: 1.1, marginTop: 2 }}>₹{(estRevenue / 100000).toFixed(1)}L</div>
-            <div style={{ fontSize: 9, color: 'var(--text-dim)', marginTop: 1 }}>recovery</div>
+          <div
+            className="py-[10px] px-[8px] rounded-[8px] text-center border text-[var(--ai-purple)]"
+            style={{
+              background: 'rgba(124,58,237,0.06)',
+              borderColor: 'rgba(124,58,237,0.2)',
+            }}
+          >
+            <div className="text-[9.5px] font-bold tracking-[0.4px] uppercase">
+              Est. ₹
+            </div>
+            <div className="text-[18px] font-extrabold font-mono leading-[1.1] mt-[2px]">
+              ₹{(estRevenue / 100000).toFixed(1)}L
+            </div>
+            <div className="text-[9px] text-[var(--text-dim)] mt-[1px]">
+              recovery
+            </div>
           </div>
         </div>
 
         {/* Energy audit card */}
-        <div style={{ background: 'linear-gradient(135deg,rgba(124,58,237,0.04) 0%,rgba(23,162,184,0.03) 100%)', border: '1px solid var(--border)', borderRadius: 10, padding: 12, marginBottom: 12 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 10 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text)', textTransform: 'uppercase', letterSpacing: '.4px' }}>Energy audit · DT-level reconciliation</div>
-            <div style={{ fontSize: 9, color: 'var(--text-dim)' }}>BEE 2021 mandate · monthly basis</div>
+        <div
+          className="border border-[var(--border)] rounded-[10px] p-[12px] mb-[12px]"
+          style={{
+            background:
+              'linear-gradient(135deg,rgba(124,58,237,0.04) 0%,rgba(23,162,184,0.03) 100%)',
+          }}
+        >
+          <div className="flex justify-between items-baseline mb-[10px] gap-[8px] flex-wrap">
+            <div className="text-[11px] font-bold text-[var(--text)] uppercase tracking-[0.4px]">
+              Energy audit · DT-level reconciliation
+            </div>
+            <div className="text-[9px] text-[var(--text-dim)]">
+              BEE 2021 mandate · monthly basis
+            </div>
           </div>
 
           {/* 3-col reconciliation grid */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 10 }}>
-            <div style={{ padding: 8, background: 'var(--bg)', borderRadius: 6 }}>
-              <div style={{ fontSize: 9, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '.4px' }}>DT input (kWh)</div>
-              <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--id-text, #0284c7)', fontFamily: 'var(--mono)' }}>{dtInputMU.toFixed(1)}k</div>
-              <div style={{ fontSize: 9, color: 'var(--text-mid)' }}>DT meter · last 30 days</div>
+          <div className="grid grid-cols-3 gap-[8px] mb-[10px]">
+            <div className="p-[8px] bg-[var(--bg)] rounded-[6px]">
+              <div className="text-[9px] text-[var(--text-dim)] uppercase tracking-[0.4px]">
+                DT input (kWh)
+              </div>
+              <div
+                className="text-[14px] font-extrabold font-mono"
+                style={{ color: 'var(--id-text, #0284c7)' }}
+              >
+                {dtInputMU.toFixed(1)}k
+              </div>
+              <div className="text-[9px] text-[var(--text-mid)]">
+                DT meter · last 30 days
+              </div>
             </div>
-            <div style={{ padding: 8, background: 'var(--bg)', borderRadius: 6 }}>
-              <div style={{ fontSize: 9, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '.4px' }}>Σ billed (kWh)</div>
-              <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--green)', fontFamily: 'var(--mono)' }}>{dtBilledMU.toFixed(1)}k</div>
-              <div style={{ fontSize: 9, color: 'var(--text-mid)' }}>{formatIndian(cons.length)} consumers</div>
+            <div className="p-[8px] bg-[var(--bg)] rounded-[6px]">
+              <div className="text-[9px] text-[var(--text-dim)] uppercase tracking-[0.4px]">
+                Σ billed (kWh)
+              </div>
+              <div className="text-[14px] font-extrabold font-mono text-[var(--green)]">
+                {dtBilledMU.toFixed(1)}k
+              </div>
+              <div className="text-[9px] text-[var(--text-mid)]">
+                {formatIndian(cons.length)} consumers
+              </div>
             </div>
-            <div style={{ padding: 8, background: 'rgba(220,53,69,0.05)', border: '1px solid rgba(220,53,69,0.2)', borderRadius: 6 }}>
-              <div style={{ fontSize: 9, color: 'var(--red)', textTransform: 'uppercase', letterSpacing: '.4px', fontWeight: 600 }}>Unaccounted</div>
-              <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--red)', fontFamily: 'var(--mono)' }}>{dtLossMU.toFixed(1)}k</div>
-              <div style={{ fontSize: 9, color: 'var(--red)' }}>{dt.loss}% of input</div>
+            <div
+              className="p-[8px] rounded-[6px] border"
+              style={{
+                background: 'rgba(220,53,69,0.05)',
+                borderColor: 'rgba(220,53,69,0.2)',
+              }}
+            >
+              <div className="text-[9px] text-[var(--red)] uppercase tracking-[0.4px] font-semibold">
+                Unaccounted
+              </div>
+              <div className="text-[14px] font-extrabold font-mono text-[var(--red)]">
+                {dtLossMU.toFixed(1)}k
+              </div>
+              <div className="text-[9px] text-[var(--red)]">
+                {dt.loss}% of input
+              </div>
             </div>
           </div>
 
           {/* Loss decomposition bar */}
-          <div style={{ marginBottom: 10 }}>
-            <div style={{ display: 'flex', height: 10, borderRadius: 5, overflow: 'hidden', background: 'var(--bg)' }}>
-              <div style={{ width: `${technicalLossBaseline}%`, background: 'var(--teal, #17a2b8)' }} title="Technical loss baseline" />
-              <div style={{ width: `${commercialLossEst}%`, background: 'var(--red)' }} title="Estimated commercial loss / theft" />
+          <div className="mb-[10px]">
+            <div className="flex h-[10px] rounded-[5px] overflow-hidden bg-[var(--bg)]">
+              <div
+                title="Technical loss baseline"
+                style={{
+                  width: `${technicalLossBaseline}%`,
+                  background: 'var(--teal, #17a2b8)',
+                }}
+              />
+              <div
+                title="Estimated commercial loss / theft"
+                style={{
+                  width: `${commercialLossEst}%`,
+                  background: 'var(--red)',
+                }}
+              />
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4, fontSize: 9.5, color: 'var(--text-mid)' }}>
-              <span><span style={{ display: 'inline-block', width: 8, height: 8, background: 'var(--teal, #17a2b8)', borderRadius: 2, verticalAlign: 'middle' }} /> Technical ({technicalLossBaseline}%)</span>
-              <span><span style={{ display: 'inline-block', width: 8, height: 8, background: 'var(--red)', borderRadius: 2, verticalAlign: 'middle' }} /> Commercial / theft (~{commercialLossEst.toFixed(1)}%)</span>
+            <div className="flex justify-between mt-[4px] text-[9.5px] text-[var(--text-mid)] gap-[6px] flex-wrap">
+              <span>
+                <span
+                  className="inline-block w-[8px] h-[8px] rounded-[2px] align-middle"
+                  style={{ background: 'var(--teal, #17a2b8)' }}
+                />{' '}
+                Technical ({technicalLossBaseline}%)
+              </span>
+              <span>
+                <span
+                  className="inline-block w-[8px] h-[8px] rounded-[2px] align-middle"
+                  style={{ background: 'var(--red)' }}
+                />{' '}
+                Commercial / theft (~{commercialLossEst.toFixed(1)}%)
+              </span>
             </div>
           </div>
 
           {/* Phase imbalance */}
-          <div style={{ borderTop: '1px dashed var(--border)', paddingTop: 10 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
-              <div style={{ fontSize: 10.5, fontWeight: 700, color: 'var(--text)', textTransform: 'uppercase', letterSpacing: '.4px' }}>Three-phase load distribution</div>
-              <div style={{ fontSize: 11, fontWeight: 700, color: phImbColor, fontFamily: 'var(--mono)' }}>{phImbalance}% imbalance</div>
+          <div className="border-t border-dashed border-[var(--border)] pt-[10px]">
+            <div className="flex justify-between items-baseline mb-[6px] gap-[8px] flex-wrap">
+              <div className="text-[10.5px] font-bold text-[var(--text)] uppercase tracking-[0.4px]">
+                Three-phase load distribution
+              </div>
+              <div
+                className="text-[11px] font-bold font-mono"
+                style={{ color: phImbColor }}
+              >
+                {phImbalance}% imbalance
+              </div>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6, marginBottom: 4 }}>
-              <div style={{ padding: '6px 8px', background: 'var(--bg)', borderRadius: 6, borderLeft: '3px solid var(--red)' }}>
-                <div style={{ fontSize: 9, color: 'var(--text-dim)', fontWeight: 600 }}>R-phase</div>
-                <div style={{ fontSize: 13, fontWeight: 700, fontFamily: 'var(--mono)', color: 'var(--text)' }}>{phR} A</div>
+            <div className="grid grid-cols-3 gap-[6px] mb-[4px]">
+              <div className="py-[6px] px-[8px] bg-[var(--bg)] rounded-[6px] border-l-[3px] border-l-[var(--red)]">
+                <div className="text-[9px] text-[var(--text-dim)] font-semibold">
+                  R-phase
+                </div>
+                <div className="text-[13px] font-bold font-mono text-[var(--text)]">
+                  {phR} A
+                </div>
               </div>
-              <div style={{ padding: '6px 8px', background: 'var(--bg)', borderRadius: 6, borderLeft: '3px solid var(--amber)' }}>
-                <div style={{ fontSize: 9, color: 'var(--text-dim)', fontWeight: 600 }}>Y-phase</div>
-                <div style={{ fontSize: 13, fontWeight: 700, fontFamily: 'var(--mono)', color: 'var(--text)' }}>{phY} A</div>
+              <div className="py-[6px] px-[8px] bg-[var(--bg)] rounded-[6px] border-l-[3px] border-l-[var(--amber)]">
+                <div className="text-[9px] text-[var(--text-dim)] font-semibold">
+                  Y-phase
+                </div>
+                <div className="text-[13px] font-bold font-mono text-[var(--text)]">
+                  {phY} A
+                </div>
               </div>
-              <div style={{ padding: '6px 8px', background: 'var(--bg)', borderRadius: 6, borderLeft: '3px solid var(--navy-light, #4B6BB8)' }}>
-                <div style={{ fontSize: 9, color: 'var(--text-dim)', fontWeight: 600 }}>B-phase</div>
-                <div style={{ fontSize: 13, fontWeight: 700, fontFamily: 'var(--mono)', color: 'var(--text)' }}>{phB} A</div>
+              <div
+                className="py-[6px] px-[8px] bg-[var(--bg)] rounded-[6px] border-l-[3px]"
+                style={{ borderLeftColor: 'var(--navy-light, #4B6BB8)' }}
+              >
+                <div className="text-[9px] text-[var(--text-dim)] font-semibold">
+                  B-phase
+                </div>
+                <div className="text-[13px] font-bold font-mono text-[var(--text)]">
+                  {phB} A
+                </div>
               </div>
             </div>
             {phImbalance >= 12 ? (
-              <div style={{ marginTop: 6, padding: '6px 8px', background: `rgba(${phImbalance >= 20 ? '220,53,69' : '230,146,30'},0.06)`, borderRadius: 6, fontSize: 10, color: 'var(--text-mid)', lineHeight: 1.4 }}>
-                <strong style={{ color: phImbColor }}>⚠ {phImbalance >= 20 ? 'Severe' : 'Moderate'} imbalance on {phMaxLetter}-phase</strong> —{' '}
+              <div
+                className="mt-[6px] py-[6px] px-[8px] rounded-[6px] text-[10px] text-[var(--text-mid)] leading-[1.4] break-words"
+                style={{
+                  background: `rgba(${phImbalance >= 20 ? '220,53,69' : '230,146,30'},0.06)`,
+                }}
+              >
+                <strong style={{ color: phImbColor }}>
+                  ⚠ {phImbalance >= 20 ? 'Severe' : 'Moderate'} imbalance on{' '}
+                  {phMaxLetter}-phase
+                </strong>{' '}
+                —{' '}
                 {phImbalance >= 20
                   ? 'transformer overheating risk + possible bypass on under-loaded phase. Recommend physical inspection within 7 days.'
                   : 'load shifting may indicate selective bypass or unbalanced consumer wiring. Monitor next 30 days.'}
               </div>
             ) : (
-              <div style={{ marginTop: 6, fontSize: 10, color: 'var(--text-mid)' }}>Within healthy band (&lt;12%). No action needed.</div>
+              <div className="mt-[6px] text-[10px] text-[var(--text-mid)]">
+                Within healthy band (&lt;12%). No action needed.
+              </div>
             )}
           </div>
-          <div style={{ marginTop: 8, fontSize: 9, color: 'var(--text-dim)', fontStyle: 'italic' }}>
-            Note: phase currents are model estimates derived from DT load profile. Replace with live MRI phasor data when DT meter is integrated.
+          <div className="mt-[8px] text-[9px] text-[var(--text-dim)] italic">
+            Note: phase currents are model estimates derived from DT load
+            profile. Replace with live MRI phasor data when DT meter is
+            integrated.
           </div>
         </div>
 
         {/* AI triage */}
-        <div className="map-detail-ai">
+        <MapDetailAi>
           <strong>✦ AI triage:</strong>{' '}
           {dt.loss > 20 ? (
             <>
-              This DTR has <strong>critically high losses ({dt.loss}%)</strong>. Of{' '}
-              <strong>{formatIndian(cons.length)} consumers</strong>, <strong>{susp.length} are flagged</strong>{' '}
-              ({flagRate}% flag rate vs network avg ~5%). <strong>{critical.length} are critical priority</strong>.
+              This DTR has{' '}
+              <strong>critically high losses ({dt.loss}%)</strong>. Of{' '}
+              <strong>{formatIndian(cons.length)} consumers</strong>,{' '}
+              <strong>{susp.length} are flagged</strong> ({flagRate}% flag rate
+              vs network avg ~5%).{' '}
+              <strong>{critical.length} are critical priority</strong>.
               Dominant theft type: {topTypeStr}.{' '}
             </>
           ) : dt.loss > 15 ? (
-            <>Moderate losses at {dt.loss}%. {susp.length} consumer(s) flagged across {formatIndian(cons.length)} total. </>
+            <>
+              Moderate losses at {dt.loss}%. {susp.length} consumer(s) flagged
+              across {formatIndian(cons.length)} total.{' '}
+            </>
           ) : (
-            <>Operating within normal parameters ({dt.loss}% loss). {susp.length} flagged across {formatIndian(cons.length)} total. </>
+            <>
+              Operating within normal parameters ({dt.loss}% loss).{' '}
+              {susp.length} flagged across {formatIndian(cons.length)} total.{' '}
+            </>
           )}
-          <strong>Recommended action: dispatch inspection team to top {Math.min(20, critical.length || 10)} critical meters first.</strong>
-        </div>
+          <strong>
+            Recommended action: dispatch inspection team to top{' '}
+            {Math.min(20, critical.length || 10)} critical meters first.
+          </strong>
+        </MapDetailAi>
 
-        {/* Quick filter strip */}
-        <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginBottom: 10, padding: 6, background: 'var(--bg)', borderRadius: 8 }}>
-          <button type="button" className={`dt-filter-btn${filter === 'critical' ? ' active' : ''}`} onClick={() => setFilter('critical')}>
+        {/* Quick filter strip (was .dt-filter-btn) */}
+        <div className="flex gap-[5px] flex-wrap mb-[10px] p-[6px] bg-[var(--bg)] rounded-[8px]">
+          <FilterPill
+            active={filter === 'critical'}
+            onClick={() => setFilter('critical')}
+          >
             ⚠ Critical {critical.length}
-          </button>
-          <button type="button" className={`dt-filter-btn${filter === 'flagged' ? ' active' : ''}`} onClick={() => setFilter('flagged')}>
+          </FilterPill>
+          <FilterPill
+            active={filter === 'flagged'}
+            onClick={() => setFilter('flagged')}
+          >
             ⚡ All flagged {susp.length}
-          </button>
-          <button type="button" className={`dt-filter-btn${filter === 'industrial' ? ' active' : ''}`} onClick={() => setFilter('industrial')}>
-            🏭 Industrial {susp.filter((c) => c.cat === 'Industrial').length}
-          </button>
-          <button type="button" className={`dt-filter-btn${filter === 'commercial' ? ' active' : ''}`} onClick={() => setFilter('commercial')}>
-            🏪 Commercial {susp.filter((c) => c.cat === 'Commercial').length}
-          </button>
+          </FilterPill>
+          <FilterPill
+            active={filter === 'industrial'}
+            onClick={() => setFilter('industrial')}
+          >
+            🏭 Industrial{' '}
+            {susp.filter((c) => c.cat === 'Industrial').length}
+          </FilterPill>
+          <FilterPill
+            active={filter === 'commercial'}
+            onClick={() => setFilter('commercial')}
+          >
+            🏪 Commercial{' '}
+            {susp.filter((c) => c.cat === 'Commercial').length}
+          </FilterPill>
         </div>
 
         {/* Top priority consumers */}
-        <div className="map-detail-section">
-          <div className="map-detail-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span>
+        <MapDetailSection
+          label={
+            <>
               Top priority consumers{' '}
-              <span style={{ fontWeight: 500, color: 'var(--text-dim)', textTransform: 'none', letterSpacing: 0, fontSize: 10, marginLeft: 6 }}>
+              <span className="font-medium text-[var(--text-dim)] normal-case tracking-normal text-[10px] ml-[6px]">
                 {filterLabel}
               </span>
-            </span>
+            </>
+          }
+          labelRight={
             <button
               type="button"
               onClick={() => {
@@ -529,15 +741,17 @@ export function DTDetail({ dt, parentFeeder, onSelect, onBack, onClose }: DTDeta
                 setSearchTerm('')
                 setPage(1)
               }}
-              style={{ background: 'none', border: 'none', color: 'var(--ai-purple)', fontSize: 10.5, fontWeight: 600, cursor: 'pointer', padding: 0 }}
+              className="bg-transparent border-none text-[var(--ai-purple)] text-[10.5px] font-semibold cursor-pointer p-0"
             >
               View all {susp.length} →
             </button>
-          </div>
-
+          }
+        >
           {displayed.length === 0 ? (
-            <div style={{ padding: 14, textAlign: 'center', fontSize: 11, color: 'var(--text-dim)', background: 'var(--bg)', borderRadius: 6 }}>
-              No consumers match this filter under this DTR.
+            <div className="p-[14px] text-center text-[11px] text-[var(--text-dim)] bg-[var(--bg)] rounded-[6px]">
+              {filter === 'critical'
+                ? 'No critical-priority consumers under this DTR.'
+                : 'No consumers match this filter under this DTR.'}
             </div>
           ) : (
             <>
@@ -545,83 +759,140 @@ export function DTDetail({ dt, parentFeeder, onSelect, onBack, onClose }: DTDeta
                 <DtConsumerRow
                   key={c.id}
                   c={c}
-                  onClick={() => onSelect({ feeder: parentFeeder, dt, consumer: c })}
+                  onClick={() =>
+                    onSelect({ feeder: parentFeeder, dt, consumer: c })
+                  }
                 />
               ))}
               {remaining > 0 && (
-                <div style={{ padding: 8, textAlign: 'center', fontSize: 10.5, color: 'var(--text-dim)', background: 'var(--bg)', borderRadius: 6, marginTop: 6 }}>
-                  Showing top 10 of {filtered.length} · click &quot;View all&quot; to see the rest
+                <div className="p-[8px] text-center text-[10.5px] text-[var(--text-dim)] bg-[var(--bg)] rounded-[6px] mt-[6px]">
+                  Showing top 10 of {filtered.length}
+                  {filter === 'critical' ? ' critical' : ''} · click &quot;View
+                  all&quot; to see the rest
                 </div>
               )}
             </>
           )}
-        </div>
+        </MapDetailSection>
 
         {/* Distribution mini-charts */}
-        <div className="map-detail-section">
-          <div className="map-detail-label">Risk distribution &amp; breakdown</div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+        <MapDetailSection label="Risk distribution & breakdown">
+          <div className="grid grid-cols-2 gap-[8px]">
             {/* By risk band */}
-            <div style={{ padding: '8px 10px', background: 'var(--bg)', borderRadius: 6 }}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '.4px', marginBottom: 6 }}>By risk band</div>
+            <div className="py-[8px] px-[10px] bg-[var(--bg)] rounded-[6px]">
+              <div className="text-[10px] font-bold text-[var(--text-dim)] uppercase tracking-[0.4px] mb-[6px]">
+                By risk band
+              </div>
               {[
-                { label: 'Critical', count: critical.length, color: 'var(--red)' },
+                {
+                  label: 'Critical',
+                  count: critical.length,
+                  color: 'var(--red)',
+                },
                 { label: 'High', count: high.length, color: 'var(--amber)' },
-                { label: 'Normal', count: normal.length, color: 'var(--green)' },
+                {
+                  label: 'Normal',
+                  count: normal.length,
+                  color: 'var(--green)',
+                },
               ].map((band) => {
-                const pct = cons.length > 0 ? (band.count / cons.length) * 100 : 0
+                const pct =
+                  cons.length > 0 ? (band.count / cons.length) * 100 : 0
                 return (
-                  <div key={band.label} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3, fontSize: 10 }}>
-                    <span style={{ color: band.color, fontWeight: 700, width: 14, textAlign: 'right' }}>{band.count}</span>
-                    <div style={{ flex: 1, height: 9, background: 'rgba(0,0,0,0.05)', borderRadius: 3, overflow: 'hidden' }}>
-                      <div style={{ height: '100%', width: `${pct}%`, background: band.color }} />
+                  <div
+                    key={band.label}
+                    className="flex items-center gap-[6px] mb-[3px] text-[10px]"
+                  >
+                    <span
+                      className="font-bold w-[14px] text-right"
+                      style={{ color: band.color }}
+                    >
+                      {band.count}
+                    </span>
+                    <div className="flex-1 h-[9px] bg-[rgba(0,0,0,0.05)] rounded-[3px] overflow-hidden">
+                      <div
+                        className="h-full"
+                        style={{
+                          width: `${pct}%`,
+                          background: band.color,
+                        }}
+                      />
                     </div>
-                    <span style={{ color: 'var(--text-dim)', fontSize: 9.5, width: 60 }}>{band.label}</span>
+                    <span className="text-[var(--text-dim)] text-[9.5px] w-[60px]">
+                      {band.label}
+                    </span>
                   </div>
                 )
               })}
             </div>
 
             {/* By activity category */}
-            <div style={{ padding: '8px 10px', background: 'var(--bg)', borderRadius: 6 }}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '.4px', marginBottom: 6 }}>Flagged by activity</div>
+            <div className="py-[8px] px-[10px] bg-[var(--bg)] rounded-[6px]">
+              <div className="text-[10px] font-bold text-[var(--text-dim)] uppercase tracking-[0.4px] mb-[6px]">
+                Flagged by activity
+              </div>
               {topCat.length === 0 ? (
-                <div style={{ fontSize: 10, color: 'var(--text-dim)', padding: '4px 0' }}>No flagged consumers</div>
+                <div className="text-[10px] text-[var(--text-dim)] py-[4px]">
+                  No flagged consumers
+                </div>
               ) : (
                 topCat.slice(0, 4).map(([cat, count]) => {
                   const maxCount = topCat[0][1]
                   return (
-                    <div key={cat} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3, fontSize: 10 }}>
-                      <span style={{ color: 'var(--text)', fontWeight: 700, width: 14, textAlign: 'right' }}>{count}</span>
-                      <div style={{ flex: 1, height: 9, background: 'rgba(0,0,0,0.05)', borderRadius: 3, overflow: 'hidden' }}>
-                        <div style={{ height: '100%', width: `${(count / maxCount) * 100}%`, background: 'var(--ai-purple)' }} />
+                    <div
+                      key={cat}
+                      className="flex items-center gap-[6px] mb-[3px] text-[10px]"
+                    >
+                      <span className="text-[var(--text)] font-bold w-[14px] text-right">
+                        {count}
+                      </span>
+                      <div className="flex-1 h-[9px] bg-[rgba(0,0,0,0.05)] rounded-[3px] overflow-hidden">
+                        <div
+                          className="h-full bg-[var(--ai-purple)]"
+                          style={{ width: `${(count / maxCount) * 100}%` }}
+                        />
                       </div>
-                      <span style={{ color: 'var(--text-dim)', fontSize: 9.5, width: 60 }}>{cat}</span>
+                      <span className="text-[var(--text-dim)] text-[9.5px] w-[60px]">
+                        {cat}
+                      </span>
                     </div>
                   )
                 })
               )}
             </div>
           </div>
-        </div>
+        </MapDetailSection>
 
         {/* DT specifications */}
-        <div className="map-detail-section">
-          <div className="map-detail-label">DT specifications</div>
-          <div className="map-detail-row"><span className="map-detail-key">Feeder</span><span className="map-detail-val">{dt.feeder}</span></div>
-          <div className="map-detail-row"><span className="map-detail-key">Loading</span><span className="map-detail-val" style={{ color: loadColor }}>{dt.load}%</span></div>
-          <div className="map-detail-row"><span className="map-detail-key">Loss %</span><span className="map-detail-val" style={{ color }}>{dt.loss}%</span></div>
-          <div className="map-detail-row"><span className="map-detail-key">Total consumers</span><span className="map-detail-val">{formatIndian(cons.length)}</span></div>
-          <div className="map-detail-row"><span className="map-detail-key">Lifetime tamper events</span><span className="map-detail-val">{formatIndian(totalEvents)}</span></div>
-          <div className="map-detail-row"><span className="map-detail-key">Top theft signature</span><span className="map-detail-val" style={{ fontSize: 10.5 }}>{topTypeStr}</span></div>
-        </div>
+        <MapDetailSection label="DT specifications">
+          <MapDetailRow label="Feeder" value={dt.feeder} />
+          <MapDetailRow
+            label="Loading"
+            value={`${dt.load}%`}
+            valueColor={loadColor}
+          />
+          <MapDetailRow
+            label="Loss %"
+            value={`${dt.loss}%`}
+            valueColor={color}
+          />
+          <MapDetailRow label="Total consumers" value={formatIndian(cons.length)} />
+          <MapDetailRow
+            label="Lifetime tamper events"
+            value={formatIndian(totalEvents)}
+          />
+          <MapDetailRow
+            label="Top theft signature"
+            value={topTypeStr}
+            valueFontSize={10.5}
+          />
+        </MapDetailSection>
 
         {/* Bulk actions footer */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, marginTop: 8 }}>
-          <button
-            type="button"
-            className="map-action-btn btn-ai"
-            style={{ margin: 0 }}
+        <div className="grid grid-cols-2 gap-[6px] mt-[8px]">
+          <MapActionBtn
+            variant="ai"
+            className="!mt-0"
             onClick={() =>
               showToast({
                 type: 'success',
@@ -632,11 +903,10 @@ export function DTDetail({ dt, parentFeeder, onSelect, onBack, onClose }: DTDeta
             }
           >
             ✦ Auto-create top {Math.min(critical.length, 20)} cases
-          </button>
-          <button
-            type="button"
-            className="map-action-btn btn-outline"
-            style={{ margin: 0 }}
+          </MapActionBtn>
+          <MapActionBtn
+            variant="outline"
+            className="!mt-0"
             onClick={() =>
               showToast({
                 type: 'info',
@@ -647,11 +917,10 @@ export function DTDetail({ dt, parentFeeder, onSelect, onBack, onClose }: DTDeta
             }
           >
             📥 Export {susp.length} flagged as CSV
-          </button>
-          <button
-            type="button"
-            className="map-action-btn btn-outline"
-            style={{ margin: 0, gridColumn: '1 / -1' }}
+          </MapActionBtn>
+          <MapActionBtn
+            variant="outline"
+            className="!mt-0 col-span-2"
             onClick={() =>
               showToast({
                 type: 'info',
@@ -662,9 +931,9 @@ export function DTDetail({ dt, parentFeeder, onSelect, onBack, onClose }: DTDeta
             }
           >
             📅 Schedule inspection batch for {dt.id}
-          </button>
+          </MapActionBtn>
         </div>
-      </div>
+      </MapDetailBody>
     </>
   )
 }

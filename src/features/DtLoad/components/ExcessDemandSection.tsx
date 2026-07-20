@@ -2,6 +2,7 @@ import { useToast } from '@/shared/context/ToastContext'
 import { useRole } from '@/shared/context/RoleContext'
 import type { ExcessDemandConsumer } from '../logic/excessDemand'
 import { computeExcessDemandStats } from '../logic/excessDemand'
+import { DtSectionHeader } from './DtSectionHeader'
 
 interface ExcessDemandSectionProps {
   excessDemand: ExcessDemandConsumer[]
@@ -17,7 +18,10 @@ function statusBadgeClass(status: ExcessDemandConsumer['status']): string {
   return 'badge badge-new'
 }
 
-export function ExcessDemandSection({ excessDemand, onSelectMeter }: ExcessDemandSectionProps) {
+export function ExcessDemandSection({
+  excessDemand,
+  onSelectMeter,
+}: ExcessDemandSectionProps) {
   const { showToast } = useToast()
   const { currentRole } = useRole()
   const stats = computeExcessDemandStats(excessDemand)
@@ -25,61 +29,49 @@ export function ExcessDemandSection({ excessDemand, onSelectMeter }: ExcessDeman
   const roleLabel = (currentRole?.label || 'all').replace(/[^A-Za-z0-9]/g, '_')
 
   return (
-    <div id="excess-demand-section" style={{ marginTop: 24 }}>
-      <div className="dt-section-header" style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '0 0 10px', flexWrap: 'wrap' }}>
-        <div style={{ width: 10, height: 10, borderRadius: '50%', background: 'var(--amber)' }} />
-        <div
-          className="dt-section-label"
-          style={{
-            fontSize: 13,
-            fontWeight: 700,
-            color: 'var(--amber)',
-            textTransform: 'uppercase',
-            letterSpacing: '.6px',
-          }}
-        >
-          Excess demand consumers · {excessDemand.length}
-        </div>
-        <div className="dt-section-desc" style={{ fontSize: 11, color: 'var(--text-dim)' }}>
-          Consumers drawing peak load above their sanctioned demand — UPERC surcharge applicable
-        </div>
-      </div>
+    <div id="excess-demand-section" className="mt-[24px]">
+      <DtSectionHeader
+        dotColor="var(--amber)"
+        labelColor="var(--amber)"
+        label={`Excess demand consumers · ${excessDemand.length}`}
+        desc="Consumers drawing peak load above their sanctioned demand — UPERC surcharge applicable"
+        topMargin="none"
+      />
       <div className="card">
-        <div
-          className="dt-excess-summary"
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            flexWrap: 'wrap',
-            gap: 10,
-            marginBottom: 12,
-          }}
-        >
-          <div className="dt-excess-stats" style={{ display: 'flex', gap: 14, fontSize: 11, flexWrap: 'wrap' }}>
+        {/* dt-excess-summary — flex row → flex col at ≤640 */}
+        <div className="flex justify-between items-center flex-wrap gap-[10px] mb-[12px] max-[640px]:flex-col max-[640px]:!items-stretch max-[640px]:!gap-[12px]">
+          {/* dt-excess-stats */}
+          <div className="flex gap-[14px] text-[11px] flex-wrap max-[640px]:!gap-[10px] max-[640px]:!text-[10.5px]">
             <div>
-              <span style={{ color: 'var(--text-dim)' }}>Total recoverable: </span>
-              <strong style={{ color: 'var(--amber)', fontFamily: 'var(--mono)' }}>
+              <span className="text-[var(--text-dim)]">Total recoverable: </span>
+              <strong className="text-[var(--amber)] font-mono">
                 ₹{(stats.totalSurcharge / 100000).toFixed(2)} L
               </strong>{' '}
-              <span style={{ color: 'var(--text-dim)', fontSize: 10 }}>/ month</span>
+              <span className="text-[var(--text-dim)] text-[10px]">
+                / month
+              </span>
             </div>
             <div>
-              <span style={{ color: 'var(--text-dim)' }}>Notice issued: </span>
-              <strong style={{ color: 'var(--id-text, #0284c7)', fontFamily: 'var(--mono)' }}>
+              <span className="text-[var(--text-dim)]">Notice issued: </span>
+              <strong className="font-mono" style={{ color: 'var(--id-text, #0284c7)' }}>
                 {stats.noticeIssued}
               </strong>
             </div>
             <div>
-              <span style={{ color: 'var(--text-dim)' }}>Recovered: </span>
-              <strong style={{ color: 'var(--green)', fontFamily: 'var(--mono)' }}>{stats.recovered}</strong>
+              <span className="text-[var(--text-dim)]">Recovered: </span>
+              <strong className="text-[var(--green)] font-mono">
+                {stats.recovered}
+              </strong>
             </div>
             <div>
-              <span style={{ color: 'var(--text-dim)' }}>Pending: </span>
-              <strong style={{ color: 'var(--red)', fontFamily: 'var(--mono)' }}>{stats.pending}</strong>
+              <span className="text-[var(--text-dim)]">Pending: </span>
+              <strong className="text-[var(--red)] font-mono">
+                {stats.pending}
+              </strong>
             </div>
           </div>
-          <div className="dt-excess-actions" style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          {/* dt-excess-actions */}
+          <div className="flex gap-[6px] flex-wrap max-[640px]:w-full max-[640px]:[&>button]:flex-1 max-[640px]:[&>button]:min-w-[140px]">
             <button
               type="button"
               className="btn btn-outline btn-sm"
@@ -128,55 +120,58 @@ export function ExcessDemandSection({ excessDemand, onSelectMeter }: ExcessDeman
             </thead>
             <tbody>
               {visible.map((e) => {
-                const peakColor = e.excessPct > 50 ? 'var(--red)' : 'var(--amber)'
+                const peakColor =
+                  e.excessPct > 50 ? 'var(--red)' : 'var(--amber)'
                 return (
                   <tr
                     key={e.meter}
-                    className="table-row"
+                    className="table-row cursor-pointer"
                     onClick={() => onSelectMeter?.(e.meter)}
-                    style={{ cursor: 'pointer' }}
                   >
                     <td>
-                      <div style={{ fontWeight: 600, fontSize: 12 }}>{e.name}</div>
-                      <div style={{ fontSize: 10, color: 'var(--text-dim)', fontFamily: 'var(--mono)' }}>
+                      <div className="font-semibold text-[12px]">{e.name}</div>
+                      <div
+                        className="text-[10px] text-[var(--text-dim)] font-mono"
+                      >
                         #{e.meter}
                       </div>
                     </td>
-                    <td style={{ fontSize: 11, color: 'var(--text-mid)' }}>{e.activity}</td>
-                    <td style={{ fontSize: 11, color: 'var(--text-mid)' }}>LMV-{e.tariff}</td>
-                    <td style={{ fontFamily: 'var(--mono)', fontSize: 11.5, textAlign: 'right' }}>
+                    <td className="text-[11px] text-[var(--text-mid)]">
+                      {e.activity}
+                    </td>
+                    <td className="text-[11px] text-[var(--text-mid)]">
+                      LMV-{e.tariff}
+                    </td>
+                    <td className="font-mono text-[11.5px] text-right">
                       {e.sanctioned} KW
                     </td>
                     <td
-                      style={{
-                        fontFamily: 'var(--mono)',
-                        fontSize: 11.5,
-                        fontWeight: 700,
-                        color: peakColor,
-                        textAlign: 'right',
-                      }}
+                      className="font-mono text-[11.5px] font-bold text-right"
+                      style={{ color: peakColor }}
                     >
                       {e.peak} KW
                     </td>
-                    <td style={{ fontFamily: 'var(--mono)', fontSize: 11.5, textAlign: 'right' }}>
-                      <span style={{ color: peakColor, fontWeight: 700 }}>+{e.excessKW} KW</span>{' '}
-                      <span style={{ color: 'var(--text-dim)', fontSize: 10, marginLeft: 4 }}>
+                    <td className="font-mono text-[11.5px] text-right">
+                      <span
+                        className="font-bold"
+                        style={{ color: peakColor }}
+                      >
+                        +{e.excessKW} KW
+                      </span>{' '}
+                      <span className="text-[var(--text-dim)] text-[10px] ml-[4px]">
                         (+{e.excessPct}%)
                       </span>
                     </td>
                     <td
-                      style={{
-                        fontFamily: 'var(--mono)',
-                        fontSize: 11.5,
-                        fontWeight: 700,
-                        color: 'var(--amber)',
-                        textAlign: 'right',
-                      }}
+                      className="font-mono text-[11.5px] font-bold text-right text-[var(--amber)]"
                     >
                       ₹{e.surcharge.toLocaleString('en-IN')}
                     </td>
                     <td>
-                      <span className={statusBadgeClass(e.status)} style={{ fontSize: 10 }}>
+                      <span
+                        className={statusBadgeClass(e.status)}
+                        style={{ fontSize: 10 }}
+                      >
                         {e.status}
                       </span>
                     </td>
@@ -187,19 +182,10 @@ export function ExcessDemandSection({ excessDemand, onSelectMeter }: ExcessDeman
           </table>
         </div>
         {excessDemand.length > EXCESS_LIMIT && (
-          <div
-            style={{
-              marginTop: 10,
-              padding: '8px 10px',
-              background: 'var(--bg)',
-              borderRadius: 6,
-              fontSize: 11,
-              color: 'var(--text-mid)',
-              textAlign: 'center',
-            }}
-          >
-            Showing top {EXCESS_LIMIT} of <strong>{excessDemand.length}</strong> excess-demand consumers (sorted
-            by % over sanctioned). Use Export CSV for the full list.
+          <div className="mt-[10px] py-[8px] px-[10px] bg-[var(--bg)] rounded-[6px] text-[11px] text-[var(--text-mid)] text-center">
+            Showing top {EXCESS_LIMIT} of{' '}
+            <strong>{excessDemand.length}</strong> excess-demand consumers
+            (sorted by % over sanctioned). Use Export CSV for the full list.
           </div>
         )}
       </div>

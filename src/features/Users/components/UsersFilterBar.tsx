@@ -22,16 +22,16 @@ export function UsersFilterBar({
   statusOptions,
 }: UsersFilterBarProps) {
   return (
-    <div className="usr-filter-bar">
+    <div className="my-[10px] flex flex-wrap gap-2 max-[560px]:flex-col">
       <input
-        className="form-input usr-search"
+        className="form-input flex-1 min-w-[200px] text-[11px] py-[6px] px-[10px] max-[560px]:w-full max-[560px]:min-w-0"
         placeholder="🔍 Search by name, email, role..."
         value={search}
         onChange={(e) => onSearch(e.target.value)}
       />
 
       <select
-        className="form-select usr-select"
+        className="form-select text-[11px] p-[6px] max-[560px]:w-full max-[560px]:min-w-0"
         value={filter.role ?? ''}
         onChange={(e) =>
           onFilter({ ...filter, role: (e.target.value || undefined) as RoleName | undefined })
@@ -46,7 +46,7 @@ export function UsersFilterBar({
       </select>
 
       <select
-        className="form-select usr-select"
+        className="form-select text-[11px] p-[6px] max-[560px]:w-full max-[560px]:min-w-0"
         value={filter.zone ?? ''}
         onChange={(e) => onFilter({ ...filter, zone: e.target.value || undefined })}
       >
@@ -59,7 +59,7 @@ export function UsersFilterBar({
       </select>
 
       <select
-        className="form-select usr-select"
+        className="form-select text-[11px] p-[6px] max-[560px]:w-full max-[560px]:min-w-0"
         value={filter.status ?? ''}
         onChange={(e) =>
           onFilter({ ...filter, status: (e.target.value || undefined) as UserStatus | undefined })

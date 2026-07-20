@@ -24,7 +24,7 @@ export default function DashboardDrilldown() {
 
   return (
     <div className="mb-3.5 grid grid-cols-2 gap-3.5 max-lg:grid-cols-1">
-      <div className="card mb-0 p-3.5">
+      <div className="mb-0 rounded-xl border border-border bg-card p-3.5 shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
         <div className="mb-2.5 flex items-center justify-between">
           <div className="text-[11.5px] font-bold uppercase tracking-[0.4px] text-text">
             📋 Your queue · today
@@ -49,7 +49,8 @@ export default function DashboardDrilldown() {
             <button
               type="button"
               onClick={() => goTo(item.actionScreen)}
-              className="btn btn-ai btn-sm shrink-0 px-3 py-[5px] text-[10.5px]"
+              className="shrink-0 cursor-pointer rounded-lg border-none px-3 py-[5px] text-[10.5px] font-semibold text-white shadow-[var(--ai-glow)] transition-all hover:opacity-85"
+              style={{ background: 'var(--ai-gradient)' }}
             >
               {item.action} →
             </button>
@@ -57,7 +58,7 @@ export default function DashboardDrilldown() {
         ))}
       </div>
 
-      <div className="card mb-0 p-3.5">
+      <div className="mb-0 rounded-xl border border-border bg-card p-3.5 shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
         <div className="mb-2.5 flex items-center justify-between">
           <div className="text-[11.5px] font-bold uppercase tracking-[0.4px] text-text">
             🔥 Today&apos;s hotspots

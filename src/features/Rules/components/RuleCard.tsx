@@ -10,16 +10,27 @@ interface RuleCardProps {
 }
 
 /** One detection rule: header (dot, id — name, impact badge, Enabled) +
- *  description + a 3-column control row (threshold, weight, extra). */
+ *  description + a 3-column control row (threshold, weight, extra).
+ *
+ *  Matches prototype's `.rule-card`, `.rule-header`, `.rule-name`, `.rule-dot`,
+ *  `.rule-desc`, `.rule-controls` styling byte-for-byte. Enabled label and
+ *  checkbox use browser-default accent colours (prototype does not set them).
+ *
+ *  Responsive @media breakpoints kept per project standing instruction:
+ *   - header stacks vertically at ≤480px
+ *   - 3-col controls collapse to 1 column at ≤720px */
 export function RuleCard({ rule, state, spec, onChange }: RuleCardProps) {
   return (
-    <div className="rule-card">
-      <div className="rule-header">
-        <div className="rule-name">
-          <span className="rule-dot" style={{ background: rule.dot }} />
+    <div className="bg-[var(--card)] rounded-[12px] border border-[var(--border)] py-[14px] px-[18px] mb-[10px]">
+      <div className="flex justify-between items-center mb-2 max-[480px]:flex-col max-[480px]:items-start max-[480px]:gap-2">
+        <div className="flex items-center gap-2 font-medium text-[13px]">
+          <span
+            className="w-[7px] h-[7px] rounded-full"
+            style={{ background: rule.dot }}
+          />
           {rule.id} — {rule.name}
           <span
-            className={`badge rule-impact-badge ${
+            className={`badge text-[9px] py-[2px] px-[6px] ${
               rule.impact === 'High' ? 'badge-confirmed' : 'badge-assigned'
             }`}
           >
@@ -27,7 +38,7 @@ export function RuleCard({ rule, state, spec, onChange }: RuleCardProps) {
           </span>
         </div>
 
-        <label className="rule-enable">
+        <label className="flex items-center gap-[5px] text-[11px] text-[var(--text-dim)]">
           Enabled
           <input
             type="checkbox"
@@ -38,9 +49,9 @@ export function RuleCard({ rule, state, spec, onChange }: RuleCardProps) {
         </label>
       </div>
 
-      <div className="rule-desc">{rule.desc}</div>
+      <div className="text-[11px] text-[var(--text-mid)] mb-[10px]">{rule.desc}</div>
 
-      <div className="rule-controls">
+      <div className="grid grid-cols-3 gap-[10px] max-[720px]:grid-cols-1">
         <SliderGroup
           label={rule.thresh}
           value={state.threshold}
@@ -63,10 +74,12 @@ export function RuleCard({ rule, state, spec, onChange }: RuleCardProps) {
           disabled={!state.enabled}
         />
 
-        <div className="slider-group">
-          <label>{rule.extra}</label>
+        <div>
+          <label className="text-[10px] font-medium text-[var(--text-dim)] block mb-[3px]">
+            {rule.extra}
+          </label>
           <select
-            className="form-select rule-extra-select"
+            className="form-select !py-[5px] !px-[6px] !text-[11px]"
             value={state.extra}
             disabled={!state.enabled}
             onChange={(e) => onChange('extra', e.target.value)}

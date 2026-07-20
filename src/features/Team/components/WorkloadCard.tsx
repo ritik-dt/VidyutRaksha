@@ -14,10 +14,20 @@ const STATUS_TEXT: Record<TeamInspector['status'], string> = {
   leave: 'On leave',
 }
 
+/** Status-dot background per inspector status (matches prototype's status-field/office/leave). */
+const STATUS_BG: Record<TeamInspector['status'], string> = {
+  field: 'var(--green)',
+  office: 'var(--navy-light)',
+  leave: 'var(--text-dim)',
+}
+
 /**
  * Workload distribution card. Port of prototype's renderLoadCard(insp).
  * Clicking the card body opens the inspector-cases side panel. The action row
  * varies by capacity tier (available / balanced / reduce load / on leave).
+ *
+ * Matches prototype spec: 14px padding, 10px radius, hover-lift with purple glow,
+ * dashed border-top between avatar row and stat grid.
  */
 export function WorkloadCard({ insp, readOnly, onOpen, onReduceLoad }: WorkloadCardProps) {
   const util = insp.openCases / insp.capacity
@@ -40,20 +50,28 @@ export function WorkloadCard({ insp, readOnly, onOpen, onReduceLoad }: WorkloadC
     onReduceLoad()
   }
 
+  // Base classes for all action-row buttons — prototype has .ld-card-action button.
+  // All action variants layer their own colors via inline style.
+  const actionBtnBase =
+    'flex-1 p-[6px] border border-[var(--border)] rounded-[5px] text-[11px] cursor-pointer text-[var(--text-mid)] font-semibold transition-all duration-[120ms] enabled:hover:bg-[var(--ai-purple-light)] enabled:hover:border-[var(--ai-purple)] enabled:hover:text-[var(--ai-purple)]'
+
   return (
     <div
-      className="ld-card"
+      className="bg-[var(--card)] border border-[var(--border)] rounded-[10px] p-[14px] transition-all duration-150 cursor-pointer hover:border-[var(--ai-purple-mid)] hover:shadow-[0_4px_14px_rgba(124,58,237,0.1)] hover:-translate-y-[1px]"
       onClick={() => onOpen(insp.id)}
       role="button"
       tabIndex={0}
       onKeyDown={onCardKey}
     >
-      <div className="ld-card-top">
+      <div className="flex items-center gap-[10px] mb-[10px]">
         <div className="ld-avatar">{insp.init}</div>
-        <div className="ld-card-info">
-          <div className="ld-card-name">{insp.name}</div>
-          <div className="ld-card-meta">
-            <span className={`status-dot status-${insp.status}`} />
+        <div className="flex-1 min-w-0">
+          <div className="text-[13.5px] font-bold text-[var(--text)] mb-[1px]">{insp.name}</div>
+          <div className="text-[10.5px] text-[var(--text-dim)] flex items-center gap-[5px]">
+            <span
+              className="inline-block w-[7px] h-[7px] rounded-full"
+              style={{ background: STATUS_BG[insp.status] }}
+            />
             <span>{STATUS_TEXT[insp.status]}</span>
             <span style={{ color: 'var(--border)' }}>·</span>
             <span>{insp.areas[0]}</span>
@@ -98,32 +116,41 @@ export function WorkloadCard({ insp, readOnly, onOpen, onReduceLoad }: WorkloadC
         {utilPct}% capacity
       </div>
 
-      <div className="ld-card-stats">
-        <div className="ld-stat">
+      <div className="grid grid-cols-3 gap-[6px] mt-[10px] pt-[10px] border-t border-dashed border-[var(--border-light)]">
+        <div className="text-center">
           <div
-            className="ld-stat-val"
+            className="text-[14px] font-bold text-[var(--text)]"
             style={{ color: insp.hitRate >= 60 ? 'var(--green)' : 'var(--amber)' }}
           >
             {insp.hitRate.toFixed(0)}%
           </div>
-          <div className="ld-stat-label">Hit rate</div>
+          <div className="text-[9px] text-[var(--text-dim)] uppercase tracking-[0.5px] mt-[1px]">
+            Hit rate
+          </div>
         </div>
-        <div className="ld-stat">
-          <div className="ld-stat-val">{insp.avgClose}d</div>
-          <div className="ld-stat-label">Avg close</div>
+        <div className="text-center">
+          <div className="text-[14px] font-bold text-[var(--text)]">{insp.avgClose}d</div>
+          <div className="text-[9px] text-[var(--text-dim)] uppercase tracking-[0.5px] mt-[1px]">
+            Avg close
+          </div>
         </div>
-        <div className="ld-stat">
-          <div className="ld-stat-val">₹{(insp.recovered / 100000).toFixed(1)}L</div>
-          <div className="ld-stat-label">Recovered</div>
+        <div className="text-center">
+          <div className="text-[14px] font-bold text-[var(--text)]">
+            ₹{(insp.recovered / 100000).toFixed(1)}L
+          </div>
+          <div className="text-[9px] text-[var(--text-dim)] uppercase tracking-[0.5px] mt-[1px]">
+            Recovered
+          </div>
         </div>
       </div>
 
       {/* Action row (variants per capacity tier / status) */}
       {action.kind === 'leave' && (
-        <div className="ld-card-action" onClick={(e) => e.stopPropagation()}>
+        <div className="mt-[10px] flex gap-[6px]" onClick={(e) => e.stopPropagation()}>
           <button
             type="button"
             disabled
+            className={actionBtnBase}
             style={{ background: 'var(--bg)', color: 'var(--text-dim)', cursor: 'not-allowed' }}
           >
             ⚠ On leave — redistribute
@@ -131,9 +158,10 @@ export function WorkloadCard({ insp, readOnly, onOpen, onReduceLoad }: WorkloadC
         </div>
       )}
       {action.kind === 'available' && (
-        <div className="ld-card-action" onClick={(e) => e.stopPropagation()}>
+        <div className="mt-[10px] flex gap-[6px]" onClick={(e) => e.stopPropagation()}>
           <button
             type="button"
+            className={actionBtnBase}
             style={{
               background: 'var(--green-light)',
               color: 'var(--green)',
@@ -147,11 +175,12 @@ export function WorkloadCard({ insp, readOnly, onOpen, onReduceLoad }: WorkloadC
         </div>
       )}
       {action.kind === 'reduce' && (
-        <div className="ld-card-action" onClick={(e) => e.stopPropagation()}>
+        <div className="mt-[10px] flex gap-[6px]" onClick={(e) => e.stopPropagation()}>
           <button
             type="button"
             disabled={readOnly}
             onClick={handleReduce}
+            className={actionBtnBase}
             style={{
               background: 'rgba(220,53,69,.1)',
               color: 'var(--red)',
@@ -165,8 +194,13 @@ export function WorkloadCard({ insp, readOnly, onOpen, onReduceLoad }: WorkloadC
         </div>
       )}
       {action.kind === 'balanced' && (
-        <div className="ld-card-action" onClick={(e) => e.stopPropagation()}>
-          <button type="button" style={{ cursor: 'default' }} tabIndex={-1}>
+        <div className="mt-[10px] flex gap-[6px]" onClick={(e) => e.stopPropagation()}>
+          <button
+            type="button"
+            className={actionBtnBase}
+            style={{ cursor: 'default' }}
+            tabIndex={-1}
+          >
             Balanced load
           </button>
         </div>

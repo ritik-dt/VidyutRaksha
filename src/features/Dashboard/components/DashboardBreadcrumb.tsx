@@ -9,7 +9,7 @@ export default function DashboardBreadcrumb() {
   }
 
   return (
-    <div className="map-breadcrumb mb-3.5 flex flex-wrap items-center text-[11px]">
+    <div className="mb-3.5 flex flex-wrap items-center py-2 text-[11px]">
       {hierPath.map((pathId, index) => {
         const node = hierData[pathId]
         if (!node) return null
@@ -20,17 +20,17 @@ export default function DashboardBreadcrumb() {
         return (
           <span key={pathId} className="inline-flex items-center">
             {index > 0 && (
-              <span className="map-bc-sep mx-1 text-text-dim">›</span>
+              <span className="mx-1 text-[10px] text-text-dim">›</span>
             )}
             {isLast ? (
-              <span className="map-bc-current font-semibold text-text">
+              <span className="cursor-default px-1.5 py-0.5 font-semibold text-text">
                 {icon} {node.name}
               </span>
             ) : (
               <button
                 type="button"
                 onClick={() => navigateToPathIndex(index)}
-                className="map-bc-item cursor-pointer border-none bg-transparent p-0 font-medium text-id-text hover:text-ai-purple-mid"
+                className="cursor-pointer border-none bg-transparent p-0 font-medium text-id-text hover:text-ai-purple-mid"
               >
                 {icon} {node.name}
               </button>

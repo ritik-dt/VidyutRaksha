@@ -23,11 +23,11 @@ export function CompletenessTable({ rows }: CompletenessTableProps) {
           <tbody>
             {rows.map((r) => (
               <tr key={r.section} className="table-row">
-                <td className="dq-area">{r.section}</td>
-                <td className="dq-mono">{r.complete}</td>
-                <td className="dq-mono">{r.partial}</td>
-                <td className="dq-mono">{r.missing}</td>
-                <td className="dq-pct" style={{ color: r.pctColor }}>
+                <td className="font-semibold">{r.section}</td>
+                <td className="font-[var(--mono)]">{r.complete}</td>
+                <td className="font-[var(--mono)]">{r.partial}</td>
+                <td className="font-[var(--mono)]">{r.missing}</td>
+                <td className="font-bold" style={{ color: r.pctColor }}>
                   {r.pct}
                 </td>
               </tr>

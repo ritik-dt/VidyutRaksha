@@ -9,7 +9,15 @@ interface DtDetailModalProps {
   onClose: () => void
 }
 
-/** DT detail modal — direct port of prototype's showDtDetail(). */
+/**
+ * DT detail modal — direct port of prototype's showDtDetail().
+ *
+ * Uses shared `.assign-backdrop`, `.assign-panel`, `.assign-header`,
+ * `.assign-body` classes (kept as-is because they're used by 8+ modules).
+ * The DtLoad-specific `.dt-modal-metrics` (2-col → 1-col at ≤480) and
+ * `.dt-modal-actions` (flex-wrap → flex-col at ≤480) are inlined via
+ * responsive Tailwind classes.
+ */
 export function DtDetailModal({ dt: d, onClose }: DtDetailModalProps) {
   const { showToast } = useToast()
 
@@ -24,24 +32,63 @@ export function DtDetailModal({ dt: d, onClose }: DtDetailModalProps) {
 
   const utilPct = Math.round(ratio(d) * 100)
   const projUtil = Math.round((d.projectedLoad90 / d.capacity) * 100)
-  const capColor = utilPct < 60 ? 'var(--green)' : utilPct < 90 ? 'var(--amber)' : 'var(--red)'
+  const capColor =
+    utilPct < 60 ? 'var(--green)' : utilPct < 90 ? 'var(--amber)' : 'var(--red)'
   const healthColor =
-    d.health === 'critical' ? 'var(--red)' : d.health === 'warning' ? 'var(--amber)' : 'var(--green)'
+    d.health === 'critical'
+      ? 'var(--red)'
+      : d.health === 'warning'
+        ? 'var(--amber)'
+        : 'var(--green)'
   const healthBg =
-    d.health === 'critical' ? 'rgba(220,53,69,.06)' : d.health === 'warning' ? 'rgba(230,146,30,.06)' : 'rgba(40,167,69,.06)'
-  const capacityClass = utilPct < 60 ? 'capacity-low' : utilPct < 90 ? 'capacity-mid' : 'capacity-high'
+    d.health === 'critical'
+      ? 'rgba(220,53,69,.06)'
+      : d.health === 'warning'
+        ? 'rgba(230,146,30,.06)'
+        : 'rgba(40,167,69,.06)'
+  const capacityClass =
+    utilPct < 60
+      ? 'capacity-low'
+      : utilPct < 90
+        ? 'capacity-mid'
+        : 'capacity-high'
+  const projColor =
+    projUtil > 100
+      ? 'var(--red)'
+      : projUtil > 85
+        ? 'var(--amber)'
+        : 'var(--green)'
+  const phaseColor =
+    d.phaseImbalance > 10
+      ? 'var(--red)'
+      : d.phaseImbalance > 5
+        ? 'var(--amber)'
+        : 'var(--green)'
+  const outagesColor =
+    d.outagesYr > 3
+      ? 'var(--red)'
+      : d.outagesYr > 1
+        ? 'var(--amber)'
+        : 'var(--green)'
 
   return (
     <>
       <div className="assign-backdrop" onClick={onClose} />
       <div className="assign-panel">
         <div className="assign-header">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div className="ld-avatar" style={{ width: 44, height: 44, fontSize: 16, background: healthColor }}>⚡</div>
-              <div>
-                <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)' }}>{d.id}</div>
-                <div style={{ fontSize: 11, color: 'var(--text-mid)', marginTop: 2 }}>
+          <div className="flex justify-between items-start mb-[8px] gap-[10px]">
+            <div className="flex items-center gap-[12px] min-w-0">
+              <div
+                className="ld-avatar shrink-0 !w-[44px] !h-[44px] !text-[16px]"
+                style={{ background: healthColor }}
+              >
+                ⚡
+              </div>
+              <div className="min-w-0">
+                <div className="text-[17px] font-bold text-[var(--text)] break-words">
+                  {d.id}
+                </div>
+                <div className="text-[11px] text-[var(--text-mid)] mt-[2px] break-words">
                   {d.name} · {d.feeder} feeder
                 </div>
               </div>
@@ -49,36 +96,54 @@ export function DtDetailModal({ dt: d, onClose }: DtDetailModalProps) {
             <button
               type="button"
               onClick={onClose}
-              style={{ background: 'transparent', border: 'none', color: 'var(--text-dim)', fontSize: 22, cursor: 'pointer', lineHeight: 1, padding: '0 4px' }}
+              className="bg-transparent border-none text-[var(--text-dim)] text-[22px] cursor-pointer leading-none px-[4px] shrink-0"
             >
               ×
             </button>
           </div>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 10 }}>
-            <div className="capacity-bar" style={{ flex: 1 }}>
-              <div className={`capacity-fill ${capacityClass}`} style={{ width: `${Math.min(100, utilPct)}%` }} />
+          <div className="flex gap-[8px] items-center mt-[10px]">
+            <div className="capacity-bar flex-1">
+              <div
+                className={`capacity-fill ${capacityClass}`}
+                style={{ width: `${Math.min(100, utilPct)}%` }}
+              />
             </div>
-            <div style={{ fontSize: 11.5, fontWeight: 700, color: capColor, minWidth: 60, textAlign: 'right' }}>
+            <div
+              className="text-[11.5px] font-bold min-w-[60px] text-right whitespace-nowrap"
+              style={{ color: capColor }}
+            >
               {utilPct}%
             </div>
           </div>
-          <div style={{ display: 'flex', gap: 14, marginTop: 10, fontSize: 11, color: 'var(--text-mid)', flexWrap: 'wrap' }}>
+          <div className="flex gap-[14px] mt-[10px] text-[11px] text-[var(--text-mid)] flex-wrap">
             <span>
-              <strong style={{ color: 'var(--text)' }}>{d.currentLoad}/{d.capacity}</strong> kVA
+              <strong style={{ color: 'var(--text)' }}>
+                {d.currentLoad}/{d.capacity}
+              </strong>{' '}
+              kVA
             </span>
             <span>
               <strong style={{ color: capColor }}>{utilPct}%</strong> current
             </span>
             {projUtil > 100 && (
               <span>
-                <strong style={{ color: 'var(--red)' }}>{projUtil}%</strong> projected (90d)
+                <strong style={{ color: 'var(--red)' }}>{projUtil}%</strong>{' '}
+                projected (90d)
               </span>
             )}
             <span>
-              <strong style={{ color: d.loss > 15 ? 'var(--red)' : 'var(--text)' }}>{d.loss.toFixed(1)}%</strong> loss
+              <strong
+                style={{
+                  color: d.loss > 15 ? 'var(--red)' : 'var(--text)',
+                }}
+              >
+                {d.loss.toFixed(1)}%
+              </strong>{' '}
+              loss
             </span>
             <span>
-              <strong style={{ color: 'var(--text)' }}>{d.consumers}</strong> consumers
+              <strong style={{ color: 'var(--text)' }}>{d.consumers}</strong>{' '}
+              consumers
             </span>
             <span>
               <strong style={{ color: 'var(--text)' }}>{d.age}y</strong> age
@@ -89,125 +154,147 @@ export function DtDetailModal({ dt: d, onClose }: DtDetailModalProps) {
         <div className="assign-body">
           {/* Status note */}
           <div
+            className="py-[12px] px-[14px] rounded-[6px] mb-[14px]"
             style={{
-              padding: '12px 14px',
               background: healthBg,
               borderLeft: `3px solid ${healthColor}`,
-              borderRadius: 6,
-              marginBottom: 14,
             }}
           >
-            <div style={{ fontSize: 11, fontWeight: 700, color: healthColor, textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: 4 }}>
+            <div
+              className="text-[11px] font-bold uppercase tracking-[0.6px] mb-[4px]"
+              style={{ color: healthColor }}
+            >
               Status: {d.health}
             </div>
-            <div style={{ fontSize: 12, color: 'var(--text)', lineHeight: 1.5 }}>{d.note}</div>
+            <div className="text-[12px] text-[var(--text)] leading-[1.5] break-words">
+              {d.note}
+            </div>
           </div>
 
-          {/* 4-tile grid: Peak / Projected / Phase / Outages */}
-          <div className="dt-modal-metrics" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 14 }}>
-            <div style={{ padding: '10px 12px', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8 }}>
-              <div style={{ fontSize: 9.5, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 4 }}>
+          {/* 4-tile grid: Peak / Projected / Phase / Outages
+              (was .dt-modal-metrics; ≤480 collapses to 1-col) */}
+          <div className="grid grid-cols-2 gap-[10px] mb-[14px] max-[480px]:grid-cols-1">
+            <div className="p-[10px_12px] bg-[var(--card)] border border-[var(--border)] rounded-[8px]">
+              <div className="text-[9.5px] text-[var(--text-dim)] uppercase tracking-[0.5px] mb-[4px]">
                 Peak load (last 30d)
               </div>
-              <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)' }}>{d.peakLoad} kVA</div>
-              <div style={{ fontSize: 10, color: 'var(--text-mid)', marginTop: 2 }}>
+              <div className="text-[18px] font-bold text-[var(--text)]">
+                {d.peakLoad} kVA
+              </div>
+              <div className="text-[10px] text-[var(--text-mid)] mt-[2px]">
                 {Math.round((d.peakLoad / d.capacity) * 100)}% of capacity
               </div>
             </div>
-            <div style={{ padding: '10px 12px', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8 }}>
-              <div style={{ fontSize: 9.5, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 4 }}>
+            <div className="p-[10px_12px] bg-[var(--card)] border border-[var(--border)] rounded-[8px]">
+              <div className="text-[9.5px] text-[var(--text-dim)] uppercase tracking-[0.5px] mb-[4px]">
                 Projected load (90d)
               </div>
-              <div style={{ fontSize: 18, fontWeight: 700, color: projUtil > 100 ? 'var(--red)' : projUtil > 85 ? 'var(--amber)' : 'var(--green)' }}>
+              <div
+                className="text-[18px] font-bold"
+                style={{ color: projColor }}
+              >
                 {d.projectedLoad90} kVA
               </div>
-              <div style={{ fontSize: 10, color: 'var(--text-mid)', marginTop: 2 }}>{projUtil}% of capacity</div>
+              <div className="text-[10px] text-[var(--text-mid)] mt-[2px]">
+                {projUtil}% of capacity
+              </div>
             </div>
-            <div style={{ padding: '10px 12px', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8 }}>
-              <div style={{ fontSize: 9.5, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 4 }}>
+            <div className="p-[10px_12px] bg-[var(--card)] border border-[var(--border)] rounded-[8px]">
+              <div className="text-[9.5px] text-[var(--text-dim)] uppercase tracking-[0.5px] mb-[4px]">
                 Phase imbalance
               </div>
-              <div style={{ fontSize: 18, fontWeight: 700, color: d.phaseImbalance > 10 ? 'var(--red)' : d.phaseImbalance > 5 ? 'var(--amber)' : 'var(--green)' }}>
+              <div
+                className="text-[18px] font-bold"
+                style={{ color: phaseColor }}
+              >
                 {d.phaseImbalance}%
               </div>
-              <div style={{ fontSize: 10, color: 'var(--text-mid)', marginTop: 2 }}>
-                {d.phaseImbalance > 10 ? 'Severe — needs rebalancing' : d.phaseImbalance > 5 ? 'Moderate — monitor' : 'Within limits'}
+              <div className="text-[10px] text-[var(--text-mid)] mt-[2px]">
+                {d.phaseImbalance > 10
+                  ? 'Severe — needs rebalancing'
+                  : d.phaseImbalance > 5
+                    ? 'Moderate — monitor'
+                    : 'Within limits'}
               </div>
             </div>
-            <div style={{ padding: '10px 12px', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8 }}>
-              <div style={{ fontSize: 9.5, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 4 }}>
+            <div className="p-[10px_12px] bg-[var(--card)] border border-[var(--border)] rounded-[8px]">
+              <div className="text-[9.5px] text-[var(--text-dim)] uppercase tracking-[0.5px] mb-[4px]">
                 Outages this year
               </div>
-              <div style={{ fontSize: 18, fontWeight: 700, color: d.outagesYr > 3 ? 'var(--red)' : d.outagesYr > 1 ? 'var(--amber)' : 'var(--green)' }}>
+              <div
+                className="text-[18px] font-bold"
+                style={{ color: outagesColor }}
+              >
                 {d.outagesYr}
               </div>
-              <div style={{ fontSize: 10, color: 'var(--text-mid)', marginTop: 2 }}>
-                {d.outagesYr > 3 ? 'High — investigate' : d.outagesYr > 0 ? 'Acceptable' : 'Excellent'}
+              <div className="text-[10px] text-[var(--text-mid)] mt-[2px]">
+                {d.outagesYr > 3
+                  ? 'High — investigate'
+                  : d.outagesYr > 0
+                    ? 'Acceptable'
+                    : 'Excellent'}
               </div>
             </div>
           </div>
 
-          {/* AI recommended actions */}
-          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-mid)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 8 }}>
+          {/* AI recommended actions header */}
+          <div className="text-[11px] font-bold text-[var(--text-mid)] uppercase tracking-[0.5px] mb-[8px]">
             ✦ AI recommended actions
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 14 }}>
+          <div className="flex flex-col gap-[6px] mb-[14px]">
             {d.health === 'critical' && (
               <div
+                className="py-[10px] px-[12px] rounded-[6px] text-[11.5px] leading-[1.5] break-words"
                 style={{
-                  padding: '10px 12px',
                   background: 'rgba(220,53,69,.04)',
                   borderLeft: '3px solid var(--red)',
-                  borderRadius: 6,
-                  fontSize: 11.5,
-                  lineHeight: 1.5,
                 }}
               >
                 <strong style={{ color: 'var(--red)' }}>URGENT:</strong>{' '}
-                {utilPct >= 90 && 'Schedule capacity augmentation within 30 days. '}
-                {d.loss > 15 && 'Audit consumers for theft/bypass — loss is significantly above threshold. '}
+                {utilPct >= 90 &&
+                  'Schedule capacity augmentation within 30 days. '}
+                {d.loss > 15 &&
+                  'Audit consumers for theft/bypass — loss is significantly above threshold. '}
                 {d.phaseImbalance > 10 && 'Phase rebalancing required. '}
               </div>
             )}
             {d.health === 'warning' && (
               <div
+                className="py-[10px] px-[12px] rounded-[6px] text-[11.5px] leading-[1.5] break-words"
                 style={{
-                  padding: '10px 12px',
                   background: 'rgba(230,146,30,.04)',
                   borderLeft: '3px solid var(--amber)',
-                  borderRadius: 6,
-                  fontSize: 11.5,
-                  lineHeight: 1.5,
                 }}
               >
                 <strong style={{ color: 'var(--amber)' }}>WATCH:</strong>{' '}
-                {d.phaseImbalance > 5 && 'Phase rebalancing recommended within 30 days. '}
+                {d.phaseImbalance > 5 &&
+                  'Phase rebalancing recommended within 30 days. '}
                 {projUtil > 95 && 'Approaching capacity — plan upgrade. '}
                 {d.loss > 12 && 'Loss creeping up — monitor for theft. '}
               </div>
             )}
             {d.health === 'healthy' && (
               <div
+                className="py-[10px] px-[12px] rounded-[6px] text-[11.5px] leading-[1.5] break-words"
                 style={{
-                  padding: '10px 12px',
                   background: 'rgba(40,167,69,.04)',
                   borderLeft: '3px solid var(--green)',
-                  borderRadius: 6,
-                  fontSize: 11.5,
-                  lineHeight: 1.5,
                 }}
               >
-                <strong style={{ color: 'var(--green)' }}>HEALTHY:</strong> No action required.{' '}
-                {utilPct < 50 ? 'Underutilized — consider as redistribution target if neighboring DTs are stressed.' : 'Monitor monthly.'}
+                <strong style={{ color: 'var(--green)' }}>HEALTHY:</strong> No
+                action required.{' '}
+                {utilPct < 50
+                  ? 'Underutilized — consider as redistribution target if neighboring DTs are stressed.'
+                  : 'Monitor monthly.'}
               </div>
             )}
           </div>
 
-          {/* Action buttons */}
-          <div className="dt-modal-actions" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          {/* Action buttons (was .dt-modal-actions; ≤480 → flex-col + full-width buttons) */}
+          <div className="flex gap-[8px] flex-wrap max-[480px]:flex-col">
             <button
               type="button"
-              className="btn-ai"
+              className="btn-ai flex-1 py-[9px] px-[12px] text-white border-none rounded-[6px] text-[11.5px] font-bold cursor-pointer min-w-[140px] max-[480px]:!min-w-full"
               onClick={() =>
                 showToast({
                   type: 'success',
@@ -216,7 +303,6 @@ export function DtDetailModal({ dt: d, onClose }: DtDetailModalProps) {
                   duration: 5000,
                 })
               }
-              style={{ flex: 1, padding: '9px 12px', color: '#fff', border: 'none', borderRadius: 6, fontSize: 11.5, fontWeight: 700, cursor: 'pointer', minWidth: 140 }}
             >
               ✦ Audit consumers
             </button>
@@ -230,13 +316,14 @@ export function DtDetailModal({ dt: d, onClose }: DtDetailModalProps) {
                   duration: 4000,
                 })
               }
-              style={{ flex: 1, padding: '9px 12px', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 6, fontSize: 11.5, fontWeight: 600, cursor: 'pointer', color: 'var(--text-mid)', minWidth: 140 }}
+              className="flex-1 py-[9px] px-[12px] bg-[var(--card)] border border-[var(--border)] rounded-[6px] text-[11.5px] font-semibold cursor-pointer text-[var(--text-mid)] min-w-[140px] max-[480px]:!min-w-full"
             >
               📋 Draft work order
             </button>
           </div>
 
-          {/* Consumer section — top 15 by load contribution, with search + anomaly filter in 'all' mode */}
+          {/* Consumer section — top 15 by load contribution, with search +
+              anomaly filter in 'all' mode */}
           <DtConsumerSection dt={d} onDrillConsumer={onClose} />
         </div>
       </div>

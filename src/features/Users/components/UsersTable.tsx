@@ -30,26 +30,32 @@ export function UsersTable({ users, onEdit }: UsersTableProps) {
             return (
               <tr key={u.email} className="table-row">
                 <td>
-                  <div className="usr-cell-user">
-                    <div className="usr-avatar" style={{ background: rc }}>
+                  <div className="flex items-center gap-2">
+                    <div
+                      className="w-[30px] h-[30px] rounded-full text-white flex items-center justify-center font-bold text-[11px] shrink-0"
+                      style={{ background: rc }}
+                    >
                       {u.init}
                     </div>
-                    <span className="usr-name">{u.name}</span>
+                    <span className="font-semibold">{u.name}</span>
                   </div>
                 </td>
-                <td className="usr-email">{u.email}</td>
+                <td className="text-[11px] text-[var(--text-mid)]">{u.email}</td>
                 <td>
-                  <span className="badge usr-badge-sm" style={{ background: rc, color: '#fff' }}>
+                  <span
+                    className="badge text-[10px]"
+                    style={{ background: rc, color: '#fff' }}
+                  >
                     {u.role}
                   </span>
                 </td>
-                <td className="usr-sm">{u.zone}</td>
-                <td className="usr-sm">{u.desig}</td>
-                <td className="usr-cases">{u.caseCount || '—'}</td>
-                <td className="usr-last">{u.last}</td>
+                <td className="text-[11px]">{u.zone}</td>
+                <td className="text-[11px]">{u.desig}</td>
+                <td className="font-[var(--mono)] text-center">{u.caseCount || '—'}</td>
+                <td className="text-[11px] text-[var(--text-dim)]">{u.last}</td>
                 <td>
                   <span
-                    className={`badge usr-badge-sm ${u.status === 'Active' ? 'badge-ai' : 'badge-false'}`}
+                    className={`badge text-[10px] ${u.status === 'Active' ? 'badge-ai' : 'badge-false'}`}
                   >
                     {u.status}
                   </span>
@@ -57,7 +63,7 @@ export function UsersTable({ users, onEdit }: UsersTableProps) {
                 <td>
                   <button
                     type="button"
-                    className="btn btn-outline btn-sm usr-btn-sm"
+                    className="btn btn-outline btn-sm text-[10px]"
                     onClick={() => onEdit(u)}
                   >
                     Edit

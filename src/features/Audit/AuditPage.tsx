@@ -33,7 +33,7 @@ export default function AuditPage() {
         actions={
           <>
             <input
-              className="form-input aud-search"
+              className="form-input w-[180px] text-[11px] py-[6px] px-[10px] max-[640px]:w-full"
               placeholder="Search logs..."
               value={a.search}
               onChange={(e) => a.setSearch(e.target.value)}

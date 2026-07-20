@@ -286,13 +286,19 @@ export function MapContainer({ feeders, dts, layers, onSelect, realMeters = [], 
       })
     }
 
-    // Center / fit bounds
+    // Center / fit bounds — matches prototype: single feeder → tight zoom;
+    // multiple → fit bounds including BOTH feeders and DTs so nothing at the
+    // scope edge gets clipped from the initial view.
     if (feeders.length === 0) {
       map.setView([26.85, 80.95], 7)
     } else if (feeders.length === 1) {
       map.setView([feeders[0].lat, feeders[0].lng], 15)
     } else {
-      const bounds = L.latLngBounds(feeders.map((f) => [f.lat, f.lng]))
+      const points: L.LatLngExpression[] = [
+        ...feeders.map((f) => [f.lat, f.lng] as [number, number]),
+        ...dts.map((d) => [d.lat, d.lng] as [number, number]),
+      ]
+      const bounds = L.latLngBounds(points)
       map.fitBounds(bounds, { padding: [30, 30], maxZoom: 15 })
     }
   }, [feeders, dts, realMeters, onSelect])
@@ -444,5 +450,11 @@ export function MapContainer({ feeders, dts, layers, onSelect, realMeters = [], 
     }
   }, [layers.heat, dts])
 
-  return <div id="networkMap" ref={containerRef} />
+  return (
+    <div
+      id="networkMap"
+      ref={containerRef}
+      className="flex-1 h-full w-full border-none rounded-none max-[900px]:!h-[420px] max-[900px]:!min-h-[420px] max-[640px]:!h-[360px] max-[640px]:!min-h-[360px] z-[1]"
+    />
+  )
 }

@@ -16,6 +16,7 @@ import { SyntheticDataBanner } from './components/SyntheticDataBanner'
 export default function NetworkMapPage() {
   const { showToast } = useToast()
   const {
+    scope,
     scopeName,
     allFeeders,
     allDts,
@@ -106,7 +107,38 @@ export default function NetworkMapPage() {
         }
       />
 
-      <ScopeBreadcrumb />
+      <ScopeBreadcrumb
+        rightActions={
+          <button
+            type="button"
+            className="btn btn-outline btn-sm"
+            style={{
+              fontSize: 10.5,
+              padding: '4px 10px',
+              color: 'var(--ai-purple)',
+              borderColor: 'rgba(124,58,237,0.3)',
+            }}
+            onClick={() => {
+              // Prototype opens a scope picker modal; we jump to root (or
+              // no-op if already at root) which lets the user re-drill.
+              if (scope.hierPath.length > 1) {
+                scope.navigateToPathIndex(0)
+              } else {
+                showToast({
+                  type: 'info',
+                  title: 'Change scope',
+                  message:
+                    'Use the top-bar scope selector or click a KPI card to drill into a specific division.',
+                  duration: 3500,
+                })
+              }
+            }}
+            title="Change scope"
+          >
+            ↕ Change scope
+          </button>
+        }
+      />
 
       {hasSynthetic && <SyntheticDataBanner isAllSynthetic={isAllSynthetic} />}
 
@@ -126,7 +158,12 @@ export default function NetworkMapPage() {
 
       <div className="mt-2 grid grid-cols-1 gap-3 md:grid-cols-[minmax(0,1.85fr)_minmax(0,1fr)]">
         <ErrorBoundary>
-          <div className="map-wrapper" style={{ margin: 0 }}>
+          {/*
+            Was `.map-wrapper` — flex row with map (flex-1) + detail panel
+            (340px) inside a rounded card. Collapses to flex-col at ≤900px
+            with min-height, so the map + panel stack cleanly.
+          */}
+          <div className="flex gap-0 h-[540px] rounded-[12px] overflow-hidden border border-[var(--border)] bg-[var(--card)] max-[900px]:flex-col max-[900px]:h-auto max-[900px]:min-h-[460px]">
             <MapContainer
               feeders={enrichedFeeders}
               dts={allDts}

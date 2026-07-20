@@ -18,7 +18,7 @@ function RiskCircle({ risk }: { risk: number }) {
 
   return (
     <div
-      className="risk-circle flex size-7 items-center justify-center rounded-full border-2 font-mono text-[10px] font-extrabold"
+      className="flex size-7 items-center justify-center rounded-full border-2 font-mono text-[10px] font-extrabold"
       style={{
         background: `${color}18`,
         borderColor: color,
@@ -52,18 +52,18 @@ export default function DashboardTables() {
     )
 
     return (
-      <div className="card">
-        <div className="card-title mb-3.5 flex items-center justify-between text-[14px] font-bold">
+      <div className="mb-3.5 rounded-xl border border-border bg-card p-[18px] shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
+        <div className="mb-3.5 flex items-center justify-between text-[14px] font-bold">
           <span>Consumers under {level.name} (click for consumer detail)</span>
           <span className="text-[11px] font-normal text-text-dim">
             {children.length} consumers
           </span>
         </div>
 
-        <div className="table-wrap">
+        <div className="overflow-x-auto rounded-xl border border-border bg-card shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
           <table>
             <thead>
-              <tr className="table-header">
+              <tr className="bg-navy text-white">
                 <th>Risk</th>
                 <th>Consumer</th>
                 <th>Connection #</th>
@@ -78,7 +78,7 @@ export default function DashboardTables() {
               {children.map((consumer) => (
                 <tr
                   key={consumer.meter ?? consumer.name}
-                  className="table-row cursor-pointer"
+                  className="cursor-pointer border-b border-border-light transition-colors even:bg-bg hover:bg-border-light even:hover:bg-border-light"
                   onClick={() => navigate(getPathForScreen('meterDetail', '1849966'))}
                 >
                   <td>
@@ -117,8 +117,8 @@ export default function DashboardTables() {
   ) as EnrichedChildRef[]
 
   return (
-    <div className="card">
-      <div className="card-title mb-3.5 flex items-center justify-between text-[14px] font-bold">
+    <div className="mb-3.5 rounded-xl border border-border bg-card p-[18px] shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
+      <div className="mb-3.5 flex items-center justify-between text-[14px] font-bold">
         <span>
           {childLabel}-wise performance (click to drill down)
         </span>
@@ -127,10 +127,10 @@ export default function DashboardTables() {
         </span>
       </div>
 
-      <div className="table-wrap">
+      <div className="overflow-x-auto rounded-xl border border-border bg-card shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
         <table>
           <thead>
-            <tr className="table-header">
+            <tr className="bg-navy text-white">
               <th>{childLabel}</th>
               <th>Consumers</th>
               <th>AI flagged</th>
@@ -153,7 +153,7 @@ export default function DashboardTables() {
               return (
                 <tr
                   key={child.id}
-                  className="table-row cursor-pointer"
+                  className="cursor-pointer border-b border-border-light transition-colors even:bg-bg hover:bg-border-light even:hover:bg-border-light"
                   onClick={() => drillToChild(child.id)}
                 >
                   <td className="font-semibold text-id-text">{child.name}</td>

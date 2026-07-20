@@ -20,6 +20,11 @@ import { useReports } from './hooks/useReports'
  * Faithful to the prototype's renderReports(): state-level, NOT scope-reactive.
  * All data is prop-driven from useReports; useReportModal is the sole resolver
  * for the 22 report ids (12 full documents + 10 stub previews).
+ *
+ * Responsive strategy:
+ *   • Sections A + B stack full-width (their internal tables/rows adapt)
+ *   • Sections C + D are a 1.4fr / 1fr side-by-side on desktop,
+ *     collapse to single-column at ≤900px.
  */
 export default function ReportsPage() {
   const reports = useReports()
@@ -35,17 +40,19 @@ export default function ReportsPage() {
         subtitle={
           <>
             Statutory filings · scheduled internal · ad-hoc queries · templates
-            <span className="rep-live-line">
-              <span className="rep-live-badge">
-                <span className="rep-live-dot" />
-                <strong className="rep-live-text">LIVE</strong>
+            <span className="flex items-center gap-[8px] mt-[6px] text-[10.5px] text-[var(--text-mid)] flex-wrap [&_strong]:text-[var(--text)]">
+              <span className="flex items-center gap-[5px]">
+                <span className="w-[7px] h-[7px] rounded-full bg-[var(--green)] shadow-[0_0_6px_rgba(40,167,69,0.6)] animate-pulse" />
+                <strong className="!text-[var(--green)] font-bold">LIVE</strong>
               </span>
-              <span className="rep-live-sep">·</span>
+              <span className="text-[var(--text-dim)]">·</span>
               <span>
                 Last batch <strong>06 May 2026, 06:00 IST</strong>
               </span>
-              <span className="rep-live-sep">·</span>
-              <span className="rep-live-dim">Auto-runs check at 06:00, 14:00, 22:00 IST</span>
+              <span className="text-[var(--text-dim)]">·</span>
+              <span className="text-[var(--text-dim)]">
+                Auto-runs check at 06:00, 14:00, 22:00 IST
+              </span>
             </span>
           </>
         }
@@ -122,10 +129,23 @@ export default function ReportsPage() {
         }
       />
 
-      {/* Sections C + D · ad-hoc + templates */}
-      <div className="rep-cd-grid">
-        <div>
-          <SectionHeaderRow color="var(--teal)" label="🔍 Recent ad-hoc reports" />
+      {/* Sections C + D · ad-hoc + templates.
+          1.4fr / 1fr on desktop, 1-col on tablet+mobile. */}
+      <div className="grid grid-cols-[1.4fr_1fr] gap-[14px] mb-[18px] max-[900px]:grid-cols-1 max-[900px]:gap-[10px] max-[480px]:mb-[14px]">
+        <div className="min-w-0">
+          <SectionHeaderRow
+            color="var(--teal)"
+            label="🔍 Recent ad-hoc reports"
+            action={
+              <button
+                type="button"
+                className="btn btn-outline btn-sm !text-[10px] !py-[3px] !px-[9px]"
+                onClick={() => navigate('/nlquery')}
+              >
+                + New query
+              </button>
+            }
+          />
           <AdhocList
             reports={reports.adhoc}
             onRun={modal.open}
@@ -139,7 +159,7 @@ export default function ReportsPage() {
             }
           />
         </div>
-        <div>
+        <div className="min-w-0">
           <SectionHeaderRow color="var(--id-text)" label="📋 Templates" />
           <TemplatesList templates={reports.templates} onOpen={modal.open} />
         </div>

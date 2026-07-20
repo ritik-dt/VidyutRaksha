@@ -17,9 +17,9 @@ interface NlResultCardProps {
  */
 export function NlResultCard({ meta, sqlText, rows, onExport, onViewAll }: NlResultCardProps) {
   return (
-    <div className="nl-result">
+    <div className="bg-[var(--card)] rounded-[12px] border border-[var(--border)] overflow-hidden">
       {/* Header */}
-      <div className="nl-header">
+      <div className="py-3 px-[14px] border-b border-[var(--border)] flex justify-between items-center max-[480px]:flex-wrap max-[480px]:gap-[6px]">
         <div>
           <span style={{ fontSize: 12, fontWeight: 500 }}>✦ {meta.headerTitle}</span>
           <span style={{ fontSize: 11, color: 'var(--text-dim)', marginLeft: 6 }}>
@@ -35,7 +35,7 @@ export function NlResultCard({ meta, sqlText, rows, onExport, onViewAll }: NlRes
       </div>
 
       {/* SQL block — \n in the data renders as a hard break */}
-      <div className="nl-sql">
+      <div className="py-[10px] px-[14px] bg-[var(--bg)] border-b border-[var(--border)] font-[var(--mono)] text-[10px] text-[var(--text-dim)] leading-[1.6]">
         {sqlText.split('\n').map((line, i, arr) => (
           <span key={i}>
             {line}

@@ -35,18 +35,24 @@ export function StaticAuditTable({ rows }: StaticAuditTableProps) {
             <tbody>
               {rows.map((l) => (
                 <tr key={l.ts + l.action} className="table-row">
-                  <td className="aud-ts">{l.ts}</td>
-                  <td className="aud-user">{l.user}</td>
+                  <td className="font-[var(--mono)] text-[10px] text-[var(--text-mid)] whitespace-nowrap">
+                    {l.ts}
+                  </td>
+                  <td className="font-semibold text-[11px]">{l.user}</td>
                   <td>
-                    <span className={`badge aud-badge ${staticRoleBadge(l.role)}`}>
+                    <span className={`badge text-[9px] ${staticRoleBadge(l.role)}`}>
                       {l.role}
                     </span>
                   </td>
-                  <td className="aud-action">{l.action}</td>
-                  <td className="aud-entity">{l.entity}</td>
-                  <td className="aud-details">{l.details}</td>
-                  <td className="aud-sig">{l.sig}</td>
-                  <td className="aud-ip">{l.ip}</td>
+                  <td className="font-[var(--mono)] text-[10px] text-[var(--id-text)] font-semibold">
+                    {l.action}
+                  </td>
+                  <td className="text-[11px]">{l.entity}</td>
+                  <td className="text-[11px] text-[var(--text-mid)]">{l.details}</td>
+                  <td className="font-[var(--mono)] text-[10px] text-[var(--ai-purple)]">
+                    {l.sig}
+                  </td>
+                  <td className="font-[var(--mono)] text-[10px] text-[var(--text-dim)]">{l.ip}</td>
                 </tr>
               ))}
             </tbody>

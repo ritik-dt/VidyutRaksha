@@ -13,6 +13,10 @@ interface RebalanceModalProps {
  * Centered popIn modal previewing AI-suggested rebalance moves. Port of the
  * prototype's openRebalanceModal(). Includes the "Net effect" summary and a
  * two-button footer (Cancel / Apply N moves).
+ *
+ * The popIn keyframe animation is defined globally in index.css (it's a
+ * declarative keyframe, not a class rule).
+ * Footer stacks at ≤480px to give the buttons full width.
  */
 export function RebalanceModal({ suggestions, inspectors, onClose, onApply }: RebalanceModalProps) {
   // Close on Escape
@@ -46,12 +50,19 @@ export function RebalanceModal({ suggestions, inspectors, onClose, onApply }: Re
     <>
       <div className="assign-backdrop" onClick={onClose} />
       <div
-        className="rebalance-modal"
+        className="fixed top-1/2 left-1/2 z-[99991] bg-[var(--card)] rounded-[14px] w-[680px] max-w-[92vw] max-h-[88vh] flex flex-col [animation:popIn_0.2s_ease] shadow-[0_30px_80px_rgba(10,25,50,0.4)]"
+        style={{ transform: 'translate(-50%, -50%)' }}
         role="dialog"
         aria-modal="true"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="rebalance-modal-header">
+        <div
+          className="py-[18px] px-[22px] border-b border-[var(--border)] rounded-t-[14px]"
+          style={{
+            background:
+              'linear-gradient(95deg, var(--ai-purple-light) 0%, var(--card) 60%)',
+          }}
+        >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <div>
               <div
@@ -89,20 +100,25 @@ export function RebalanceModal({ suggestions, inspectors, onClose, onApply }: Re
           </div>
         </div>
 
-        <div className="rebalance-modal-body">
+        <div className="flex-1 overflow-y-auto py-[18px] px-[22px]">
           {suggestions.map((m, idx) => (
             <div key={`${m.src.id}-${m.dst.id}-${idx}`}>
-              <div className="move-card">
-                <div className="move-side" style={{ border: '1px solid rgba(220,53,69,.3)' }}>
-                  <div className="move-side-name">{m.src.name}</div>
-                  <div className="move-side-load">
+              <div className="flex items-center gap-3 p-3 bg-[var(--bg)] border border-[var(--border)] rounded-lg mb-2">
+                <div
+                  className="flex-1 text-center py-2 px-[10px] bg-[var(--card)] rounded-md"
+                  style={{ border: '1px solid rgba(220,53,69,.3)' }}
+                >
+                  <div className="text-[12px] font-bold text-[var(--text)] mb-[2px]">
+                    {m.src.name}
+                  </div>
+                  <div className="text-[10px] text-[var(--text-dim)]">
                     {m.src.openCases}/{m.src.capacity} (
                     {Math.round((m.src.openCases / m.src.capacity) * 100)}%)
                     {m.src.status === 'leave' ? ' · ON LEAVE' : ''}
                   </div>
                 </div>
                 <div style={{ textAlign: 'center' }}>
-                  <div className="move-arrow">→</div>
+                  <div className="text-[18px] text-[var(--ai-purple)] font-bold">→</div>
                   <div
                     style={{
                       fontSize: 10,
@@ -114,9 +130,14 @@ export function RebalanceModal({ suggestions, inspectors, onClose, onApply }: Re
                     {m.caseCount} case{m.caseCount > 1 ? 's' : ''}
                   </div>
                 </div>
-                <div className="move-side" style={{ border: '1px solid rgba(40,167,69,.3)' }}>
-                  <div className="move-side-name">{m.dst.name}</div>
-                  <div className="move-side-load">
+                <div
+                  className="flex-1 text-center py-2 px-[10px] bg-[var(--card)] rounded-md"
+                  style={{ border: '1px solid rgba(40,167,69,.3)' }}
+                >
+                  <div className="text-[12px] font-bold text-[var(--text)] mb-[2px]">
+                    {m.dst.name}
+                  </div>
+                  <div className="text-[10px] text-[var(--text-dim)]">
                     {m.dst.openCases}/{m.dst.capacity} (
                     {Math.round((m.dst.openCases / m.dst.capacity) * 100)}%)
                   </div>
@@ -151,11 +172,12 @@ export function RebalanceModal({ suggestions, inspectors, onClose, onApply }: Re
           </div>
         </div>
 
-        <div className="rebalance-modal-footer">
+        {/* Footer wraps to full-width column at ≤480px per prototype. */}
+        <div className="py-[14px] px-[22px] border-t border-[var(--border)] flex justify-between items-center gap-[10px] max-[480px]:flex-wrap">
           <span style={{ fontSize: 10.5, color: 'var(--text-dim)' }}>
             Each inspector &amp; affected consumer will be notified on apply.
           </span>
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div className="flex gap-2 max-[480px]:w-full max-[480px]:[&>button]:flex-1">
             <button
               type="button"
               onClick={onClose}

@@ -92,7 +92,17 @@ export function InspectorCasesPanel({
                     marginTop: 2,
                   }}
                 >
-                  <span className={`status-dot status-${inspector.status}`} />
+                  <span
+                    className="inline-block w-[7px] h-[7px] rounded-full"
+                    style={{
+                      background:
+                        inspector.status === 'field'
+                          ? 'var(--green)'
+                          : inspector.status === 'office'
+                            ? 'var(--navy-light)'
+                            : 'var(--text-dim)',
+                    }}
+                  />
                   {STATUS_TEXT[inspector.status]} · {inspector.statusDetail}
                 </div>
               </div>

@@ -16,7 +16,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="dashboard-page space-y-0 pb-2">
+    <div className="space-y-0 pb-2">
       <DashboardHeader />
       <DashboardOvernightStrip />
       <DashboardAiAnalysis />

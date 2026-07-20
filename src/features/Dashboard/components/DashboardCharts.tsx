@@ -162,7 +162,7 @@ function ChartControls({
     "border-[var(--ai-purple)] bg-[var(--ai-purple)] text-white";
 
   return (
-    <div className="chart-controls flex items-center gap-1">
+    <div className="flex items-center gap-1">
       {types.map((t) => (
         <button
           key={t}
@@ -213,7 +213,7 @@ function ChartTableView({
   onCopyCSV: () => void;
 }) {
   return (
-    <div className="chart-table-view mt-[-4px]">
+    <div className="mt-[-4px]">
       <div className="max-h-[240px] overflow-y-auto rounded border border-[var(--border)]">
         <table className="w-full text-[11px]">
           <thead>
@@ -558,9 +558,9 @@ export default function DashboardCharts() {
   return (
     <div className="grid grid-cols-2 gap-[14px] max-lg:grid-cols-1">
       {/* ===== Card 1: Detection Funnel Trend ============================= */}
-      <div className="card mb-0">
+      <div className="mb-0 rounded-xl border border-border bg-card p-[18px] shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
         {/* Header */}
-        <div className="chart-header mb-[10px] flex items-start justify-between">
+        <div className="mb-[10px] flex items-start justify-between">
           <div>
             <div className="flex items-center text-[12px] font-bold text-[var(--text)]">
               📈 Detection funnel · 12-month trend
@@ -588,7 +588,7 @@ export default function DashboardCharts() {
 
         {/* Chart or Table */}
         {trendView === "chart" ? (
-          <div className="chart-container relative h-[200px]">
+          <div className="relative h-[200px]">
             <canvas ref={trendCanvasRef} />
           </div>
         ) : (
@@ -613,9 +613,9 @@ export default function DashboardCharts() {
       </div>
 
       {/* ===== Card 2: Loss Concentration ================================= */}
-      <div className="card mb-0">
+      <div className="mb-0 rounded-xl border border-border bg-card p-[18px] shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
         {/* Header */}
-        <div className="chart-header mb-[10px] flex items-start justify-between">
+        <div className="mb-[10px] flex items-start justify-between">
           <div>
             <div className="flex items-center text-[12px] font-bold text-[var(--text)]">
               🎯 Where is the loss concentrated?
@@ -644,7 +644,7 @@ export default function DashboardCharts() {
 
         {/* Chart or Table */}
         {lossView === "chart" ? (
-          <div className="chart-container relative h-[200px]">
+          <div className="relative h-[200px]">
             <canvas ref={lossCanvasRef} />
           </div>
         ) : (

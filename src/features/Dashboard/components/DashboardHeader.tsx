@@ -50,12 +50,12 @@ export default function DashboardHeader() {
     <>
       <DashboardBreadcrumb />
 
-      <div className="page-header mb-2.5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mb-2.5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <div className="page-title text-[20px] font-bold">
+          <div className="text-[20px] font-bold">
             {icon} {level.name}
           </div>
-          <div className="page-sub mt-0.5 text-[12px] text-text-dim">
+          <div className="mt-0.5 text-[12px] text-text-dim">
             {level.type} level
             {isConsumerLevel ? ` — ${level.meters} consumers under this DTR` : ''}
           </div>
@@ -79,7 +79,7 @@ export default function DashboardHeader() {
             <button
               type="button"
               onClick={() => navigateToPathIndex(hierPath.length - 2)}
-              className="btn btn-outline btn-sm"
+              className="cursor-pointer rounded-lg border border-border bg-card px-3 py-[5px] text-[11px] font-semibold text-text-mid transition-all hover:opacity-85"
             >
               ← Back
             </button>
@@ -88,15 +88,16 @@ export default function DashboardHeader() {
             type="button"
             onClick={toggleScopePicker}
             title="Change scope"
-             className="btn btn-outline btn-sm"
-          style={{ fontSize: '10px', padding: '3px 9px', color: 'var(--ai-purple)', borderColor: 'rgba(124,58,237,0.3)' }}
+            className="cursor-pointer rounded-lg border bg-card px-[9px] py-[3px] text-[10px] font-semibold transition-all hover:opacity-85"
+            style={{ color: 'var(--ai-purple)', borderColor: 'rgba(124,58,237,0.3)' }}
           >
             ↕ Change scope
           </button>
           <button
             type="button"
             onClick={showAiInsights}
-            className="btn btn-ai btn-sm flex items-center gap-1"
+            className="flex cursor-pointer items-center gap-1 rounded-lg border-none px-3 py-[5px] text-[11px] font-semibold text-white shadow-[var(--ai-glow)] transition-all hover:opacity-85"
+            style={{ background: 'var(--ai-gradient)' }}
           >
             <Sparkles size={11} /> AI insights
           </button>

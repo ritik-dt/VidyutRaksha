@@ -9,6 +9,7 @@ import { DtHealthBar } from './components/DtHealthBar'
 import { CriticalDtCard } from './components/CriticalDtCard'
 import { WarningDtCard } from './components/WarningDtCard'
 import { DtPillList } from './components/DtPillList'
+import { DtSectionHeader } from './components/DtSectionHeader'
 import { ExcessDemandSection } from './components/ExcessDemandSection'
 import { DtDetailModal } from './components/DtDetailModal'
 import { ratio } from './logic/dtLogic'
@@ -116,14 +117,10 @@ export default function DtLoadPage() {
 
       <ScopeBreadcrumb
         rightActions={
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <div className="flex gap-[8px] items-center">
             <span
-              style={{
-                fontSize: 11,
-                fontWeight: 700,
-                color: hasDts ? 'var(--text)' : 'var(--text-dim)',
-                fontFamily: 'var(--mono)',
-              }}
+              className="text-[11px] font-bold font-mono whitespace-nowrap"
+              style={{ color: hasDts ? 'var(--text)' : 'var(--text-dim)' }}
             >
               {allDts.length} DT{allDts.length === 1 ? '' : 's'}
             </span>
@@ -144,23 +141,15 @@ export default function DtLoadPage() {
       <AiInsightBanner title={`AI load analysis · ${scopeName}`}>{insightBody}</AiInsightBanner>
 
       {!hasDts && (
-        <div className="card" style={{ padding: 36, textAlign: 'center' }}>
-          <div style={{ fontSize: 42, marginBottom: 8, opacity: 0.5 }}>⚡</div>
-          <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', marginBottom: 6 }}>
+        <div className="card p-[36px] text-center">
+          <div className="text-[42px] mb-[8px] opacity-50">⚡</div>
+          <div className="text-[14px] font-bold text-[var(--text)] mb-[6px]">
             No distribution transformer data at {scopeName}
           </div>
-          <div
-            style={{
-              fontSize: 12,
-              color: 'var(--text-mid)',
-              maxWidth: 520,
-              margin: '0 auto',
-              lineHeight: 1.5,
-              marginBottom: 16,
-            }}
-          >
-            The Load management page covers KVVNL Varanasi territory in this prototype. State-wide there are{' '}
-            <strong>10 demo DTs</strong> — navigate up to UPPCL or KVVNL to view them.
+          <div className="text-[12px] text-[var(--text-mid)] max-w-[520px] mx-auto leading-[1.5] mb-[16px]">
+            The Load management page covers KVVNL Varanasi territory in this
+            prototype. State-wide there are <strong>10 demo DTs</strong> —
+            navigate up to UPPCL or KVVNL to view them.
           </div>
           <button
             type="button"
@@ -191,28 +180,27 @@ export default function DtLoadPage() {
           />
 
           {isFiltered && isFilteredEmpty && (
-            <div className="card" style={{ padding: '40px 20px', textAlign: 'center', color: 'var(--text-dim)' }}>
-              <div style={{ fontSize: 36, marginBottom: 10, opacity: 0.4 }}>⚡</div>
-              <div style={{ fontWeight: 700, color: 'var(--text-mid)', fontSize: 14 }}>No DTs match this filter</div>
-              <div style={{ fontSize: 11, marginTop: 6 }}>Try clearing the filter to see all transformers.</div>
+            <div className="card py-[40px] px-[20px] text-center text-[var(--text-dim)]">
+              <div className="text-[36px] mb-[10px] opacity-40">⚡</div>
+              <div className="font-bold text-[var(--text-mid)] text-[14px]">
+                No DTs match this filter
+              </div>
+              <div className="text-[11px] mt-[6px]">
+                Try clearing the filter to see all transformers.
+              </div>
             </div>
           )}
 
           {buckets.overloaded.length > 0 && (
             <>
-              <div
+              <DtSectionHeader
                 id="overloaded-dts-section"
-                className="dt-section-header"
-                style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '18px 0 10px', flexWrap: 'wrap' }}
-              >
-                <div style={{ width: 10, height: 10, borderRadius: '50%', background: 'var(--red)' }} />
-                <div className="dt-section-label" style={{ fontSize: 13, fontWeight: 700, color: 'var(--red)', textTransform: 'uppercase', letterSpacing: '.6px' }}>
-                  Overloaded · {buckets.overloaded.length}
-                </div>
-                <div className="dt-section-desc" style={{ fontSize: 11, color: 'var(--text-dim)' }}>
-                  &gt;100% loading — act this week, capacity upgrade or load redistribution
-                </div>
-              </div>
+                dotColor="var(--red)"
+                labelColor="var(--red)"
+                label={`Overloaded · ${buckets.overloaded.length}`}
+                desc=">100% loading — act this week, capacity upgrade or load redistribution"
+                topMargin="first"
+              />
               {buckets.overloaded.map((d) => (
                 <CriticalDtCard key={d.id} dt={d} onSelectDt={setSelectedDt} />
               ))}
@@ -221,20 +209,14 @@ export default function DtLoadPage() {
 
           {buckets.nearOverload.length > 0 && (
             <>
-              <div
+              <DtSectionHeader
                 id="near-overload-dts-section"
-                className="dt-section-header"
-                style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '22px 0 10px', flexWrap: 'wrap' }}
-              >
-                <div style={{ width: 10, height: 10, borderRadius: '50%', background: 'var(--amber)' }} />
-                <div className="dt-section-label" style={{ fontSize: 13, fontWeight: 700, color: 'var(--amber)', textTransform: 'uppercase', letterSpacing: '.6px' }}>
-                  Near-overload · {buckets.nearOverload.length}
-                </div>
-                <div className="dt-section-desc" style={{ fontSize: 11, color: 'var(--text-dim)' }}>
-                  85–100% loading — plan within 30 days, monitor closely
-                </div>
-              </div>
-              <div className="dt-warning-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 12 }}>
+                dotColor="var(--amber)"
+                labelColor="var(--amber)"
+                label={`Near-overload · ${buckets.nearOverload.length}`}
+                desc="85–100% loading — plan within 30 days, monitor closely"
+              />
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(340px,1fr))] gap-[12px] max-[640px]:grid-cols-1">
                 {buckets.nearOverload.map((d) => (
                   <WarningDtCard key={d.id} dt={d} onSelectDt={setSelectedDt} />
                 ))}
@@ -244,38 +226,26 @@ export default function DtLoadPage() {
 
           {buckets.optimal.length > 0 && (
             <>
-              <div
+              <DtSectionHeader
                 id="optimal-dts-section"
-                className="dt-section-header"
-                style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '22px 0 10px', flexWrap: 'wrap' }}
-              >
-                <div style={{ width: 10, height: 10, borderRadius: '50%', background: 'var(--green)' }} />
-                <div className="dt-section-label" style={{ fontSize: 13, fontWeight: 700, color: 'var(--green)', textTransform: 'uppercase', letterSpacing: '.6px' }}>
-                  Optimal · {buckets.optimal.length}
-                </div>
-                <div className="dt-section-desc" style={{ fontSize: 11, color: 'var(--text-dim)' }}>
-                  55–85% loading — efficient utilisation, monitor monthly
-                </div>
-              </div>
+                dotColor="var(--green)"
+                labelColor="var(--green)"
+                label={`Optimal · ${buckets.optimal.length}`}
+                desc="55–85% loading — efficient utilisation, monitor monthly"
+              />
               <DtPillList dts={buckets.optimal} variant="optimal" onSelectDt={setSelectedDt} />
             </>
           )}
 
           {buckets.underUtilised.length > 0 && (
             <>
-              <div
+              <DtSectionHeader
                 id="under-utilised-dts-section"
-                className="dt-section-header"
-                style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '22px 0 10px', flexWrap: 'wrap' }}
-              >
-                <div style={{ width: 10, height: 10, borderRadius: '50%', background: 'var(--navy-light, #4B6BB8)' }} />
-                <div className="dt-section-label" style={{ fontSize: 13, fontWeight: 700, color: 'var(--id-text, #0284c7)', textTransform: 'uppercase', letterSpacing: '.6px' }}>
-                  Under-utilised · {buckets.underUtilised.length}
-                </div>
-                <div className="dt-section-desc" style={{ fontSize: 11, color: 'var(--text-dim)' }}>
-                  &lt;55% loading — DT may be oversized; consider redistribution to optimise capex
-                </div>
-              </div>
+                dotColor="var(--navy-light, #4B6BB8)"
+                labelColor="var(--id-text, #0284c7)"
+                label={`Under-utilised · ${buckets.underUtilised.length}`}
+                desc="<55% loading — DT may be oversized; consider redistribution to optimise capex"
+              />
               <DtPillList dts={buckets.underUtilised} variant="under-utilised" onSelectDt={setSelectedDt} />
             </>
           )}

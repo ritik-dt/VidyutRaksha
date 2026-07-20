@@ -8,7 +8,14 @@ interface LayerTogglesProps {
   realMetersCount: number
 }
 
-/** 6 layer toggle pills — direct port of prototype's map-controls row. */
+/**
+ * 6 layer toggle pills — direct port of prototype's map-controls row.
+ *
+ * Replaces `.map-controls/.map-toggle` with pure Tailwind. Active pill uses
+ * `--ai-purple` accent (border + bg tint + purple text). Mobile ≤640px
+ * tightens gap (6px→4px) and pill padding + font-size (was
+ * `@media (max-width:640px) .map-toggle { padding:4px 9px; font-size:10.5px }`).
+ */
 export function LayerToggles({
   layers,
   onToggle,
@@ -16,27 +23,31 @@ export function LayerToggles({
   dtsCount,
   realMetersCount,
 }: LayerTogglesProps) {
-  const btnClass = (id: MapLayerId) =>
-    'map-toggle' + (layers[id] ? ' active' : '')
+  const pillClass = (isActive: boolean) =>
+    'py-[5px] px-[12px] rounded-[14px] border text-[11px] cursor-pointer transition-colors duration-150 ' +
+    'max-[640px]:!py-[4px] max-[640px]:!px-[9px] max-[640px]:!text-[10.5px] ' +
+    (isActive
+      ? 'border-[var(--ai-purple)] bg-[var(--ai-purple-light)] text-[var(--ai-purple)] font-semibold'
+      : 'border-[var(--border)] bg-[var(--card)] text-[var(--text-mid)]')
 
   return (
-    <div className="map-controls">
-      <button type="button" className={btnClass('feeders')} onClick={() => onToggle('feeders')}>
+    <div className="flex gap-[6px] mb-[12px] flex-wrap max-[640px]:!gap-[4px] max-[640px]:!mb-[10px]">
+      <button type="button" className={pillClass(layers.feeders)} onClick={() => onToggle('feeders')}>
         ⚡ Feeders ({feedersCount})
       </button>
-      <button type="button" className={btnClass('dts')} onClick={() => onToggle('dts')}>
+      <button type="button" className={pillClass(layers.dts)} onClick={() => onToggle('dts')}>
         🔶 DTRs ({dtsCount})
       </button>
-      <button type="button" className={btnClass('consumers')} onClick={() => onToggle('consumers')}>
+      <button type="button" className={pillClass(layers.consumers)} onClick={() => onToggle('consumers')}>
         👤 Consumers
       </button>
-      <button type="button" className={btnClass('real')} onClick={() => onToggle('real')}>
+      <button type="button" className={pillClass(layers.real)} onClick={() => onToggle('real')}>
         ✓ Real meters ({realMetersCount})
       </button>
-      <button type="button" className={btnClass('lines')} onClick={() => onToggle('lines')}>
+      <button type="button" className={pillClass(layers.lines)} onClick={() => onToggle('lines')}>
         — Connections
       </button>
-      <button type="button" className={btnClass('heat')} onClick={() => onToggle('heat')}>
+      <button type="button" className={pillClass(layers.heat)} onClick={() => onToggle('heat')}>
         🔥 Loss heatmap
       </button>
     </div>

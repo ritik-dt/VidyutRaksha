@@ -17,6 +17,12 @@ import { useRoi } from './hooks/useRoi'
  * scope-reactive (matches the prototype, which computes scope values but
  * discards them). Every panel is prop-driven from useRoi; the hook is the sole
  * API-integration seam.
+ *
+ * Responsive strategy:
+ *   • Anchor line wraps to multiple lines on narrow screens.
+ *   • Sections 1-2 & 4-5 use their component-level grid responsiveness.
+ *   • Section 3 is a 2-col grid (CostStackTable + PaybackPanel) that
+ *     collapses to 1-col at ≤900px.
  */
 export default function ROIPage() {
   const roi = useRoi()
@@ -26,7 +32,25 @@ export default function ROIPage() {
     <div className="overflow-x-hidden pb-2">
       <PageHeader
         title="💼 ROI & Business Case"
-        subtitle="Financial case for state-wide rollout · UPPCL · 15-lakh smart-meter footprint"
+        subtitle={
+          <>
+            Financial case for state-wide rollout · UPPCL · 15-lakh smart-meter footprint
+            <span className="flex items-center gap-[8px] mt-[6px] text-[10.5px] text-[var(--text-mid)] flex-wrap [&_strong]:text-[var(--text)]">
+              <span className="flex items-center gap-[5px]">
+                <span className="w-[7px] h-[7px] rounded-full bg-[var(--ai-purple)]" />
+                <strong className="!text-[var(--ai-purple)] font-bold">
+                  PROCUREMENT GRADE
+                </strong>
+              </span>
+              <span className="text-[var(--text-dim)]">·</span>
+              <span>
+                Anchors: <strong>UPPCL AT&amp;C Tariff Order FY26</strong> ·{' '}
+                <strong>PFC RDSS guidelines</strong> ·{' '}
+                <strong>CEA loss-bracket data</strong>
+              </span>
+            </span>
+          </>
+        }
         actions={
           <>
             <button
@@ -47,33 +71,29 @@ export default function ROIPage() {
         }
       />
 
-      {/* Procurement-grade anchor line */}
-      <div className="roi-anchor-line">
-        <div className="roi-grade">
-          <span className="roi-grade-dot" />
-          <strong className="roi-grade-text">PROCUREMENT GRADE</strong>
-        </div>
-        <span className="roi-anchor-sep">·</span>
-        <span>
-          Anchors: <strong>UPPCL AT&amp;C Tariff Order FY26</strong> ·{' '}
-          <strong>PFC RDSS guidelines</strong> · <strong>CEA loss-bracket data</strong>
-        </span>
-      </div>
-
       {/* Section 1 · The opportunity */}
       <RoiSectionHeader color="var(--red)" label="1 · The opportunity (loss baseline)" />
       <OpportunityCards cards={roi.opportunityCards} />
       <LossBreakdownTable buckets={roi.lossBuckets} total={roi.lossTotal} />
 
       {/* Section 2 · AI-attributable recovery */}
-      <RoiSectionHeader color="var(--ai-purple)" label="2 · AI-attributable recovery (3 scenarios)" />
+      <RoiSectionHeader
+        color="var(--ai-purple)"
+        label="2 · AI-attributable recovery (3 scenarios)"
+      />
       <RecoveryScenarios scenarios={roi.scenarios} />
 
-      {/* Section 3 · Implementation cost & payback */}
+      {/* Section 3 · Implementation cost & payback.
+          Prototype: `grid-template-columns: 1.4fr 1fr` on desktop.
+          Responsive: collapse to 1-col at ≤900px. */}
       <RoiSectionHeader color="var(--green)" label="3 · Implementation cost & payback" />
-      <div className="grid-2" style={{ marginBottom: 14 }}>
-        <CostStackTable rows={roi.costRows} total={roi.costTotal} note={roi.costNote} />
-        <PaybackPanel stats={roi.paybackStats} cumulativeNet={roi.cumulativeNet} />
+      <div className="grid grid-cols-[1.4fr_1fr] gap-[14px] mb-[14px] max-[900px]:grid-cols-1 max-[480px]:gap-[10px]">
+        <div className="min-w-0">
+          <CostStackTable rows={roi.costRows} total={roi.costTotal} note={roi.costNote} />
+        </div>
+        <div className="min-w-0">
+          <PaybackPanel stats={roi.paybackStats} cumulativeNet={roi.cumulativeNet} />
+        </div>
       </div>
 
       {/* Section 4 · Non-financial value */}
@@ -84,7 +104,7 @@ export default function ROIPage() {
       <RoiSectionHeader color="var(--amber)" label="5 · What could go wrong" />
       <RiskTable risks={roi.risks} />
 
-      {/* Section 6 · Recommendation */}
+      {/* Section 6 · Recommendation (no header — the card is the header). */}
       <RecommendationCard
         recommendation={roi.recommendation}
         onLockScope={() => showToast(roi.toasts.lockScope)}

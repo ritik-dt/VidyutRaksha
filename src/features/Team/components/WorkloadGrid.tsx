@@ -61,7 +61,7 @@ export function WorkloadGrid({
           <div style={{ fontSize: 11, marginTop: 6 }}>{emptyBody}</div>
         </div>
       ) : (
-        <div className="ld-grid">
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-[14px] mb-[18px]">
           {sorted.map((insp) => (
             <WorkloadCard
               key={insp.id}
