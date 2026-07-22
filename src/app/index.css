@@ -949,23 +949,6 @@ button:disabled,
   cursor: not-allowed;
 }
 
-/* ── Shared badge + back-link + risk-circle classes (byte-identical to prototype) ── */
-.back-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  color: var(--ai-purple);
-  font-size: 12px;
-  font-weight: 500;
-  cursor: pointer;
-  margin-bottom: 14px;
-  border: none;
-  background: none;
-  font-family: var(--font);
-  padding: 0;
-}
-.back-link:hover { text-decoration: underline; }
-
 .badge {
   display: inline-block;
   padding: 3px 8px;
@@ -1004,7 +987,7 @@ button:disabled,
   inset: 0;
   background: rgba(15, 43, 70, 0.55);
   z-index: 9996;
-  animation: fadeIn 0.22s ease;
+  animation: fade-in 0.22s ease;
 }
 .assign-panel {
   position: fixed;
@@ -1018,7 +1001,7 @@ button:disabled,
   z-index: 9997;
   display: flex;
   flex-direction: column;
-  animation: slideInRight 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  animation: slide-in-right 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
 body.dark .assign-panel {
   box-shadow: -10px 0 40px rgba(0, 0, 0, 0.5);
@@ -1033,14 +1016,6 @@ body.dark .assign-panel {
   flex: 1;
   overflow-y: auto;
   padding: 16px 20px;
-}
-@keyframes slideInRight {
-  from { transform: translateX(100%); }
-  to   { transform: translateX(0); }
-}
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to   { opacity: 1; }
 }
 /* Capacity utilization bar — used inside DT critical + warning cards */
 .capacity-row {
@@ -1195,61 +1170,6 @@ body.dark .assign-panel {
   0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.96); }
   100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
 }
-
-/* ── Procurement-grade badge line under the page header ───────────────────── */
-/* ── Section 1: opportunity cards (tinted) ────────────────────────────────── */
-/* ── Loss-breakdown table ─────────────────────────────────────────────────── */
-/* ── Section 2: recovery scenario cards ───────────────────────────────────── */
-/* ── Section 3: cost total + payback tiles + cumulative-net bars ───────────── */
-/* ── Section 4: benefit cards ─────────────────────────────────────────────── */
-/* ── Section 5: risk table ────────────────────────────────────────────────── */
-/* ── Section 6: recommendation card ───────────────────────────────────────── */
-/* ── Responsive ───────────────────────────────────────────────────────────── */
-@media (max-width: 900px) {
-}
-@media (max-width: 640px) {
-}
-
-/* Plain horizontal-scroll wrapper for ROI tables. Unlike .table-wrap (which
-   carries its own card chrome), this adds NO background/border/shadow — the
-   table sits directly inside its .card exactly as in the prototype, while still
-   scrolling rather than squashing on narrow screens. */
-/* Cost-stack table uses tighter cells than the loss/risk tables (prototype:
-   th 6px 8px, td 8px vs 7px 9px / 9px). */
-/* =============================================================================
- * REPORTS MODULE — faithful port of renderReports() + the report-viewer modal.
- * Structure uses the app's card/btn/ai-insight classes; this block adds the
- * module's bespoke pieces. Colours use app CSS vars only.
- * ========================================================================== */
-
-/* ── Section header: dot + label + right-aligned note ─────────────────────── */
-/* ── Header live-status line ──────────────────────────────────────────────── */
-/* ── At-a-glance strip ────────────────────────────────────────────────────── */
-/* ── Flush list card (statutory / adhoc / templates) ──────────────────────── */
-/* ── Section A · statutory rows ───────────────────────────────────────────── */
-/* ── Section B · internal reports table ───────────────────────────────────── */
-/* ── Sections C + D · adhoc + templates grid ──────────────────────────────── */
-/* ── Report modal (viewer) ────────────────────────────────────────────────── */
-/* stub body */
-/* ── Responsive ───────────────────────────────────────────────────────────── */
-@media (max-width: 1024px) {
-}
-@media (max-width: 900px) {
-}
-@media (max-width: 640px) {
-}
-
-/* ── Report document: tinted total/highlight rows ─────────────────────────────
-   The prototype styles total & highlight rows at the <tr> level: a translucent
-   tint, bold text, and a top border (2px on the strongest totals). Exact rgba
-   values ported from the prototype. */
-/* strongest red total also colours its own text */
-/* ── Report metric tile: value + inline unit, amber tone ──────────────────── */
-/* ── Report document: captions are PLAIN small dim lines (prototype boxes none) ── */
-/* ── Report document: inline mini progress-bar inside a score cell ────────── */
-
-
-
 
 /* Chart caption between the header and the canvas — the prototype's
    `<div class="page-sub" style="margin:-4px 0 10px">`. */
